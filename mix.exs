@@ -43,7 +43,8 @@ defmodule Chi2fit.Mixfile do
     [
       maintainers: ["Pieter Rijken"],
       licenses: ["Apache 2.0"],
-      files: ["lib", "mix.exs", "README*", "LICENSE*", "config"]
+      files: ["lib", "mix.exs", "README*", "LICENSE*", "config"],
+      links: %{ }
     ]
   end
 
