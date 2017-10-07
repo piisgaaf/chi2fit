@@ -188,8 +188,8 @@ defmodule Chi2fit.Matrix do
   """
   @spec inverse(matrix, options :: Keyword.t) :: {:ok,inverse :: matrix} | :failed_to_find_v0 | {:failed_to_reach_tolerance,inverse :: matrix,error :: float}
   def inverse(matrix, options \\ [])
-  def inverse([[x]], _options), do: [[1.0/x]]
-  def inverse([[x1,x2],[y1,y2]], _options), do: [[y2,-x2],[-y1,x1]] |> scalar_multiply(1.0/(x1*y2-x2*y1))
+  def inverse([[x]], _options), do: {:ok,[[1.0/x]]}
+  def inverse([[x1,x2],[y1,y2]], _options), do: {:ok,[[y2,-x2],[-y1,x1]] |> scalar_multiply(1.0/(x1*y2-x2*y1))}
   def inverse(matrix, options) do
     max_iter = options[:max_iterations] || @default_inverse_iterations
 
@@ -214,7 +214,7 @@ defmodule Chi2fit.Matrix do
 
   defp forward(:hotelling_bodewig, av), do: telescope(av,[2.0])
   defp forward(:lie, av), do: telescope(av,[3.0,3.0])
-##  defp forward(:krishnamurthy_sen, av), do: telescope(av,)
+  defp forward(:krishnamurthy_sen, av), do: telescope(av,[2.0]) |> multiply(telescope(av,[3.0,3.0]) |> multiply(telescope(av,[1.0,1.0])))
   defp forward(:soleymani, av), do: telescope(av,[120.0,393.0,735.0,861.0,651.0,315.0,93.0,15.0]) |> scalar_multiply(1/16.0)
 
   defp iterate(matrix,v0,0,_options) do
