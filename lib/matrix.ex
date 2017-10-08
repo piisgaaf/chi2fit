@@ -127,7 +127,7 @@ defmodule Chi2fit.Matrix do
     range = options[:range] || @default_range
     size = options[:size] || @default_size
 
-    {v, error} = List.duplicate(0,size)
+    List.duplicate(0,size)
     |> Enum.map(fn (_x)->range*(2*:rand.uniform() - 1) end)
     |> Enum.reduce({nil,:infinity},fn
       (factor,{_,:infinity}) ->
@@ -139,7 +139,6 @@ defmodule Chi2fit.Matrix do
         test = matrix |> length |> unit |> subtract(multiply(matrix,v0)) |> norm_1 |> abs
         if test < error, do: {v0,test}, else: {v,error}
       end)
-    if error < 1.0, do: {v,error}, else: throw :no_v0
   end
 
   @doc """
@@ -184,9 +183,14 @@ defmodule Chi2fit.Matrix do
         [[0.20000000000000004, -0.2, 0.2],
          [0.20000000000000004, 0.3, -0.3],
          [-5.048709793414476e-29, 0.9999999999999999, -1.6087621596054126e-28]]}
+      
+  For matrices that have no inverse:
+  
+      iex> inverse [[1,2,3],[4,5,6],[7,8,9]]
+      :no_inverse
   
   """
-  @spec inverse(matrix, options :: Keyword.t) :: {:ok,inverse :: matrix} | :failed_to_find_v0 | {:failed_to_reach_tolerance,inverse :: matrix,error :: float}
+  @spec inverse(matrix, options :: Keyword.t) :: {:ok,inverse :: matrix} | :failed_to_find_v0 | :no_inverse | {:failed_to_reach_tolerance,inverse :: matrix,error :: float}
   def inverse(matrix, options \\ [])
   def inverse([[x]], _options), do: {:ok,[[1.0/x]]}
   def inverse([[x1,x2],[y1,y2]], _options), do: {:ok,[[y2,-x2],[-y1,x1]] |> scalar_multiply(1.0/(x1*y2-x2*y1))}
@@ -194,21 +198,25 @@ defmodule Chi2fit.Matrix do
     max_iter = options[:max_iterations] || @default_inverse_iterations
 
     {v0,test} = findv0(:way2,matrix, options)
-    if test < 2.0 do
-      try do
+    try do
+      if test < 2.0 do
         iterate(matrix,v0,max_iter,options)
-      catch
-        {:impossible_inverse,v,error} ->
-          {:failed_to_reach_tolerance,v,error}
+      else
+        {v0,test} = findv0(:way3,matrix,options)
+        if test < 1.0 do
+          iterate(matrix,v0,max_iter,options)
+        else
+          throw :no_v0
+        end
       end
-    else
-      try do
-        {v0,_} = findv0(:way3,matrix,options)
-        iterate(matrix,v0,max_iter,options)
-      catch
-        :no_v0 ->
-          :failed_to_find_v0
-      end
+    catch
+      {:impossible_inverse,v,error} ->
+        {:failed_to_reach_tolerance,v,error}
+      :no_v0 ->
+        :failed_to_find_v0
+    rescue
+      _e in ArithmeticError ->
+        :no_inverse
     end
   end
 
@@ -225,9 +233,10 @@ defmodule Chi2fit.Matrix do
     algorithm = options[:algorithm] || @default_algorithm
 
     u = unit(length matrix)
-    test = subtract(u,multiply(matrix,v0)) |> norm_1
+    av = multiply(matrix,v0)
+    test = subtract(u,av) |> norm_1
     unless test < tolerance do
-      matrix |> iterate(multiply(v0,forward(algorithm, multiply(matrix,v0))),max-1,options)
+      matrix |> iterate(multiply(v0,forward(algorithm, av)),max-1,options)
     else
       {:ok,v0}
     end

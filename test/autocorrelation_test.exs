@@ -16,9 +16,11 @@ defmodule AutocorrelationTest do
 
   use ExUnit.Case
 
+  import Chi2fit.Utilities
+  doctest Chi2.Utilities
+    
   @h 1.0e-5
 
-  import Chi2fit.Utilities
 
   defp [] <~> [], do: true
   defp [x|restx] <~> [y|resty], do: (x <~> y) and (restx <~> resty)
