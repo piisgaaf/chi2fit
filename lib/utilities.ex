@@ -132,9 +132,12 @@ defmodule Chi2fit.Utilities do
           
   ## Example
   
-  iex(1)> fun = [1,2,3,4,5] |> to_cdf(0.5, 1) |> Enum.map(fn {x,y}->{x,y/5} end) |> to_cdf_fun(5,:wilson)
-  iex(2)> fun.(2.2)
-  {0.2, 0.027223328910987405, 0.5233625708498564}
+      iex(1)> fun = [1,2,3,4,5]
+      ...> |> to_cdf(0.5, 1)
+      ...> |> Enum.map(fn {x,y}->{x,y/5} end)
+      ...> |> to_cdf_fun(5,:wilson)
+      iex(2)> fun.(2.2)
+      {0.2, 0.027223328910987405, 0.5233625708498564}
   
   """
   @spec to_cdf_fun([{x::number,y::number}],pos_integer,algorithm) :: cdf
