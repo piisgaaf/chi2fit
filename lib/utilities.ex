@@ -27,8 +27,6 @@ defmodule Chi2fit.Utilities do
 
   import Chi2fit.FFT
   
-  @h 1.0e-10
-
   @typedoc "Cumulative Distribution Function"
   @type cdf :: ((number)->{number,number,number})
 
@@ -370,6 +368,7 @@ defmodule Chi2fit.Utilities do
       [5, 3, 2.5, 2]
 
   """
+  @h 1.0e-10
   @spec puiseaux([number],[number],boolean) :: [number]
   def puiseaux(list,result \\ [],flag \\ false)
   def puiseaux([x],result,false), do: Enum.reverse [x|result]
