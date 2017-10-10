@@ -306,9 +306,9 @@ defmodule Chi2fit.Utilities do
     list |> Enum.map(
           fn
             ({{x,0}}) -> {x}
-            ({{x,n}}) -> List.flatten expand_pars([{{D.add(x,h),n-1}},{x,n-1}],h)
+            ({{x,n}}) -> List.flatten expand_pars([{{x*(1.0+h),n-1}},{x*(1.0-h),n-1}],h)
             ({x,0}) -> x
-            ({x,n}) -> List.flatten expand_pars([{D.add(x,h),n-1},{{x,n-1}}],h)
+            ({x,n}) -> List.flatten expand_pars([{x*(1.0+h),n-1},{{x*(1.0-h),n-1}}],h)
             (x) -> x
           end)
   end
@@ -327,54 +327,42 @@ defmodule Chi2fit.Utilities do
       |> Enum.map(fn ({l,n}) -> {Enum.reverse(l),n} end)
   end
 
-  defp pow(_d,0), do: D.new(1)
-  defp pow(d,n) when is_integer(n) and n > 0, do: D.mult(d,pow(d,n-1))
-
-  defp to_decimals(list) do
-    list |> Enum.map(
-      fn
-        {x,n} -> {D.new(x),n}
-        x -> D.new(x)
-      end)
-  end
-
   @doc """
   Calculates the partial derivative of a function and returns the value.
   
   ## Examples
 
       The function value at a point:
-      iex> der [3.0], fn [x]-> D.mult(x,x) end
-      #Decimal<9.0>
+      iex> der([3.0], fn [x]-> x*x end) |> Float.round(10)
+      9.0
 
       The first derivative of a function at a point:
-      iex> der [{3.0,1}], fn [x]-> D.mult(x,x) end
-      #Decimal<6.0000000001>
+      iex> der([{3.0,1}], fn [x]-> x*x end) |> Float.round(10)
+      6.0
 
       The second derivative of a function at a point:
-      iex> der [{3.0,2}], fn [x]-> D.mult(x,x) end
-      #Decimal<2>
+      iex> der([{3.0,2}], fn [x]-> x*x end) |> Float.round(10)
+      2.0
 
       Partial derivatives with respect to two variables:
-      iex> der [{2.0,1},{3.0,1}], fn [x,y] -> D.mult(D.new(3),D.mult(x,D.mult(x,y))) end
-      #Decimal<12.000>
+      iex> der([{2.0,1},{3.0,1}], fn [x,y] -> 3*x*x*y end) |> Float.round(10)
+      12.0
 
   """
-  @spec der([float|{float,integer}], (([D.t])->D.t), Keyword.t) :: float
+  @spec der([float|{float,integer}], (([float])->float), Keyword.t) :: float
   def der(parameters, fun, options \\ []) do
-    h = D.new(options[:h] || @h)
+    h = options[:h] || 1.5e-3
 
-    factor = Enum.reduce(parameters,D.new(1.0),
+    factor = Enum.reduce(parameters,1.0,
       fn
-        ({_x,n},acc) -> D.mult(acc,pow(h,n))
+        ({x,n},acc) -> acc*:math.pow(2.0*x*h,n)*n
         (_x,acc) -> acc
       end)
     parameters
-    |> to_decimals
     |> expand_pars(h)
     |> reduce_pars
-    |> Enum.reduce(D.new(0), fn ({x,n},sum) when is_list(x) -> D.add(sum,D.mult(D.new(n),fun.(x))) end)
-    |> D.div(factor)
+    |> Enum.reduce(0.0, fn ({x,n},sum) when is_list(x) -> sum+n*fun.(x) end)
+    |> Kernel./(factor)
   end
 
   defp jacobian(x=[_|_], k, fun) when k>0 and k<=length(x) and is_function(fun,1) do
@@ -386,8 +374,8 @@ defmodule Chi2fit.Utilities do
   
   ## Examples
   
-      iex> jacobian [2.0,3.0], fn [x,y] -> D.mult(x,y) end
-      [D.new(3), D.new(2)]
+      iex> jacobian([2.0,3.0], fn [x,y] -> x*y end) |> Enum.map(&Float.round(&1,10))
+      [3.0, 2.0]
 
   """
   @spec jacobian(x :: [float], (([D.t])->D.t)) :: [D.t]

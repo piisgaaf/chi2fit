@@ -14,6 +14,10 @@ defmodule Chi2fit do
   # See the License for the specific language governing permissions and
   # limitations under the License.
 
+  @moduledoc """
+  Implements fitting a distribution function to sample data. It minimizes the liklihood function.
+  """
+
   require Logger
 
   import Chi2fit.Matrix
@@ -21,10 +25,10 @@ defmodule Chi2fit do
 
   @type observable :: {x :: float, y :: float, dy :: float}
   @type observables :: [observable]
-  @type model :: {[float], ((float,[float])->float)}
+  @type model :: {[float], ((x::float,[parameter::float])->float)}
 
   @type chi2 :: float
-  @type cov :: Matrix.matrix
+  @type cov :: Chi2fit.Matrix.matrix
   @type params :: [{float,float}]
   
   @arithmic_penalty 1_000_000_000
@@ -63,6 +67,14 @@ defmodule Chi2fit do
     end
   end
 
+  @doc """
+  Calculates the Chi-squared function for a list of observables.
+  
+  ## Options
+  
+      `model` - Required. Determines the contribution to chi-squared taking the asymmetric errors into account.
+      Vaid values are `:linear`, `:simple`, and `:asimple`
+  """
   @spec chi2(observables, ((float)->float), ((float)->float), Keyword.t) :: float
   def chi2(observables, fun, penalties \\ fn (_)->0.0 end, options \\ [])
   def chi2(observables, fun, penalties, []), do: chi2(observables, fun, penalties, [model: :simple])
@@ -101,6 +113,9 @@ defmodule Chi2fit do
       end)
   end
 
+  @doc """
+  Calculates the beta-matrix.
+  """
   @spec beta({pos_integer,pos_integer}, observables, model) :: float
   def beta(index, observables, {parameters, fun}), do: beta(index, observables, {parameters, fun, &nopenalties/2})
   def beta({k,j}, observables, {parameters, fun, _penalties}) when k>0 and k<=length(parameters) and j>0 and j<=length(parameters) do
@@ -124,6 +139,9 @@ defmodule Chi2fit do
     Enum.reduce(length(parameters)..1, [], fn (k,acc)->[gammafun.(k)|acc] end)
   end
 
+  @doc """
+  Calculates the gamma-matrix.
+  """
   @spec gamma(pos_integer, observables, model) :: float
   def gamma(k, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) do
     params_k = parameters |> List.update_at(k-1, fn (val) -> {val,1} end)
@@ -141,6 +159,9 @@ defmodule Chi2fit do
 
   defp derive_par(list, index), do: list |> List.update_at(index-1, fn (val) when is_number(val) -> {val,1}; ({val,n}) -> {val,n+1} end)
 
+  @doc """
+  Calculates the alpha-matrix.
+  """
   @spec alpha({pos_integer,pos_integer}, observables, model) :: float
   def alpha({k,j}, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) and j>0 and j<=length(parameters) do
     params_kj = parameters |> derive_par(k-1) |> derive_par(j-1)
@@ -171,6 +192,12 @@ defmodule Chi2fit do
       end)
   end
 
+  @doc """
+  Probes the chi-squared surface within a certain range of the parameters.
+  
+  Returns the minimum chi-squared found and the parameter values.
+  """
+  @spec chi2probe(observables, [float], (...->any), Keyword.t) :: {chi2::float,[float],{[float],[float]}}
   def chi2probe(observables, parranges, fun_penalties, options) do
     chi2probe(observables, parranges, fun_penalties, options[:num], nil, options)
   end
@@ -235,6 +262,11 @@ defmodule Chi2fit do
       end)
   end
 
+  @doc """
+  Fits observables to a known model.
+  
+  Returns the found minimum chi-squared value, parameter values, and covariance matrix.
+  """
   @spec chi2fit(observables, model, pos_integer, Keyword.t) :: {chi2,cov,params}
   def chi2fit(observables, model, max \\ 100, error \\ nil, options \\ [debug: false])
   def chi2fit(observables, {parameters, fun}, max, error, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, max, error, options

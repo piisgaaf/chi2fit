@@ -26,7 +26,6 @@ defmodule Chi2fit.Mixfile do
   defp deps do
     [
       {:exalgebra, "~> 0.0.5"},
-      {:decimal, "~> 1.0"},
       {:ex_doc, "~> 0.16", only: :dev, runtime: false}
     ]
   end
