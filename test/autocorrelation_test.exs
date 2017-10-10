@@ -17,6 +17,7 @@ defmodule AutocorrelationTest do
   use ExUnit.Case
 
   import Chi2fit.Utilities
+  import Chi2fit.FFT
     
   @h 1.0e-5
 

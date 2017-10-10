@@ -25,41 +25,15 @@ defmodule Chi2fit.Utilities do
   
   """
 
+  import Chi2fit.FFT
+  
   @h 1.0e-10
 
-  require Integer
-  require Logger
-  import Kernel, except: [*: 2, /: 2,+: 2, -: 2]
-
-  alias Decimal, as: D
-
-  @typedoc "A real number."
-  @type real :: number
-  
-  @typedoc "A complex number with a real part and an imaginary part."
-  @type complex :: {real,real}
-  
   @typedoc "Cumulative Distribution Function"
   @type cdf :: ((number)->{number,number,number})
 
   @typedoc "Algorithm used to assign errors to frequencey data: Wald score and Wilson score."
   @type algorithm :: :wilson | :wald
-
-  defp {x1,x2} * {y1,y2}, do: {x1*y1-x2*y2,x1*y2+x2*y1}
-  defp x * {y1,y2}, do: {x*y1,x*y2}
-  defp x * y, do: Kernel.*(x,y)
-
-  defp {x1,x2} / y, do: {x1/y,x2/y}
-  defp x / y, do: Kernel./(x,y)
-
-  defp {x1,x2} + {y1,y2}, do: {x1+y1,x2+y2}
-  defp x + {y1,y2}, do: {x+y1,y2}
-  defp {x1,x2} + y, do: {x1+y,x2}
-  defp x + y, do: Kernel.+(x,y)
-
-  defp {x1,x2} - {y1,y2}, do: {x1-y1,x2-y2}
-  defp x - {y1,y2}, do: {x-y1,-y2}
-  defp x - y, do: Kernel.-(x,y)
 
   @doc """
   Converts a list of number to frequency data.
@@ -384,140 +358,6 @@ defmodule Chi2fit.Utilities do
     Enum.reduce(length(x)..1, [], fn (k,acc) -> [jacfun.(k)|acc] end)
   end
 
-  defp weight(r,m,n), do: weight(r*m,n)
-  defp weight(rm,n), do: weight(rm/n)
-  defp weight(x), do: {:math.cos(2*:math.pi()*x),-:math.sin(2*:math.pi()*x)}
-
-  defp split_evenodds(list) when Integer.is_even(length(list)) do
-    list
-    |> List.foldr({[[],[]],false},
-      fn
-        (item,{[e,o],true}) -> {[[item|e],o],false}
-        (item,{[e,o],false}) -> {[e,[item|o]],true}
-      end)
-    |> elem(0)
-  end
-
-  @doc """
-  Calculates the discrete Fast Fourier Transform of a list of numbers.
-  
-  Provides a parallel version (see options below). See [1] for details of the algorithm implemented.
-  
-  ## Options
-    * `:phase` - Correction factor to use in the weights of the FFT algorithm. Defaults to 1.
-    * `:nproc` - Parellel version. Number of processes to use. See [2]. Defaults to 1.
-
-  ## References
-  
-    [1] Zie: https://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
-  
-    [2] Parallel version of FFT; see http://www.webabode.com/articles/Parallel%20FFT%20implementations.pdf
-  
-  ## Examples
-    
-      iex> fft [4]
-      [{4.0, 0.0}]
-    
-      iex> fft [1,2,3,4,5,6]
-      [{21.0, 0.0}, {-3.0000000000000053, 5.19615242270663},
-                {-3.0000000000000036, 1.7320508075688736}, {-3.0, 0.0},
-                {-2.9999999999999982, -1.7320508075688799},
-                {-2.999999999999991, -5.196152422706634}]
-
-  """
-  @spec fft([real],opts :: Keyword.t) :: [complex]
-  def fft(list,opts \\ [])
-
-  def fft([],_opts), do: []
-  def fft([x,y],opts) do
-    fac = opts[:phase] || 1
-    [x*weight(fac*0,0,2)+y*weight(fac*0,1,2),x*weight(fac*1,0,2)+y*weight(fac*1,1,2)]
-  end
-  def fft(list=[_|_],opts) do
-    fac = opts[:phase] || 1
-    nproc = opts[:nproc] || 1
-
-    nn = length(list)
-    cond do
-      Integer.is_even(length(list)) ->
-        zipped = cond do
-          nproc == 2 or nproc == 4 ->
-            list
-            |> split_evenodds
-            |> Enum.map(fn x-> Task.async(fn -> fft(x,Keyword.merge(opts,[nproc: nproc/2])) end) end)
-            |> Task.yield_many(3_600_000)
-            |> Enum.map(fn ({_task,{:ok,result}})->result end)
-            |> (&(apply(fn x,y->Stream.zip(x,y) end,&1))).()
-        
-          nproc == 1 ->
-            list
-            |> split_evenodds
-            |> Enum.map(fn arg->fft(arg,opts) end)
-            |> (&(apply(fn x,y->Stream.zip(x,y) end,&1))).()
-        end
-
-        n = nn/2
-        zipped
-        |> Stream.concat(zipped)
-        |> Stream.with_index(0)
-        |> Stream.map(
-          fn
-            ({{x,y},m}) when m<n -> x + (weight(fac*1,m,2*n)*y)
-            ({{x,y},m}) when m>=n -> x - (weight(fac*1,m-n,2*n)*y)
-          end)
-        |> Enum.to_list
-        
-      true ->
-        0..nn-1 |> Enum.map(
-          fn m ->
-            list |> Stream.with_index(0) |> Stream.map(fn ({item,k})-> item*weight(fac*m,k,nn) end) |> Enum.reduce(0,fn (x,acc)->x+acc end)
-          end)
-    end
-  end
-  
-  @doc """
-  Calculates the inverse FFT.
-  
-  For available options see `fft/2`.
-
-  ## Examples
-  
-      iex> ifft [4.0]
-      [{4.0, 0.0}]
-  
-      iex> ifft [1.0,2.0,3.0]
-      [{2.0, 0.0}, {-0.5000000000000003, -0.2886751345948125},
-                  {-0.4999999999999995, 0.28867513459481353}]
-
-      iex> [1.0,5.0] |> fft |> ifft
-      [{1.0, -3.061616997868383e-16}, {5.0, 6.123233995736767e-17}]
-
-  """
-  @spec ifft([real],Keyword.t) :: [complex]
-  def ifft(list,opts \\ [nproc: 1]) do
-    n = length(list)
-    list |> fft(Keyword.merge(opts,[phase: -1])) |> Enum.map(&(&1/n))
-  end
-
-  @doc """
-  Calculates the norm of a complex number or list of complex numbers.
-  
-  ## Examples
-  
-      iex> normv []
-      []
-      
-      iex> normv {2,3}
-      13
-      
-      iex> normv [{2,3},{1,2}]
-      [13,5]
-
-  """
-  @spec normv([complex]|complex) :: real
-  def normv({x,y}), do: x*x+y*y
-  def normv(list) when is_list(list), do: list |> Enum.map(&normv/1)
-
   @doc """
   Converts the input so that the result is a Puiseaux diagram, that is a strict convex shape.
   
@@ -530,7 +370,7 @@ defmodule Chi2fit.Utilities do
       [5, 3, 2.5, 2]
 
   """
-  @spec puiseaux([real],[real],boolean) :: [real]
+  @spec puiseaux([number],[number],boolean) :: [number]
   def puiseaux(list,result \\ [],flag \\ false)
   def puiseaux([x],result,false), do: Enum.reverse [x|result]
   def puiseaux([x,y],result,false), do: Enum.reverse [y,x|result]
@@ -554,7 +394,7 @@ defmodule Chi2fit.Utilities do
       [14.0, 7.999999999999999, 2.999999999999997]
 
   """
-  @spec auto([real],Keyword.t) :: [real]
+  @spec auto([number],Keyword.t) :: [number]
   def auto(list,opts \\ [nproc: 1])
   
   def auto([],_opts), do: []

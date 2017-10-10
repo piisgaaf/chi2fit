@@ -1,4 +1,4 @@
-defmodule UtilitiesTest do
+defmodule FastFourierTransformTest do
 
   # Copyright 2017 Pieter Rijken
   #
@@ -15,8 +15,8 @@ defmodule UtilitiesTest do
   # limitations under the License.
 
   use ExUnit.Case, async: true
-  import Chi2fit.Utilities
+  import Chi2fit.FFT
 
-  doctest Chi2fit.Utilities
+  doctest Chi2fit.FFT
 
 end
