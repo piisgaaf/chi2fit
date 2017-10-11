@@ -277,7 +277,7 @@ defmodule Chi2fit do
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
-    cov = try do
+    {:ok,cov} = try do
         alpha |> inverse
       catch
         {:impossible_inverse,error} ->
@@ -297,10 +297,10 @@ defmodule Chi2fit do
     alpha = alpha(observables, {parameters, fun, penalties,options})
 
     try do
-      cov = alpha |> inverse
+      {:ok,cov} = alpha |> inverse
       error = cov |> diagonal
 
-      betainv = matb |> inverse
+      {:ok,betainv} = matb |> inverse
       delta = betainv |> Enum.map(&(dotproduct(&1,vecg)))
       {params,_chi2} = parameters
       |> vary_params
