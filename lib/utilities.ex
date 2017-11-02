@@ -1,6 +1,6 @@
 defmodule Chi2fit.Utilities do
 
-  # Copyright 2017 Pieter Rijken
+  # Copyright 2015-2017 Pieter Rijken
   #
   # Licensed under the Apache License, Version 2.0 (the "License");
   # you may not use this file except in compliance with the License.
@@ -127,12 +127,22 @@ defmodule Chi2fit.Utilities do
           {y,ylow,yhigh}
 
         :wilson ->
-          splus = t*t - 1/numpoints + 4*numpoints*y*(1-y) + (4*y - 2)
-          smin =  t*t - 1/numpoints + 4*numpoints*y*(1-y) - (4*y - 2)
-          srtplus = 1.0 + t*:math.sqrt(splus)
-          srtmin =  1.0 + t*:math.sqrt(smin)
-          ylow =  max(0.0, (2*numpoints*y + t*t - srtplus)/2/(numpoints + t*t))
-          yhigh = min(1.0, (2*numpoints*y + t*t + srtmin )/2/(numpoints + t*t))
+          ylow = if y > 0 do
+            splus = t*t - 1/numpoints + 4*numpoints*y*(1-y) + (4*y - 2)
+            srtplus = 1.0 + t*:math.sqrt(splus)
+            max(0.0, (2*numpoints*y + t*t - srtplus)/2/(numpoints + t*t))
+          else
+            0.0
+          end
+
+          yhigh = if y < 1 do
+            smin =  t*t - 1/numpoints + 4*numpoints*y*(1-y) - (4*y - 2)
+            srtmin =  1.0 + t*:math.sqrt(smin)
+            min(1.0, (2*numpoints*y + t*t + srtmin )/2/(numpoints + t*t))
+          else
+            1.0
+          end
+
           {y,ylow,yhigh}
 
         other ->
@@ -175,7 +185,7 @@ defmodule Chi2fit.Utilities do
   [1] "Handbook of Monte Carlo Methods" by Kroese, Taimre, and Botev, section 8.4
   """
   @correction 0.01
-  @spec empirical_cdf([{float,number}],integer,algorithm) :: {cdf,[float],pos_integer,float}
+  @spec empirical_cdf([{float,number}],integer,algorithm) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
   def empirical_cdf(data,binsize \\ 1,algorithm \\ :wilson) do
     {bins,sum} = data
       |> Enum.sort(fn ({x1,_},{x2,_})->x1<x2 end)
@@ -196,7 +206,7 @@ defmodule Chi2fit.Utilities do
   
   Convenience function that chains `make_histogram/2` and `empirical_cdf/3`.
   """
-  @spec get_cdf([number], number, algorithm) :: {cdf,[float],pos_integer,float,[number]}
+  @spec get_cdf([number], number, algorithm) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
   def get_cdf(data, binsize \\ 1,algorithm \\ :wilson) do
     data
     |> make_histogram(binsize)
@@ -226,77 +236,49 @@ defmodule Chi2fit.Utilities do
     |> Enum.to_list
   end
 
-  @doc """
-  Returns the real roots of polynoms of order 1, 2 and 3 as a list.
-  
-  ## Examples
-  
-      Solve `2.0*x + 5.0 = 0`
-      iex> solve [2.0,5.0]
-      [-2.5]
-      
-      iex> solve [2.0,-14.0,24.0]
-      [4.0,3.0]
-      
-      iex> solve [1.0,0.0,5.0,6.0]
-      [-0.9999999999999999]
-  """
-  @spec solve([float]) :: [float]
-  def solve([0.0|rest]), do: solve rest
-
-  def solve([a1,a0]), do: [-a0/a1]
-
-  def solve([a2,a1,a0]) do
-    sqr = a1*a1-4*a2*a0
-    cond do
-      sqr == 0 -> -a1/2/a2
-      sqr > 0 -> [(-a1+:math.sqrt(sqr))/2/a2,(-a1-:math.sqrt(sqr))/2/a2]
-      true -> []
-    end
-  end
-
-  def solve([1.0,0.0,p,q]) do
-    ## For details see equations (83) and (84) in http://mathworld.wolfram.com/CubicFormula.html
-    c = -0.5*q*:math.pow(3/abs(p),1.5)
-    cond do
-      p>0 ->
-        [:math.sinh(1.0/3.0*:math.asinh(c))]
-      c>=1 ->
-        [:math.cosh(1.0/3.0*:math.acosh(c))]
-      c<=-1 ->
-        [-:math.cosh(1.0/3.0*:math.acosh(abs(c)))]
-      true ->
-        ## Three real solutions
-        [:math.cos(1.0/3.0*:math.acos(c)),:math.cos(1.0/3.0*:math.acos(c) + 2*:math.pi()/3.0),:math.cos(1.0/3.0*:math.acos(c) + 4*:math.pi()/3.0)]
-    end
-    |> Enum.map(&(&1*2*:math.sqrt(abs(p)/3.0)))
-  end
-  def solve([1.0,a2,a1,a0]), do: solve([1.0,0.0,(3*a1-a2*a2)/3.0,(2*a2*a2*a2-9*a1*a2+27*a0)/27.0]) |> Enum.map(&(&1-a2/3.0))
-  def solve([a3,a2,a1,a0]), do: solve([1.0,a2/a3,a1/a3,a0/a3])
-
   defp expand_pars(list,h) do
     list |> Enum.map(
           fn
-            ({{x,0}}) -> {x}
-            ({{x,n}}) -> List.flatten expand_pars([{{x*(1.0+h),n-1}},{x*(1.0-h),n-1}],h)
-            ({x,0}) -> x
-            ({x,n}) -> List.flatten expand_pars([{x*(1.0+h),n-1},{{x*(1.0-h),n-1}}],h)
-            (x) -> x
+            ({{x,0,factor}}) -> {{x,0,factor}}
+            ({{x,0}}) -> {{x,0,1.0}}
+            ({{x,n,factor}}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{{xplus,n-1,factor*dx}},{xmin,n-1,factor*dx}] |> expand_pars(h) |> List.flatten 
+            ({{x,n}}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{{xplus,n-1,dx}},{xmin,n-1,dx}] |> expand_pars(h) |> List.flatten 
+            ({x,0,factor}) -> {x,0,factor}
+            ({x,0}) -> {x,0,1.0}
+            ({x,n,factor}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{xplus,n-1,factor*dx},{{xmin,n-1,factor*dx}}] |> expand_pars(h) |> List.flatten 
+            ({x,n}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{xplus,n-1,dx},{{xmin,n-1,dx}}] |> expand_pars(h) |> List.flatten 
+            (x) when is_number(x) -> {x,0,1.0}
           end)
   end
 
   defp reduce_pars(list) do
-    list |> Enum.reduce([{[],1}],
+    list |> Enum.reduce([{[],1,1.0}],
       fn
         (list,acc) when is_list(list) ->
           Enum.flat_map(list,
             fn
-              ({x}) -> Enum.map(acc, fn ({y,n})->{[x|y],-n} end)
-              (x) -> Enum.map(acc, fn ({y,n})->{[x|y],n} end)
+              ({{x,0,dx1}}) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],-n,dx1*dx2} end)
+              ({x,0,dx1}) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],n,dx1*dx2} end)
             end)
-        (x,acc) -> Enum.map(acc, fn ({y,n})->{[x|y],n} end)
+        ({x,0,dx1},acc) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],n,dx1*dx2} end)
       end)
-      |> Enum.map(fn ({l,n}) -> {Enum.reverse(l),n} end)
+      |> Enum.map(fn ({l,n,dx}) -> {Enum.reverse(l),n,dx} end)
   end
 
   @doc """
@@ -305,40 +287,35 @@ defmodule Chi2fit.Utilities do
   ## Examples
 
       The function value at a point:
-      iex> der([3.0], fn [x]-> x*x end) |> Float.round(10)
+      iex> der([3.0], fn [x]-> x*x end) |> Float.round(3)
       9.0
 
       The first derivative of a function at a point:
-      iex> der([{3.0,1}], fn [x]-> x*x end) |> Float.round(10)
+      iex> der([{3.0,1}], fn [x]-> x*x end) |> Float.round(3)
       6.0
 
       The second derivative of a function at a point:
-      iex> der([{3.0,2}], fn [x]-> x*x end) |> Float.round(10)
+      iex> der([{3.0,2}], fn [x]-> x*x end) |> Float.round(3)
       2.0
 
       Partial derivatives with respect to two variables:
-      iex> der([{2.0,1},{3.0,1}], fn [x,y] -> 3*x*x*y end) |> Float.round(10)
+      iex> der([{2.0,1},{3.0,1}], fn [x,y] -> 3*x*x*y end) |> Float.round(3)
       12.0
 
   """
+  @default_h 1.5e-3
   @spec der([float|{float,integer}], (([float])->float), Keyword.t) :: float
   def der(parameters, fun, options \\ []) do
-    h = options[:h] || 1.5e-3
+    h = options[:h] || @default_h
 
-    factor = Enum.reduce(parameters,1.0,
-      fn
-        ({x,n},acc) -> acc*:math.pow(2.0*x*h,n)*n
-        (_x,acc) -> acc
-      end)
     parameters
     |> expand_pars(h)
     |> reduce_pars
-    |> Enum.reduce(0.0, fn ({x,n},sum) when is_list(x) -> sum+n*fun.(x) end)
-    |> Kernel./(factor)
+    |> Enum.reduce(0.0, fn ({x,n,dx},sum) when is_list(x) -> sum+n*fun.(x)/dx end)
   end
 
   defp jacobian(x=[_|_], k, fun) when k>0 and k<=length(x) and is_function(fun,1) do
-    x |> List.update_at(k-1, fn (val) -> {val,1} end) |> der(fun)
+    x |> List.update_at(k-1, fn (val) -> {val,1} end) |> der(fun,h: 1.0e-6)
   end
 
   @doc """
@@ -346,11 +323,11 @@ defmodule Chi2fit.Utilities do
   
   ## Examples
   
-      iex> jacobian([2.0,3.0], fn [x,y] -> x*y end) |> Enum.map(&Float.round(&1,10))
+      iex> jacobian([2.0,3.0], fn [x,y] -> x*y end) |> Enum.map(&Float.round(&1))
       [3.0, 2.0]
 
   """
-  @spec jacobian(x :: [float], (([D.t])->D.t)) :: [D.t]
+  @spec jacobian(x :: [float], (([float])->float)) :: [float]
   def jacobian(x, fun) do
     jacfun = &(jacobian(x, &1, fun))
     Enum.reduce(length(x)..1, [], fn (k,acc) -> [jacfun.(k)|acc] end)
@@ -385,7 +362,8 @@ defmodule Chi2fit.Utilities do
   @doc """
   Calculates the autocorrelation coefficient of a list of observations.
   
-  For available options see `fft/2`. Returns a list of the autocorrelation coefficients.
+  The implementation uses the discrete Fast Fourier Transform to calculate the autocorrelation.
+  For available options see `Chi2fit.FFT.fft/2`. Returns a list of the autocorrelation coefficients.
   
   ## Example
   
@@ -422,7 +400,7 @@ defmodule Chi2fit.Utilities do
   
     [1] 'Handbook of Markov Chain Monte Carlo'
   """
-  @spec error([{gamma :: number,k :: pos_integer}], :initial_sequence_method) :: {number, number}
+  @spec error([{gamma :: number,k :: pos_integer}], :initial_sequence_method) :: {var :: number, lag :: number}
   def error(nauto, :initial_sequence_method) do
     ## For reversible Markov Chains
     gamma = nauto |> Stream.chunk(2) |> Stream.map(fn ([{x,k},{y,_}])->{k/2,x+y} end) |> Enum.to_list
@@ -430,10 +408,10 @@ defmodule Chi2fit.Utilities do
     m = gamma |> Stream.take_while(fn ({_k,x})->x>0 end) |> Enum.count
     gammap = gamma |> Stream.take_while(fn ({_k,x})->x>0 end) |> Stream.map(fn {_,x}->x end) |> Stream.concat([0.0]) |> Enum.to_list
     gammap = gammap |> puiseaux
-    cov = -gamma0 + 2.0*(gammap |> Enum.sum)
+    var = -gamma0 + 2.0*(gammap |> Enum.sum)
 
-    if cov < 0, do: throw {:negative_covariance, cov, 2*m}
-    {cov,2*m}
+    if var < 0, do: throw {:negative_variance, var, 2*m}
+    {var,2*m}
   end
 
   @doc """

@@ -1,4 +1,4 @@
-defmodule UtilitiesTest do
+defmodule FitTest do
 
   # Copyright 2017 Pieter Rijken
   #
@@ -15,12 +15,8 @@ defmodule UtilitiesTest do
   # limitations under the License.
 
   use ExUnit.Case, async: true
-  import Chi2fit.Utilities
+  import Chi2fit.Fit
 
-  doctest Chi2fit.Utilities
-
-  test "Third derivatives" do
-    assert 6.0 == der([{3.0,3}], fn [x]-> x*x*x end) |> Float.round(3)
-  end
+  doctest Chi2fit.Fit
 
 end

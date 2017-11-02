@@ -1,6 +1,6 @@
 defmodule Chi2fit.Matrix do
 
-  # Copyright 2017 Pieter Rijken
+  # Copyright 2016-2017 Pieter Rijken
   #
   # Licensed under the Apache License, Version 2.0 (the "License");
   # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ defmodule Chi2fit.Matrix do
 
   @moduledoc """
   This module provides matrix inverse operations and supporting functions.
+
   It provides 2 types of matrix norms and an iterative approach to calculating the matrix inverse.
   The implementation is based on the work [1].
   
@@ -73,7 +74,7 @@ defmodule Chi2fit.Matrix do
   defp abssum(list), do: list |> Enum.map(&abs/1) |> Enum.sum
 
   @doc """
-  Calculates the norm of the matrix as the sum of the absolute value of all elements.
+  Calculates the norm of the matrix as the sum of the absolutes value of all elements.
   
   ## Example
   
@@ -98,7 +99,7 @@ defmodule Chi2fit.Matrix do
   def norm_1(matrix), do: matrix |> Enum.map(&abssum/1) |> Enum.max
 
   @doc """
-  Calculates the norm of the matrix as norm_1 but over the columns instead of over the rows.
+  Calculates the norm of the matrix as `norm_1/1` but over the columns instead of over the rows.
   
   ## Example
   
@@ -146,7 +147,7 @@ defmodule Chi2fit.Matrix do
   
   ## Options
 
-  * `:tolerance` - Iterate until the norm_1 of I-AV is less than this value
+  * `:tolerance` - Iterate until the `norm_1/1` of I-AV is less than this value
   
   * `:algorithm` - Four algorithms are supported: `:hotelling_bodewig` (second order), `:lie` (third order),
   `:krishnamurthy_sen` (sixth order), and `:soleymani` (seventh order); defaults to `#{inspect @default_algorithm}`

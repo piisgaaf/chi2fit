@@ -1,6 +1,6 @@
 defmodule Chi2fit.FFT do
 
-  # Copyright 2017 Pieter Rijken
+  # Copyright 2016-2017 Pieter Rijken
   #
   # Licensed under the Apache License, Version 2.0 (the "License");
   # you may not use this file except in compliance with the License.
