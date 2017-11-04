@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "0.5.0",
+      version: "0.5.1",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -27,7 +27,8 @@ defmodule Chi2fit.Mixfile do
       ## Hex stuff:
       description: description(),
       package: package(),
-      name: "Chi-SquaredFit"
+      name: "Chi-SquaredFit",
+      source_url: "https://github.com/piisgaaf/chi2fit"
     ]
   end
 
@@ -67,8 +68,7 @@ defmodule Chi2fit.Mixfile do
       maintainers: ["Pieter Rijken"],
       licenses: ["Apache 2.0"],
       files: ["lib", "mix.exs", "README*", "LICENSE*", "config", "chi2fit"],
-      links: %{ },
-      source_url: "https://github.com/piisgaaf/chi2fit"
+      links: %{ "GitHub" => "https://github.com/piisgaaf/chi2fit" }
     ]
   end
 
