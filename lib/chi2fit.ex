@@ -14,12 +14,16 @@ defmodule Chi2fit.Cli do
   # See the License for the specific language governing permissions and
   # limitations under the License.
 
+  @moduledoc """
+  Provides a command line interface for fitting data against a known cumulative distribution function.
+  """
+
   require Logger
 
   import Chi2fit.Fit, only: [chi2fit: 5, chi2probe: 4, chi2: 4]
   import Chi2fit.Utilities
   import Chi2fit.Matrix
-  import Chi2fit.Distributions
+  import Chi2fit.Distribution
 
   @datapoints 500
   @maxx 1.1
@@ -71,7 +75,7 @@ defmodule Chi2fit.Cli do
 
     data = convert_cdf({cdf,[mindur,maxdur]})
 
-    model = model options[:name], elem(Code.eval_string(options[:ranges]),0)
+    model = model(options[:name]) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
     {chi2, parameters,errors} = probe data, model, options
     {data,model, {chi2, parameters,errors}}
   end
@@ -222,7 +226,7 @@ defmodule Chi2fit.Cli do
         boot = bootstrap(options[:mcbootstrap], wdata, kernel(options),options) |> Enum.filter(&is_tuple/1)
 
         # Compute average, average sd, sd error, and maximum lag that occured
-        model = model(options[:name],options[:ranges])
+        model = model(options[:name]) |> Keyword.put(:probe, options[:ranges])
         avgchi2 = (boot |> Stream.map(fn ({chi2,_,_}) -> chi2 end) |> Enum.sum)/length(boot)
         sdchi2 = :math.sqrt((boot |> Stream.map(fn {chi2,_,_}->(chi2-avgchi2)*(chi2-avgchi2) end) |> Enum.sum))/length(boot)
 
