@@ -19,10 +19,15 @@ defmodule Chi2fit.Distribution do
   """
 
   @type distribution() :: ((...) :: number())
+  @type cdf() :: ((number) :: number())
 
   defmodule UnsupportedDistributionError do
     defexception message: "Unsupported distribution function"
   end
+
+  ###
+  ### Standard distributions
+  ###
 
   @doc """
   Uniform distribution.
@@ -44,28 +49,6 @@ defmodule Chi2fit.Distribution do
   @spec constant(number | Keyword.t) :: distribution
   def constant([avg: average]), do: fn () -> average end
   def constant(average) when is_number(average), do: fn () -> average end
-
-  @doc """
-  Distribution for flipping coins.
-  """
-  @spec coin(integer) :: distribution
-  def coin(value), do: uniform([0.0,value])
-
-  @doc """
-  Distribution simulating a dice (1..6)
-  """
-  @spec dice([] | number) :: distribution
-  def dice([]), do: dice(1.0)
-  def dice([avg: avg]), do: dice(avg)
-  def dice(avg), do: uniform([avg*1,avg*2,avg*3,avg*4,avg*5,avg*6])
-
-  @doc """
-  Distribution simulating the dice in the GetKanban V4 simulation game.
-  """
-  @spec dice_gk4([] | number) :: distribution
-  def dice_gk4([]), do: dice_gk4(1.0)
-  def dice_gk4([avg: avg]), do: dice_gk4(avg)
-  def dice_gk4(avg), do: uniform([avg*3,avg*4,avg*4,avg*5,avg*5,avg*6])
 
   @doc """
   The exponential distribution.
@@ -110,22 +93,20 @@ defmodule Chi2fit.Distribution do
   @doc """
   The Weibull cumulative distribution function.
   """
-  @spec weibullCDF(number,number,number) :: float
-  def weibullCDF(0,_,_), do: 0.0
-  def weibullCDF(0.0,_,_), do: 0.0
-  def weibullCDF(x,_,_) when x<0, do: 0.0
-  def weibullCDF(_,k,_) when k<0, do: 0.0
-  def weibullCDF(_,_,lambda) when lambda<0, do: 0.0
-  def weibullCDF(x,k,lambda) when is_number(x) and is_number(k) and is_number(lambda) do
-    require Logger
-    try do
-      if :math.log(x/lambda)*k > 100, do: 0.0, else: 1.0 - :math.exp -:math.pow(x/lambda,k)
-    rescue
-      e ->
-        stack=System.stacktrace
-        Logger.error "args=#{x},#{k},#{lambda}"
-        Logger.error "ERROR: #{inspect e} #{inspect stack}"
-        raise e
+  @spec weibullCDF(number,number) :: cdf
+  def weibullCDF(k,_) when k<0, do: raise ArithmeticError, "Weibull is only defined for positive shape"
+  def weibullCDF(_,lambda) when lambda<0, do: raise ArithmeticError, "Weibull is only defined for positive scale"
+  def weibullCDF(k,lambda) when is_number(k) and is_number(lambda) do
+    fn
+      0 -> 0.0
+      0.0 -> 0.0
+      x when x<0 -> 0.0
+      x ->
+        if :math.log(x/lambda)*k > 100 do
+          0.0
+        else
+          1.0 - :math.exp -:math.pow(x/lambda,k)
+        end
     end
   end
 
@@ -172,52 +153,57 @@ defmodule Chi2fit.Distribution do
   @doc """
   The Wald cumulative distribution function.
   """
-  @spec waldCDF(number,number,number) :: float
-  def waldCDF(x,_,_) when x == 0, do: 0.0
-  def waldCDF(x,_,_) when x < 0, do: 0.0
-  def waldCDF(_,mu,_) when mu < 0, do: raise ArithmeticError, "Wald is only defined for positive average"
-  def waldCDF(_,_,lambda) when lambda < 0, do: raise ArithmeticError, "Wald is only defined for positive shape"
-  def waldCDF(x,mu,lambda) when x>0 and lambda>=0 do
-   phi(:math.sqrt(lambda/x) * (x/mu-1.0)) + :math.exp(2.0*lambda/mu) * phi(-:math.sqrt(lambda/x) * (x/mu+1.0))
+  @spec waldCDF(number,number) :: cdf
+  def waldCDF(mu,_) when mu < 0, do: raise ArithmeticError, "Wald is only defined for positive average"
+  def waldCDF(_,lambda) when lambda < 0, do: raise ArithmeticError, "Wald is only defined for positive shape"
+  def waldCDF(mu,lambda) do
+    fn
+      x when x == 0 -> 0.0
+      x when x < 0 -> 0.0
+      x when x>0 ->
+        phi(:math.sqrt(lambda/x) * (x/mu-1.0)) + :math.exp(2.0*lambda/mu) * phi(-:math.sqrt(lambda/x) * (x/mu+1.0))
+    end
   end
 
+  ###
+  ### Special distributions
+  ###
+
   @doc """
-  Poisson cumulative distribution function.
+  Distribution for flipping coins.
   """
-  @spec poissonCDF(number,number) :: float
-  def poissonCDF(x,_) when x == 0, do: 0.0
-  def poissonCDF(x,_) when x < 0, do: 0.0
-  def poissonCDF(x,lambda) when is_float(x), do: poissonCDF Float.ceil(x),lambda
-  def poissonCDF(x,lambda) when x>0 and is_integer(x) do
-   :math.exp(-lambda)*(0..x-1 |> Enum.reduce({1.0,0.0},
-     fn
-       (0,{_,_})->{1.0,1.0}
-       (k,{acc,sum})->
-         delta=acc*lambda/k
-         {delta,sum+delta}
-     end) |> elem(1))
-  end
+  @spec coin(integer) :: distribution
+  def coin(value), do: uniform([0.0,value])
+
+  @doc """
+  Distribution simulating a dice (1..6)
+  """
+  @spec dice([] | number) :: distribution
+  def dice([]), do: dice(1.0)
+  def dice([avg: avg]), do: dice(avg)
+  def dice(avg), do: uniform([avg*1,avg*2,avg*3,avg*4,avg*5,avg*6])
+
+  @doc """
+  Distribution simulating the dice in the GetKanban V4 simulation game.
+  """
+  @spec dice_gk4([] | number) :: distribution
+  def dice_gk4([]), do: dice_gk4(1.0)
+  def dice_gk4([avg: avg]), do: dice_gk4(avg)
+  def dice_gk4(avg), do: uniform([avg*3,avg*4,avg*4,avg*5,avg*5,avg*6])
 
   @doc """
   Returns the model for a name.
   """
-  @spec model(name::String.t) :: [fun: ((float,[...])->float), df: pos_integer(), curve: (([...])->((float)->float))]
+  @spec model(name::String.t) :: [fun: cdf, df: pos_integer()]
   def model(name) do
     case name do
       "wald" -> [
-        fun: fn (x,[mu,lambda]) -> 1.0-waldCDF(x,mu,lambda) end,
-        curve: fn ([k,lambda]) -> fn x->waldCDF(x,k,lambda) end end,
+        fun: fn (x,[k,lambda]) -> waldCDF(k,lambda).(x) end,
         df: 2
       ]
       "weibull" -> [
-        fun: fn (x,[k,lambda]) -> 1.0-weibullCDF(x,k,lambda) end,
-        curve: fn ([k,lambda]) -> fn x->weibullCDF(x,k,lambda) end end,
+        fun: fn (x,[k,lambda]) -> weibullCDF(k,lambda).(x) end,
         df: 2
-      ]
-      "cpoisson" -> [
-        fun: fn (x,[lambda]) -> 1.0-poissonCDF(x,lambda) end,
-        curve: fn ([lambda]) -> fn x->poissonCDF(x,lambda) end end,
-        df: 1
       ]
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
@@ -239,8 +225,8 @@ defmodule Chi2fit.Distribution do
 
   @spec polar() :: {number(), number(), number()}
   defp polar() do
-    v1 = 2*:rand.uniform()-1
-    v2 = 2*:rand.uniform()-1
+    v1 = random(-1,1)
+    v2 = random(-1,1)
     w = v1*v1 + v2*v2
 
    cond do

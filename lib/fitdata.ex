@@ -266,7 +266,6 @@ defmodule Chi2fit.Fit do
       ArithmeticError ->
         chi2probe(observables, parranges, {fun,penalties}, num-1, best, options)
       err ->
-        Logger.error "\nError: #{inspect err} #{inspect System.stacktrace}"
         reraise err, "Error!"
     end
   end

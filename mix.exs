@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "0.4.1",
+      version: "0.5.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -34,7 +34,7 @@ defmodule Chi2fit.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [ ]
+      extra_applications: [ Logger ]
     ]
   end
 
@@ -67,7 +67,8 @@ defmodule Chi2fit.Mixfile do
       maintainers: ["Pieter Rijken"],
       licenses: ["Apache 2.0"],
       files: ["lib", "mix.exs", "README*", "LICENSE*", "config", "chi2fit"],
-      links: %{ }
+      links: %{ },
+      source_url: "https://github.com/piisgaaf/chi2fit"
     ]
   end
 

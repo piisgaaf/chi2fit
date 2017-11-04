@@ -75,9 +75,15 @@ defmodule Chi2fit.Cli do
 
     data = convert_cdf({cdf,[mindur,maxdur]})
 
-    model = model(options[:name]) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
-    {chi2, parameters,errors} = probe data, model, options
-    {data,model, {chi2, parameters,errors}}
+    try do
+      model = model(options[:name]) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
+      {chi2, parameters,errors} = probe data, model, options
+      {data,model, {chi2, parameters,errors}}
+    rescue
+      _e in Chi2fit.Distribution.UnsupportedDistributionError ->
+        IO.puts :stderr, "ERROR: Unsupported distribution '#{options[:name]}'"
+        System.halt 1
+    end
   end
   
   defp do_output(data, parameters, model, alphainv) do
@@ -208,6 +214,15 @@ defmodule Chi2fit.Cli do
     end
   end
 
+  defp validate options do
+    cond do
+      options[:ranges] == nil ->
+        IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
+        System.halt 1
+      true -> :ok
+    end
+  end
+
   def main args do
     {options, filename} = parse_args(args)
 
@@ -215,6 +230,7 @@ defmodule Chi2fit.Cli do
     if options[:help], do: usage(0)
 
     ## Default options
+    validate options
     options = add_defaults(options)
 
     ## Read the data
