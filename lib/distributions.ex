@@ -18,6 +18,8 @@ defmodule Chi2fit.Distribution do
   Provides various distributions.
   """
 
+  import Chi2fit.Utilities
+  
   @type distribution() :: ((...) :: number())
   @type cdf() :: ((number) :: number())
 
@@ -60,7 +62,7 @@ defmodule Chi2fit.Distribution do
       -average*:math.log(u)
     end
   end
-  def exponential([cdf: rate]), do: fn (t) -> 1.0 - :math.exp(-rate*t) end
+  def exponentialCDF(rate), do: fn (t) -> 1.0 - :math.exp(-rate*t) end
 
   @doc """
   The Erlang distribution.
@@ -165,6 +167,49 @@ defmodule Chi2fit.Distribution do
     end
   end
 
+  defp sepPDF(a,b,lambda,alpha) do
+    fn x ->
+      z = (x-a)/b
+      t = :math.pow(abs(z),alpha/2.0)
+      w = lambda*:math.sqrt(2.0/alpha)*t
+
+      if z > 0.0 do
+        :math.exp(-t*t/alpha) * 0.5 * ( 1.0 + :math.erf(w/:math.sqrt(2.0)) )
+      else
+        :math.exp(-t*t/alpha) * 0.5 * ( :math.erfc(w/:math.sqrt(2.0)) )
+      end
+    end
+  end
+
+  @doc """
+  The Skew Exponential Power cumulative distribution (Azzalini).
+
+  ## Options
+    `:method` - the integration method to use, :gauss and :romberg types are supported, see below
+    `:tolerance` - re-iterate until the tolerance is reached (only for :romberg)
+    `:points` - the number of points to use in :gauss method
+
+  ## Integration methods
+    `:gauss` - n-point Gauss rule,
+    `:gauss2` - n-point Guass rule with tanh transformation,
+    `:gauss3` - n-point Gauss rule with linear transformstion,
+    `:romberg` - Romberg integration,
+    `:romberg2` - Romberg integration with tanh transformation,
+    `:romberg3` - Romberg integration with linear transformstion.
+
+  """
+  @spec sepCDF(a :: float,b :: float,lambda :: float,alpha :: float, options :: Keyword.t) :: cdf
+  def sepCDF(a,b,lambda,alpha,options \\ []) do
+    method = options[:method] || :romberg2
+    endpoint = if method in [:gauss2,:gauss3,:romberg2,:romberg3], do: :infinity, else: 1000.0
+    fn
+      x ->
+        result2 = integrate(method, sepPDF(a,b,lambda,alpha), 0.0, x, options)
+        result3 = integrate(method, sepPDF(a,b,lambda,alpha), 0.0, endpoint, options)
+        result2/result3
+    end
+  end
+
   ###
   ### Special distributions
   ###
@@ -193,9 +238,19 @@ defmodule Chi2fit.Distribution do
 
   @doc """
   Returns the model for a name.
+  
+  Supported disributions:
+      "wald" - The Wald or Inverse Gauss distribution,
+      "weibull" - The Weibull distribution,
+      "exponential" - The exponential distribution,
+      "sep" - The Skewed Exponential Power distribution (Azzalini),
+      "sep0" - The Skewed Exponential Power distribution (Azzalini) with location parameter set to zero (0).
+      
+  ## Options
+  Available only for the SEP distribution, see 'sepCDF/5'.
   """
-  @spec model(name::String.t) :: [fun: cdf, df: pos_integer()]
-  def model(name) do
+  @spec model(name::String.t, options::Keyword.t) :: [fun: cdf, df: pos_integer()]
+  def model(name, options \\ []) do
     case name do
       "wald" -> [
         fun: fn (x,[k,lambda]) -> waldCDF(k,lambda).(x) end,
@@ -204,6 +259,18 @@ defmodule Chi2fit.Distribution do
       "weibull" -> [
         fun: fn (x,[k,lambda]) -> weibullCDF(k,lambda).(x) end,
         df: 2
+      ]
+      "exponential" -> [
+        fun: fn (x,[k]) -> exponentialCDF(k).(x) end,
+        df: 1
+      ]
+      "sep" -> [
+        fun: fn (x,[a,b,lambda,alpha]) -> sepCDF(a,b,lambda,alpha,options).(x) end,
+        df: 4
+      ]
+      "sep0" -> [
+        fun: fn (x,[b,lambda,alpha]) -> sepCDF(0.0,b,lambda,alpha,options).(x) end,
+        df: 3
       ]
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
@@ -229,10 +296,10 @@ defmodule Chi2fit.Distribution do
     v2 = random(-1,1)
     w = v1*v1 + v2*v2
 
-   cond do
-     w > 1.0 -> polar()
-     true -> {w,v1,v2}
-   end
- end
+    cond do
+      w > 1.0 -> polar()
+      true -> {w,v1,v2}
+    end
+  end
 
 end

@@ -230,12 +230,51 @@ defmodule Chi2fit.Fit do
     chi2probe(observables, parranges, fun_penalties, options[:num] || options[:probes], nil, options)
   end
 
+  defp unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
+  defp unzip(list=[{_,_}|_]), do: Enum.unzip(list)
+  defp unzip(list=[{_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2))
+    }
+  end
+  defp unzip(list=[{_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3))
+    }
+  end
+  defp unzip(list=[{_,_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3)),
+      list |> Enum.map(&elem(&1,4))
+    }
+  end
+
   defp chi2probe(_observables, _parranges, {_fun,_penalties}, 0, best, _options) do
     ## Refactor this!!!!!
     {chi2,parameters,saved} = best
     {_chis,plists} = saved |> Enum.unzip
-    {plist1,plist2} = plists |> Stream.map(&List.to_tuple/1) |> Enum.unzip
-    {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)]}}
+    case plists |> Enum.map(&List.to_tuple/1) |> unzip do
+      {plist1} ->
+        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)]}}
+      {plist1,plist2} ->
+        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)]}}
+      {plist1,plist2,plist3} ->
+        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)],[Enum.min(plist3),Enum.max(plist3)]}}
+      {plist1,plist2,plist3,plist4} ->
+        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)],[Enum.min(plist3),Enum.max(plist3)],[Enum.min(plist4),Enum.max(plist4)]}}
+      {plist1,plist2,plist3,plist4,plist5} ->
+        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)],[Enum.min(plist3),Enum.max(plist3)],[Enum.min(plist4),Enum.max(plist4)],[Enum.min(plist5),Enum.max(plist5)]}}
+      other ->
+        raise ArgumentError, message: "Unsupported number of distribution parameters (#{tuple_size other})"
+    end
   end
   defp chi2probe(observables, parranges, {fun,penalties}, num, best, options) do
     if options[:progress] do
@@ -315,10 +354,15 @@ defmodule Chi2fit.Fit do
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
     {:ok,cov} = try do
+        IO.inspect alpha
         alpha |> inverse
       catch
         {:impossible_inverse,error} ->
           throw {:inverse_error, error, chi2, parameters}
+
+        {:failed_to_reach_tolerance,_pars,error} ->
+          throw {:failed_to_reach_tolerance, error, chi2, parameters}
+
       rescue
         ArithmeticError ->
           throw {:inverse_error, ArithmeticError, chi2, parameters}
@@ -369,6 +413,9 @@ defmodule Chi2fit.Fit do
     catch
       {:impossible_inverse,error} ->
         Logger.debug "chi2: impossible inverse: #{error}"
+        chi2fit observables, {parameters,fun,penalties}, 0, preverror, options
+      {:failed_to_reach_tolerance,_pars,error} ->
+        Logger.debug "chi2: failed to reach tolerance: #{error}"
         chi2fit observables, {parameters,fun,penalties}, 0, preverror, options
     rescue
       ArithmeticError ->

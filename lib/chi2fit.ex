@@ -32,6 +32,9 @@ defmodule Chi2fit.Cli do
   @default_surface_file "cdf_surface.csv"
   @default_cdf "weibull"
   @default_asymm :simple
+  @default_int_method :romberg2
+  @default_tolerance 1.0e-6
+  @default_npoints 32
 
   @jac_threshold 0.01
   
@@ -76,7 +79,7 @@ defmodule Chi2fit.Cli do
     data = convert_cdf({cdf,[mindur,maxdur]})
 
     try do
-      model = model(options[:name]) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
+      model = model(options[:name],options) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
       {chi2, parameters,errors} = probe data, model, options
       {data,model, {chi2, parameters,errors}}
     rescue
@@ -94,7 +97,7 @@ defmodule Chi2fit.Cli do
         try do
           y = model[:fun].(x,parameters)
           error = if abs(error2/y) < 1.0e-6, do: 1.0e-6, else: :math.sqrt(error2)
-          IO.puts("#{x},#{1.0-y},#{1.0-y-error},#{1.0-y+error}")
+          IO.puts("#{x},#{y},#{y-error},#{y+error}")
         rescue
           ArithmeticError -> IO.puts "Warning: arithmetic error (probably negative diagonal element (#{error2}) in covariance matrix)"
         end
@@ -107,12 +110,19 @@ defmodule Chi2fit.Cli do
     IO.puts ""
     IO.puts "    Fitting data to a CDF:"
     IO.puts "    --fit\t\t\t\tTry to fit the parameters"
-    IO.puts "    --cdf wald|weibull|exponential\tThe distribution function (defaults to '#{@default_cdf}') to fit the data"
     IO.puts "    --iterations <number>\t\tNumber of iterations (defaults to '#{@default_iterations}') to use in the optimizing the Likelihood function"
     IO.puts "    --model simple|asimple|linear\tThe model (defaults to '#{@default_asymm}') to use for handling asymmetrical errors in the input data"
     IO.puts "    --probes <number>\t\t\tThe number of probes (defaults to '#{@default_probes}') to use for guessing parameter values at initialization"
     IO.puts "    --ranges \"[{...,...},...]\"\t\tRanges of parameters to search for optimum likelihood"
-    IO.puts "    --data <data>\t\t\tArray of data points to use in fotting"
+    IO.puts ""
+    IO.puts "    Distributions:"
+    IO.puts "    --cdf <cdf>\t\t\t\tThe distribution function (defaults to '#{@default_cdf}') to fit the data."
+    IO.puts "    \t\t\t\t\tSupported values are 'wald|weibull|exponential|sep|sep0'"
+    IO.puts "    --data <data>\t\t\tArray of data points to use in fitting"
+    IO.puts "    --method <method>\t\tThe integration method to use (defaults to '#{@default_int_method}'); applies to sep and sep0 only."
+    IO.puts "    \t\t\t\t\tSupported values are 'gauss|gauss2|gaus3|romberg|romberg2|romberg3'"
+    IO.puts "    --tolerance <tolerance>\t\tThe target precision (defaults to '#{@default_tolerance}') for Romberg integration"
+    IO.puts "    --npoints <points>\t\t\tThe number of points to use in Gauss integration (defaults to '#{@default_npoints}')"
     IO.puts ""
     IO.puts "    Output:"
     IO.puts "    --print\t\t\t\tOutputs the input data"
@@ -142,6 +152,9 @@ defmodule Chi2fit.Cli do
       surface: :string,
       iterations: :integer,
       model: :string,
+      tolerance: :float,
+      npoints: :integer,
+      method: :string,
       probes: :integer,
       ranges: :string,
       smoothing: :boolean,
@@ -165,6 +178,7 @@ defmodule Chi2fit.Cli do
     |> Keyword.put_new(:surface,    @default_surface_file)
     |> Keyword.put_new(:name,       options[:cdf] || @default_cdf)
     |> Keyword.update(:model,       @default_asymm, &String.to_atom/1)
+    |> Keyword.update(:method,      @default_int_method, &String.to_atom/1)
     |> Keyword.put_new(:iterations, @default_iterations)
     |> Keyword.put_new(:probes,     @default_probes)
     |> Keyword.put_new(:ranges,     nil)
@@ -178,10 +192,11 @@ defmodule Chi2fit.Cli do
     
     options
     |> Keyword.put_new(:mark,       [
-      m: fn -> if(!(options[:x] || options[:c]), do: IO.write("M")) end,
-      c: fn -> if(options[:c], do: IO.write("C")) end,
+      m: fn -> if(options[:progress?], do: IO.write("M")) end,
+      c: fn -> if(options[:x] || options[:c], do: IO.write("C")) end,
       x: fn -> if(options[:x], do: IO.write("X")) end,
-      *: fn -> if(options[:progress?], do: IO.write("*")) end])
+      *: fn -> if(options[:progress?], do: IO.write("*")) end
+      ])
     #
     |> Keyword.put_new(:datapoints, @datapoints)
     |> Keyword.put_new(:maxx,       @maxx)
@@ -242,7 +257,7 @@ defmodule Chi2fit.Cli do
         boot = bootstrap(options[:mcbootstrap], wdata, kernel(options),options) |> Enum.filter(&is_tuple/1)
 
         # Compute average, average sd, sd error, and maximum lag that occured
-        model = model(options[:name]) |> Keyword.put(:probe, options[:ranges])
+        model = model(options[:name],options) |> Keyword.put(:probe, options[:ranges])
         avgchi2 = (boot |> Stream.map(fn ({chi2,_,_}) -> chi2 end) |> Enum.sum)/length(boot)
         sdchi2 = :math.sqrt((boot |> Stream.map(fn {chi2,_,_}->(chi2-avgchi2)*(chi2-avgchi2) end) |> Enum.sum))/length(boot)
 
@@ -281,10 +296,12 @@ defmodule Chi2fit.Cli do
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
           IO.puts "    Degrees of freedom:\t#{length(data)-model[:df]}"
-          IO.puts "    covariance:\t\t#{inspect alphainv}"
+          IO.puts "    covariance:\t\t["
+          alphainv |> Enum.each(fn row -> IO.puts "    \t\t\t  #{inspect row}" end)
+          IO.puts "    \t\t\t]"
           IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options))}"
           IO.puts "    parameters:\t\t#{inspect parameters}"
-          IO.puts "    errors:\t\t#{inspect alphainv |> diagonal |> Enum.map(&:math.sqrt/1)}"
+          IO.puts "    errors:\t\t#{inspect alphainv |> diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)}"
 
           if options[:output?], do: do_output(Enum.map(data, fn {x,_,_,_}->x end), parameters, model, alphainv)
         end

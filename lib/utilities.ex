@@ -33,6 +33,9 @@ defmodule Chi2fit.Utilities do
   @typedoc "Algorithm used to assign errors to frequencey data: Wald score and Wilson score."
   @type algorithm :: :wilson | :wald
 
+  @typedoc "Supported numerical integration methods"
+  @type method :: :gauss | :gauss2 | :gauss3 | :romberg | :romberg2 | :romberg3
+
   @doc """
   Converts a list of number to frequency data.
   
@@ -485,6 +488,120 @@ defmodule Chi2fit.Utilities do
     |> Stream.filter(&is_tuple(Float.parse(&1)))
     |> Stream.map(&elem(Float.parse(&1),0))
     |> Stream.filter(&(&1 >= 0.0))
+  end
+
+  ## TODO: implement gauss-kronrad integration (progressive gauss)
+  @doc """
+  Numerical integration providing Gauss and Romberg types.
+  """
+  @default_points 32
+  @spec integrate(method, ((float)->float), a::float, b::float, options::Keyword.t) :: float
+  def integrate(:gauss, func, a, b, options) do
+    npoints = options[:points] || @default_points
+
+    factor_min = (b-a)/2.0
+    factor_plus = (b+a)/2.0
+
+    {weights,abscissa} = case npoints do
+      4 ->
+        {
+          [ 0.6521451548625461,0.3478548451374538 ],
+          [ 0.3399810435848563,0.8611363115940526 ]
+         }
+      8 ->
+        {
+          [ 0.3626837833783620,0.3137066458778873,0.2223810344533745,0.1012285362903763 ],
+          [ 0.1834346424956498,0.5255324099163290,0.7966664774136267,0.9602898564975363 ]
+        }
+      32 ->
+        {
+          [ 0.0965400885147278,0.0956387200792749,0.0938443990808046,0.0911738786957639,0.0876520930044038,0.0833119242269467,0.0781938957870703,0.0723457941088485,0.0658222227763618,0.0586840934785355,0.0509980592623762,0.0428358980222267,0.0342738629130214,0.0253920653092621,0.0162743947309057,0.0070186100094701 ],
+          [ 0.0483076656877383,0.1444719615827965,0.2392873622521371,0.3318686022821277,0.4213512761306353,0.5068999089322294,0.5877157572407623,0.6630442669302152,0.7321821187402897,0.7944837959679424,0.8493676137325700,0.8963211557660521,0.9349060759377397,0.9647622555875064,0.9856115115452684,0.9972638618494816 ]
+        }
+    end
+
+    factor_min * (Enum.zip(abscissa,weights) |> Enum.map(fn {x,w} -> w*( func.(factor_min*x+factor_plus) + func.(-factor_min*x+factor_plus) ) end) |> Enum.sum)
+  end
+  def integrate(:gauss2, func, a, :infinity, options) do
+    fac = 500.0 ## t = tanh(x/fac)
+    fac*integrate(:gauss, fn t -> (func.(fac*:math.atanh(t)))/(1.0-t*t) end, :math.tanh(a/fac), 1.0, options)
+  end
+  def integrate(:gauss2, func, a, b, options) do
+    fac = 500.0 ## t = tanh(x/fac)
+    fac*integrate(:gauss, fn t -> (func.(fac*:math.atanh(t)))/(1.0-t*t) end, :math.tanh(a/fac), :math.tanh(b/fac), options)
+  end
+  def integrate(:gauss3, func, a, :infinity, options) do
+    ## x = t/(1-t) = -1 + 1/(1-t), dx = dt/(1-t)^2
+    integrate(:gauss, fn t -> (func.(t/(1.0-t)))/(1.0-t)/(1.0-t) end, a/(a+1.0), 1.0, options)
+  end
+  def integrate(:gauss3, func, a, b, options) do
+    ## x = t/(1-t) = -1 + 1/(1-t), dx = dt/(1-t)^2
+    integrate(:gauss, fn t -> (func.(t/(1.0-t)))/(1.0-t)/(1.0-t) end, a/(a+1.0), b/(b+1.0), options)
+  end
+
+  @default_tolerance 1.0e-6
+  def integrate(:romberg, func, a, b, options) do
+    richardson(fn acc ->
+        case acc do
+          [] ->
+            f1 = try do func.(a) rescue _e -> 0.0 end
+            f2 = try do func.(b) rescue _e -> 0.0 end
+            result = (b-a) * ( f1 + f2 )/2.0
+            {result,[{a,f1},{b,f2}]}
+
+          values ->
+            vals = values
+            |> Stream.transform(nil, fn
+              {x2,f},nil -> {[{x2,f}],x2}
+              {x2,f},x1 -> {[{(x2+x1)/2.0,func.((x2+x1)/2.0)},{x2,f}],x2}
+            end)
+            |> Enum.to_list
+
+            result = vals
+            |> Stream.chunk_every(2,1,:discard)
+            |> Stream.map(fn [{x1,f1},{x2,f2}] -> (x2-x1)*( f1 + f2 )/2.0 end)
+            |> Enum.sum
+            {result,vals}
+        end
+      end, [], 4.0, options)
+  end
+  def integrate(:romberg2, func, a, :infinity, options) do
+    fac = 500.0 ## t = tanh(x/fac)
+    integrate(:romberg, fn t -> (func.(fac*:math.atanh(t)))*fac/(1.0-t*t) end, :math.tanh(a/fac), 1.0, options)
+  end
+  def integrate(:romberg2, func, a, b, options) do
+    fac = 500.0 ## t = tanh(x/fac)
+    integrate(:romberg, fn t -> (func.(fac*:math.atanh(t)))*fac/(1.0-t*t) end, :math.tanh(a/fac), :math.tanh(b/fac), options)
+  end
+  def integrate(:romberg3, func, a, :infinity, options) do
+    ## x = t/(1-t) = -1 + 1/(1-t), dx = dt/(1-t)^2
+    integrate(:romberg, fn t -> (func.(t/(1.0-t)))/(1.0-t)/(1.0-t) end, a/(a+1.0), 1.0, options)
+  end
+  def integrate(:romberg3, func, a, b, options) do
+    ## x = t/(1-t) = -1 + 1/(1-t), dx = dt/(1-t)^2
+    integrate(:romberg, fn t -> (func.(t/(1.0-t)))/(1.0-t)/(1.0-t) end, a/(a+1.0), b/(b+1.0), options)
+  end
+
+  @doc """
+  Richardson extrapolation.
+  """
+  @default_tolerance 1.0e-6
+  @spec richardson(func::((term)->{float,term}), init::term, factor::float, results::[float], options::Keyword.t) :: float
+  def richardson(func, init, factor, results \\ [], options)
+  def richardson(func, init, factor, results, options) do
+    tolerance = options[:tolerance] || @default_tolerance
+
+    {result,acc} = func.(init)
+    {new,last,error,_} = results |> Enum.reduce({[],result,nil,factor}, fn
+        prev,{acc,item,_,order} ->
+          diff = (order*item - prev)/(order-1.0)
+          {[diff|acc],diff,abs((diff-item)/diff),order*factor}
+        end)
+    if error < tolerance do
+      last
+    else
+      richardson(func, acc, factor, [result|Enum.reverse(new)], options)
+    end
   end
 
 end

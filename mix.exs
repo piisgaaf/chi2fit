@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "0.5.2",
+      version: "0.5.3",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -35,7 +35,7 @@ defmodule Chi2fit.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [ Logger ]
+      extra_applications: [ :logger ]
     ]
   end
 
@@ -49,8 +49,7 @@ defmodule Chi2fit.Mixfile do
   
   defp escript do
     [
-      main_module: Chi2fit.Cli,
-      app: nil
+      main_module: Chi2fit.Cli
     ]
   end
 

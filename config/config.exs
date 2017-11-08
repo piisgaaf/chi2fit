@@ -35,9 +35,7 @@ use Mix.Config
 # Or configure a 3rd-party app:
 #
 config :logger, :console,
-  level: :info,
-  handle_otp_reports: false,
-  handle_sasl_reports: false
+  level: :info
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

@@ -27,7 +27,7 @@ defmodule Chi2fit.Matrix do
 
   """
 
-  @inverse_tolerance 1.0e-8
+  @inverse_tolerance 1.0e-5
   @default_inverse_iterations 500
   @default_range 100
   @default_size 100
@@ -212,12 +212,12 @@ defmodule Chi2fit.Matrix do
       end
     catch
       {:impossible_inverse,v,error} ->
-        {:failed_to_reach_tolerance,v,error}
+        throw {:failed_to_reach_tolerance,v,error}
       :no_v0 ->
-        :failed_to_find_v0
+        throw :failed_to_find_v0
     rescue
       _e in ArithmeticError ->
-        :no_inverse
+        throw :no_inverse
     end
   end
 
