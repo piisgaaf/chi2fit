@@ -16,6 +16,16 @@ defmodule Chi2fit.Cli do
 
   @moduledoc """
   Provides a command line interface for fitting data against a known cumulative distribution function.
+  
+  ## References
+  
+      [1] R.A. Arndt and M.H. MacGregor, Methods in Computational Physics, Vol. 6 (1966) 256-296
+
+      [2] Marius M. Nagels, Baryon-Baryon Scattering in a One-Boson-Exchange Potential Mode, PhD. Thesis, Nijmegen University, 1975
+
+      [3] Richard A. Arndt and Malcolm H. MacGregor,
+        Determination of the Nucleon-Nucleon Elastic-Scattering Matrix. IV. Comparison of Energy-Dependent and Energy-Independent Phase-Shift Analyses,
+        Physical Review Volume 142, Number 3, January 1966
   """
 
   require Logger
