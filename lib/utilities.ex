@@ -305,19 +305,21 @@ defmodule Chi2fit.Utilities do
       12.0
 
   """
-  @default_h 1.5e-3
+  @default_h 0.001
   @spec der([float|{float,integer}], (([float])->float), Keyword.t) :: float
   def der(parameters, fun, options \\ []) do
-    h = options[:h] || @default_h
-
-    parameters
-    |> expand_pars(h)
-    |> reduce_pars
-    |> Enum.reduce(0.0, fn ({x,n,dx},sum) when is_list(x) -> sum+n*fun.(x)/dx end)
+    richardson(fn acc ->
+        result = parameters
+        |> expand_pars(acc)
+        |> reduce_pars
+        |> Enum.reduce(0.0, fn ({x,n,dx},sum) when is_list(x) -> sum+n*fun.(x)/dx end)
+        {result,acc/2.0}
+      end,
+      @default_h,4.0,options)
   end
 
-  defp jacobian(x=[_|_], k, fun) when k>0 and k<=length(x) and is_function(fun,1) do
-    x |> List.update_at(k-1, fn (val) -> {val,1} end) |> der(fun,h: 1.0e-6)
+  defp jacobian(x=[_|_], k, fun, options) when k>0 and k<=length(x) and is_function(fun,1) do
+    x |> List.update_at(k-1, fn (val) -> {val,1} end) |> der(fun,options)
   end
 
   @doc """
@@ -330,8 +332,8 @@ defmodule Chi2fit.Utilities do
 
   """
   @spec jacobian(x :: [float], (([float])->float)) :: [float]
-  def jacobian(x, fun) do
-    jacfun = &(jacobian(x, &1, fun))
+  def jacobian(x, fun, options \\ []) do
+    jacfun = &(jacobian(x, &1, fun, options))
     Enum.reduce(length(x)..1, [], fn (k,acc) -> [jacfun.(k)|acc] end)
   end
 
@@ -590,6 +592,7 @@ defmodule Chi2fit.Utilities do
   def richardson(func, init, factor, results \\ [], options)
   def richardson(func, init, factor, results, options) do
     tolerance = options[:tolerance] || @default_tolerance
+    max = options[:itermax]
 
     {result,acc} = func.(init)
     {new,last,error,_} = results |> Enum.reduce({[],result,nil,factor}, fn
@@ -597,11 +600,45 @@ defmodule Chi2fit.Utilities do
           diff = (order*item - prev)/(order-1.0)
           {[diff|acc],diff,abs((diff-item)/diff),order*factor}
         end)
-    if error < tolerance do
-      last
-    else
-      richardson(func, acc, factor, [result|Enum.reverse(new)], options)
+    cond do
+      max && (length(new) > max) ->
+        last
+      error < tolerance ->
+        last
+      true ->
+        richardson(func, acc, factor, [result|Enum.reverse(new)], options)
     end
+  end
+
+  @doc """
+  Unzips lists of 1-, 2-, 3-, 4-, and 5-tuples.
+  """
+  @spec unzip(list::[tuple]) :: tuple
+  def unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
+  def unzip(list=[{_,_}|_]), do: Enum.unzip(list)
+  def unzip(list=[{_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2))
+    }
+  end
+  def unzip(list=[{_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3))
+    }
+  end
+  def unzip(list=[{_,_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3)),
+      list |> Enum.map(&elem(&1,4))
+    }
   end
 
 end

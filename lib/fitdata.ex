@@ -151,7 +151,7 @@ defmodule Chi2fit.Fit do
   @spec gamma(pos_integer, observables, model) :: float
   defp gamma(k, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) do
     params_k = parameters |> derive_par(k)
-    -0.5*der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},options[:smoothing],options) end, h: 1.5e-6
+    -0.5*der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},options[:smoothing],options) end, options
   end
 
   defp alpha(observables, {parameters, fun, penalties, options}) do
@@ -177,7 +177,7 @@ defmodule Chi2fit.Fit do
   @spec alpha({pos_integer,pos_integer}, observables, model) :: float
   defp alpha({k,j}, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) and j>0 and j<=length(parameters) do
     params_kj = parameters |> derive_par(k) |> derive_par(j)
-    0.5*der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},options[:smoothing],options) end, h: 1.5e-6
+    0.5*der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},options[:smoothing],options) end, options
   end
 
   #######################################################################################################
@@ -230,51 +230,17 @@ defmodule Chi2fit.Fit do
     chi2probe(observables, parranges, fun_penalties, options[:num] || options[:probes], nil, options)
   end
 
-  defp unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
-  defp unzip(list=[{_,_}|_]), do: Enum.unzip(list)
-  defp unzip(list=[{_,_,_}|_]) do
-    {
-      list |> Enum.map(&elem(&1,0)),
-      list |> Enum.map(&elem(&1,1)),
-      list |> Enum.map(&elem(&1,2))
-    }
-  end
-  defp unzip(list=[{_,_,_,_}|_]) do
-    {
-      list |> Enum.map(&elem(&1,0)),
-      list |> Enum.map(&elem(&1,1)),
-      list |> Enum.map(&elem(&1,2)),
-      list |> Enum.map(&elem(&1,3))
-    }
-  end
-  defp unzip(list=[{_,_,_,_,_}|_]) do
-    {
-      list |> Enum.map(&elem(&1,0)),
-      list |> Enum.map(&elem(&1,1)),
-      list |> Enum.map(&elem(&1,2)),
-      list |> Enum.map(&elem(&1,3)),
-      list |> Enum.map(&elem(&1,4))
-    }
-  end
-
   defp chi2probe(_observables, _parranges, {_fun,_penalties}, 0, best, _options) do
     ## Refactor this!!!!!
     {chi2,parameters,saved} = best
     {_chis,plists} = saved |> Enum.unzip
-    case plists |> Enum.map(&List.to_tuple/1) |> unzip do
-      {plist1} ->
-        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)]}}
-      {plist1,plist2} ->
-        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)]}}
-      {plist1,plist2,plist3} ->
-        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)],[Enum.min(plist3),Enum.max(plist3)]}}
-      {plist1,plist2,plist3,plist4} ->
-        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)],[Enum.min(plist3),Enum.max(plist3)],[Enum.min(plist4),Enum.max(plist4)]}}
-      {plist1,plist2,plist3,plist4,plist5} ->
-        {chi2,parameters,{[Enum.min(plist1),Enum.max(plist1)],[Enum.min(plist2),Enum.max(plist2)],[Enum.min(plist3),Enum.max(plist3)],[Enum.min(plist4),Enum.max(plist4)],[Enum.min(plist5),Enum.max(plist5)]}}
-      other ->
-        raise ArgumentError, message: "Unsupported number of distribution parameters (#{tuple_size other})"
-    end
+    {chi2,parameters,
+      plists
+      |> Enum.map(&List.to_tuple/1)
+      |> unzip
+      |> Tuple.to_list
+      |> Enum.map(fn plist -> [ Enum.min(plist),Enum.max(plist) ] end)
+      |> List.to_tuple}
   end
   defp chi2probe(observables, parranges, {fun,penalties}, num, best, options) do
     if options[:progress] do

@@ -27,7 +27,7 @@ defmodule Chi2fit.Matrix do
 
   """
 
-  @inverse_tolerance 1.0e-5
+  @inverse_tolerance 1.0e-8
   @default_inverse_iterations 500
   @default_range 100
   @default_size 100
@@ -187,7 +187,7 @@ defmodule Chi2fit.Matrix do
       
   For matrices that have no inverse:
   
-      iex> inverse [[1,2,3],[4,5,6],[7,8,9]]
+      iex> try do inverse [[1,2,3],[4,5,6],[7,8,9]] catch x->x end
       :no_inverse
   
   """

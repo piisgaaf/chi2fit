@@ -89,10 +89,10 @@ defmodule Chi2fit.Cli do
     end
   end
   
-  defp do_output(data, parameters, model, alphainv) do
+  defp do_output(data, parameters, model, alphainv, options) do
     data |> Enum.sort |> Enum.each(fn
       (x)->
-        jac = jacobian parameters, fn (pars)->model[:fun].(x,pars) end
+        jac = jacobian parameters, fn (pars)->model[:fun].(x,pars) end, options
         error2 = alphainv |> Enum.map(&(ExAlgebra.Vector.dot(&1,jac))) |> ExAlgebra.Vector.dot(jac)
         try do
           y = model[:fun].(x,parameters)
@@ -122,6 +122,7 @@ defmodule Chi2fit.Cli do
     IO.puts "    --method <method>\t\tThe integration method to use (defaults to '#{@default_int_method}'); applies to sep and sep0 only."
     IO.puts "    \t\t\t\t\tSupported values are 'gauss|gauss2|gaus3|romberg|romberg2|romberg3'"
     IO.puts "    --tolerance <tolerance>\t\tThe target precision (defaults to '#{@default_tolerance}') for Romberg integration"
+    IO.puts "    --itermax <integer>\t\tThe maximum number of iterations to use in Romberg integration"
     IO.puts "    --npoints <points>\t\t\tThe number of points to use in Gauss integration (defaults to '#{@default_npoints}')"
     IO.puts ""
     IO.puts "    Output:"
@@ -153,6 +154,7 @@ defmodule Chi2fit.Cli do
       iterations: :integer,
       model: :string,
       tolerance: :float,
+      itermax: :integer,
       npoints: :integer,
       method: :string,
       probes: :integer,
@@ -210,7 +212,7 @@ defmodule Chi2fit.Cli do
       try do
         IO.write "...fitting..."
         fit = {_,_,pars} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], nil, options)
-        jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options))
+        jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options).options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
       catch
@@ -282,7 +284,7 @@ defmodule Chi2fit.Cli do
         IO.puts "    Degrees of freedom:\t\t#{length(wdata|>Enum.to_list)-model[:df]}"
         IO.puts "    Total:\t\t\t#{length(boot)}"
 
-        if options[:output?], do: do_output(wdata, avgpars, model, sdpars |> Enum.map(&(&1*&1)) |> from_diagonal)
+        if options[:output?], do: do_output(wdata, avgpars, model, sdpars |> Enum.map(&(&1*&1)) |> from_diagonal, options)
 
       true ->
         {data,model, {chi2, parameters,errors}} = prepare_data data, options
@@ -299,11 +301,11 @@ defmodule Chi2fit.Cli do
           IO.puts "    covariance:\t\t["
           alphainv |> Enum.each(fn row -> IO.puts "    \t\t\t  #{inspect row}" end)
           IO.puts "    \t\t\t]"
-          IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options))}"
+          IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options),options)}"
           IO.puts "    parameters:\t\t#{inspect parameters}"
           IO.puts "    errors:\t\t#{inspect alphainv |> diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)}"
 
-          if options[:output?], do: do_output(Enum.map(data, fn {x,_,_,_}->x end), parameters, model, alphainv)
+          if options[:output?], do: do_output(Enum.map(data, fn {x,_,_,_}->x end), parameters, model, alphainv, options)
         end
     end
   end

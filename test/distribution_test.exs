@@ -34,6 +34,7 @@ defmodule Chi2fitDistributionTest do
     assert Enum.all? numbers, fn (n) -> n==1 end
   end
 
+  @tag long: true
   test "exponential distribution" do
     total = 10_000_000
 
@@ -44,6 +45,7 @@ defmodule Chi2fitDistributionTest do
     assert_in_delta 5.0, sd, 0.005
   end
 
+  @tag long: true
   test "exponential distribution - convolution" do
     total = 10_000_000
     chunk = 10

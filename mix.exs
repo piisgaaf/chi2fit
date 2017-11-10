@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "0.5.3",
+      version: "0.6.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -64,9 +64,9 @@ defmodule Chi2fit.Mixfile do
   
   defp package() do
     [
-      maintainers: ["Pieter Rijken"],
-      licenses: ["Apache 2.0"],
-      files: ["lib", "mix.exs", "README*", "LICENSE*", "config", "chi2fit"],
+      maintainers: [ "Pieter Rijken" ],
+      licenses: [ "Apache 2.0" ],
+      files: [ "lib", "mix.exs", "README*", "LICENSE*", "config", "chi2fit" ],
       links: %{ "GitHub" => "https://github.com/piisgaaf/chi2fit" }
     ]
   end

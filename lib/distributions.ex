@@ -104,10 +104,16 @@ defmodule Chi2fit.Distribution do
       0.0 -> 0.0
       x when x<0 -> 0.0
       x ->
-        if :math.log(x/lambda)*k > 100 do
-          0.0
-        else
-          1.0 - :math.exp -:math.pow(x/lambda,k)
+        lg = :math.log(x/lambda)*k
+        cond do
+          lg > 100.0 ->
+            0.0
+          lg < -18.0 ->
+            ## With -18 (x/lambda)^2k < 10^(-16)
+            t = :math.pow(x/lambda,k)
+            t*(1 - 0.5*t)
+          true ->
+            1.0 - :math.exp -:math.pow(x/lambda,k)
         end
     end
   end
