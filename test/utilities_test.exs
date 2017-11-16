@@ -23,4 +23,20 @@ defmodule UtilitiesTest do
     assert 6.0 == der([{3.0,3}], fn [x]-> x*x*x end) |> Float.round(3)
   end
 
+  test "Newton-Fourier" do
+    {root, {l, r}} = newton(2.0,3.0,fn x->x*x-6.25 end, tolerance: 1.0e-6)
+    assert_in_delta 2.5, root, 1.0e-6
+    assert_in_delta 2.5, l, 1.0e-6
+    assert_in_delta 2.5, r, 1.0e-6
+    
+    {root, {l, r}} = newton(0.5,3.0,fn x->x*x-3.0 end, tolerance: 1.0e-4)
+    assert_in_delta :math.sqrt(3), root, 1.0e-4
+    assert_in_delta :math.sqrt(3), l, 1.0e-4
+    assert_in_delta :math.sqrt(3), r, 1.0e-4
+  end
+
+  test "Newton-Fourier - no root in interval" do
+    assert_raise ArgumentError, fn -> newton(3.0,3.5,fn x->x*x-6.25 end, []) end
+  end
+
 end

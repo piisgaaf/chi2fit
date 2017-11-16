@@ -275,15 +275,33 @@ defmodule Chi2fit.Fit do
     end
   end
 
-  defp vary_params(parameters, num_variations \\ 100) when is_list(parameters) do
-    -1..length(parameters)
+  defp filter_param(parameters, flags) do
+    parameters |> Enum.zip(flags) |> Enum.map(fn {par, true}->par; {_par, false}->0.0 end)
+  end
+
+  defp vary_params(parameters, flags, first, second, num_variations \\ 1) when is_list(parameters) do
+    -1..length(parameters) |> Enum.to_list
     |> Stream.map(&(List.duplicate(&1,num_variations)))
     |> Stream.concat
     |> Stream.flat_map(
       fn
-        (-1) -> [List.duplicate(:rand.uniform(),length(parameters)), List.duplicate(:rand.uniform()/100,length(parameters))]
-        (0) -> [List.duplicate(0.0,length(parameters)) |> Enum.map(fn (_)->:rand.uniform() end)]
-        (n) when is_integer(n) and n>0 -> [List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform()),List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform()/100)]
+        (-2) -> [Enum.zip(first,second)|>Enum.map(fn {d1,d2}->d1/d2*:rand.uniform() end)]
+        (-1) ->
+          [
+            List.duplicate(:rand.uniform(),length(parameters))|>filter_param(flags),
+            List.duplicate(:rand.uniform()/100,length(parameters))|>filter_param(flags)
+          ]
+        (0) ->
+          [
+            List.duplicate(0.0,length(parameters)) |> Enum.map(fn (_)->:rand.uniform() end)|>filter_param(flags)
+          ]
+        (n) when is_integer(n) and n>0 ->
+          [
+            List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform())|>filter_param(flags),
+            List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform()/100)|>filter_param(flags),
+            List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform()/1000)|>filter_param(flags),
+            List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform()/10000)|>filter_param(flags)
+          ]
       end)
   end
 
@@ -310,17 +328,16 @@ defmodule Chi2fit.Fit do
       `model` - The same values as in chi2/3 and chi2/4
   """
   @spec chi2fit(observables, model, iterations::pos_integer, options::Keyword.t) :: {chi2,cov,params}
-  def chi2fit(observables, model, max \\ 100, error \\ nil, options \\ [])
-  def chi2fit(observables, {parameters, fun}, max, error, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, max, error, options
-  def chi2fit(observables, {parameters, fun, penalties}, 0, {cov,_error}, options) do
+  def chi2fit(observables, model, max \\ {100,10}, error \\ nil, options \\ [])
+  def chi2fit(observables, {parameters, fun}, {max,maxpar}, error, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, {max,maxpar}, error, options
+  def chi2fit(observables, {parameters, fun, penalties}, {0,_}, {cov,_error}, options) do
     {chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options), cov, parameters}
   end
-  def chi2fit observables, {parameters, fun, penalties}, 0, nil, options do
+  def chi2fit observables, {parameters, fun, penalties}, {0,_}, nil, options do
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
     {:ok,cov} = try do
-        IO.inspect alpha
         alpha |> inverse
       catch
         {:impossible_inverse,error} ->
@@ -335,9 +352,12 @@ defmodule Chi2fit.Fit do
       end
 
     error = cov |> diagonal
-    chi2fit observables, {parameters, fun, penalties}, 0, {cov,error}, options
+    chi2fit observables, {parameters, fun, penalties}, {0,:does_not_matter}, {cov,error}, options
   end
-  def chi2fit observables, {parameters, fun, penalties}, max, preverror, options do
+  def chi2fit observables, {parameters, fun, penalties}, {max,0}, preverror, options do
+    chi2fit observables, {parameters, fun, penalties}, {max-1,options[:pariter]}, preverror, options
+  end
+  def chi2fit observables, {parameters, fun, penalties}, {max,parmax}, preverror, options do
     vecg = gamma(observables, {parameters, fun, penalties, options})
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)),options)
     alpha = alpha(observables, {parameters, fun, penalties,options})
@@ -346,17 +366,26 @@ defmodule Chi2fit.Fit do
       {:ok,cov} = alpha |> inverse
       error = cov |> diagonal
 
+      flags = List.duplicate(false, length(parameters))
+      flags = flags |> List.replace_at(rem(max,length(parameters)),true) ## grid search
+
       delta = cov |> Enum.map(&(dotproduct(&1,vecg)))
+
+      IO.puts "\n[#{max}]\tdelta=#{inspect delta}"
+      IO.puts "\tders=#{inspect Enum.zip(vecg,diagonal(alpha))}"
       {params,_chi2} = parameters
-      |> vary_params
+      |> vary_params(flags,vecg,diagonal(alpha))
       |> Enum.reduce({parameters,chi2},
         fn
           (factor,{pars,oldchi}) ->
             dvec = factor |> from_diagonal |> Enum.map(&dotproduct(&1,delta))
-            vec = ExAlgebra.Vector.add(parameters,dvec)
+            vec = ExAlgebra.Vector.add(parameters,delta)
             try do
               newchi = chi2smooth observables,vec,{fun,penalties},options[:smoothing],options
               if newchi < oldchi do
+                IO.puts "\n[-]\tdchi=#{newchi-oldchi}"
+                IO.puts "\tfactor=#{inspect factor}"
+                IO.puts "\tparameters=#{inspect parameters} => #{inspect vec}"
                 options[:onstep] && options[:onstep].(%{delta: dvec, chi2: newchi, params: vec})
                 {vec,newchi}
               else
@@ -364,29 +393,29 @@ defmodule Chi2fit.Fit do
               end
             rescue
               ArithmeticError ->
-                Logger.debug "chi2fit: arithmetic error [#{inspect vec}] [#{inspect System.stacktrace}]"
+                Logger.warn "chi2fit: arithmetic error [#{inspect vec}] [#{inspect System.stacktrace}]"
                 {pars,oldchi}
             end
         end)
 
       cond do
         Enum.all?(delta, &(&1 == 0)) -> 
-          chi2fit observables, {params,fun,penalties}, 0, {cov,error}, options
+          chi2fit observables, {params,fun,penalties}, {max-1,options[:pariter]}, {cov,error}, options
 
         true ->
-          chi2fit observables, {params,fun,penalties}, max-1, {cov,error}, options
+          chi2fit observables, {params,fun,penalties}, {max,parmax-1}, {cov,error}, options
       end
     catch
       {:impossible_inverse,error} ->
-        Logger.debug "chi2: impossible inverse: #{error}"
-        chi2fit observables, {parameters,fun,penalties}, 0, preverror, options
+        Logger.warn "chi2: impossible inverse: #{error}"
+        chi2fit observables, {parameters,fun,penalties}, {max-1,options[:pariter]}, preverror, options
       {:failed_to_reach_tolerance,_pars,error} ->
-        Logger.debug "chi2: failed to reach tolerance: #{error}"
-        chi2fit observables, {parameters,fun,penalties}, 0, preverror, options
+        Logger.warn "chi2: failed to reach tolerance: #{error}"
+        chi2fit observables, {parameters,fun,penalties}, {max-1,options[:pariter]}, preverror, options
     rescue
       ArithmeticError ->
-        Logger.debug "chi2: arithmetic error"
-        chi2fit observables, {parameters,fun,penalties}, 0, preverror, options
+        Logger.warn "chi2: arithmetic error"
+        chi2fit observables, {parameters,fun,penalties}, {max-1,options[:pariter]}, preverror, options
     end
 
   end

@@ -596,9 +596,11 @@ defmodule Chi2fit.Utilities do
 
     {result,acc} = func.(init)
     {new,last,error,_} = results |> Enum.reduce({[],result,nil,factor}, fn
+        _prev,{acc,item,0.0,order} ->
+          {acc,item,0.0,order}
         prev,{acc,item,_,order} ->
           diff = (order*item - prev)/(order-1.0)
-          {[diff|acc],diff,abs((diff-item)/diff),order*factor}
+          {[diff|acc],diff,if(diff==0, do: 0.0, else: abs((diff-item)/diff)),order*factor}
         end)
     cond do
       max && (length(new) > max) ->
@@ -607,6 +609,41 @@ defmodule Chi2fit.Utilities do
         last
       true ->
         richardson(func, acc, factor, [result|Enum.reverse(new)], options)
+    end
+  end
+
+  @doc """
+  Newton-Fourier method for locating roots and returning the interval where the root is located.
+  
+  See [https://en.wikipedia.org/wiki/Newton%27s_method#Newton.E2.80.93Fourier_method]
+  """
+  @spec newton(a::float,b::float,func::((x::float)->float),maxiter::non_neg_integer,options::Keyword.t) :: {float, {float,float}}
+  def newton(a,b,func,maxiter \\ 10, options), do: newton(a,b,func,maxiter,{(a+b)/2,{a,b}},options)
+
+  @default_rel_tolerance 1.0e-6
+  defp newton(_a,_b,_func,0,result,_options), do: result
+  defp newton(a,b,func,maxiter,{_,{left,right}},options) do
+    tolerance = options[:tolerance] || @default_rel_tolerance
+
+    x0 = func.(right)
+    z0 = func.(left)
+
+    if x0*z0 > 0 do
+      raise ArgumentError, message: "Interval does not contain root"
+    end
+
+    derx0 = der([{right,1}], fn [x]->func.(x) end, options)
+
+    if derx0 == 0, do: raise ArithmeticError, message: "Interval contains local minimum/maximum"
+
+    x1 = right - x0/derx0
+    z1 = left - z0/derx0
+    root = (x1+z1)/2.0
+
+    if abs(x1-z1) < tolerance do
+      newton(a,b,func,0,{root,{z1,x1}},options)
+    else
+      newton(a,b,func,maxiter-1,{root,{z1,x1}},options)
     end
   end
 

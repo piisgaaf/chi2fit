@@ -38,6 +38,7 @@ defmodule Chi2fit.Cli do
   @datapoints 500
   @maxx 1.1
   @default_iterations 10
+  @default_parameter_iterations 10
   @default_probes 100_000
   @default_surface_file "cdf_surface.csv"
   @default_cdf "weibull"
@@ -162,6 +163,7 @@ defmodule Chi2fit.Cli do
       output: :boolean,
       surface: :string,
       iterations: :integer,
+      pariter: :integer,
       model: :string,
       tolerance: :float,
       itermax: :integer,
@@ -192,6 +194,7 @@ defmodule Chi2fit.Cli do
     |> Keyword.update(:model,       @default_asymm, &String.to_atom/1)
     |> Keyword.update(:method,      @default_int_method, &String.to_atom/1)
     |> Keyword.put_new(:iterations, @default_iterations)
+    |> Keyword.put_new(:pariter,    @default_parameter_iterations)
     |> Keyword.put_new(:probes,     @default_probes)
     |> Keyword.put_new(:ranges,     nil)
     |> Keyword.put_new(:smoothing,  false)
@@ -221,7 +224,7 @@ defmodule Chi2fit.Cli do
       {data,model, {_chi2, parameters,_errors}} = prepare_data sample, options
       try do
         IO.write "...fitting..."
-        fit = {_,_,pars} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], nil, options)
+        fit = {_,_,pars} = chi2fit(data, {parameters, model[:fun], &penalties/2}, {options[:iterations],options[:pariter]}, nil, options)
         jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options).options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
@@ -304,7 +307,7 @@ defmodule Chi2fit.Cli do
         IO.puts "    errors:\t\t#{inspect errors}\n"
   
         if options[:fit?] do
-          {chi2, alphainv, parameters} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], nil, options)
+          {chi2, alphainv, parameters} = chi2fit(data, {parameters, model[:fun], &penalties/2}, {options[:iterations],options[:pariter]}, nil, options)
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
           IO.puts "    Degrees of freedom:\t#{length(data)-model[:df]}"
