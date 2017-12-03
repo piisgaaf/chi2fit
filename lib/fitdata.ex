@@ -279,13 +279,12 @@ defmodule Chi2fit.Fit do
     parameters |> Enum.zip(flags) |> Enum.map(fn {par, true}->par; {_par, false}->0.0 end)
   end
 
-  defp vary_params(parameters, flags, first, second, num_variations \\ 1) when is_list(parameters) do
+  defp vary_params(parameters, flags, _first, _second, num_variations) when is_list(parameters) do
     -1..length(parameters) |> Enum.to_list
     |> Stream.map(&(List.duplicate(&1,num_variations)))
     |> Stream.concat
     |> Stream.flat_map(
       fn
-        (-2) -> [Enum.zip(first,second)|>Enum.map(fn {d1,d2}->d1/d2*:rand.uniform() end)]
         (-1) ->
           [
             List.duplicate(:rand.uniform(),length(parameters))|>filter_param(flags),
@@ -293,7 +292,9 @@ defmodule Chi2fit.Fit do
           ]
         (0) ->
           [
-            List.duplicate(0.0,length(parameters)) |> Enum.map(fn (_)->:rand.uniform() end)|>filter_param(flags)
+            List.duplicate(0.0,length(parameters)) |> Enum.map(fn (_)-> 2* :rand.uniform() end)|>filter_param(flags),
+            List.duplicate(0.0,length(parameters)) |> Enum.map(fn (_)->    :rand.uniform() end)|>filter_param(flags),
+            List.duplicate(0.0,length(parameters)) |> Enum.map(fn (_)->  - :rand.uniform() end)|>filter_param(flags)
           ]
         (n) when is_integer(n) and n>0 ->
           [
@@ -303,6 +304,7 @@ defmodule Chi2fit.Fit do
             List.duplicate(0.0,length(parameters)) |> List.replace_at(n-1, :rand.uniform()/10000)|>filter_param(flags)
           ]
       end)
+    |> Stream.filter(fn list -> Enum.any?(list, fn x->x != 0.0 end) end)
   end
 
   @doc """
@@ -326,14 +328,18 @@ defmodule Chi2fit.Fit do
       `smoothing` - boolean value indicating whether the chi-squared is smoothened using a Gauss distribution. This
       is used in case the surface is rough because of numerical instabilities to smoothen the surface,
       `model` - The same values as in chi2/3 and chi2/4
+      `grid?` - Performs a grid search: per step, tries to fit only one parameter and keeps the others fixed; selects the parameter in
+      a round-robin fashion
   """
   @spec chi2fit(observables, model, iterations::pos_integer, options::Keyword.t) :: {chi2,cov,params}
-  def chi2fit(observables, model, max \\ {100,10}, error \\ nil, options \\ [])
-  def chi2fit(observables, {parameters, fun}, {max,maxpar}, error, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, {max,maxpar}, error, options
-  def chi2fit(observables, {parameters, fun, penalties}, {0,_}, {cov,_error}, options) do
-    {chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options), cov, parameters}
+  def chi2fit(observables, model, max \\ 100, options \\ []), do: chi2fit(observables, model, max, {nil,nil}, options)
+  
+  defp chi2fit(observables, {parameters, fun}, max, data, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, max, data, options
+  defp chi2fit(observables, {parameters, fun, penalties}, 0, {{cov,_error}, _grid}, options) do
+    chi = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
+    {chi, cov, parameters}
   end
-  def chi2fit observables, {parameters, fun, penalties}, {0,_}, nil, options do
+  defp chi2fit observables, {parameters, fun, penalties,}, 0, {nil, nil}, options do
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
@@ -352,12 +358,12 @@ defmodule Chi2fit.Fit do
       end
 
     error = cov |> diagonal
-    chi2fit observables, {parameters, fun, penalties}, {0,:does_not_matter}, {cov,error}, options
+    chi2fit observables, {parameters, fun, penalties}, 0, {{cov,error}, nil}, options
   end
-  def chi2fit observables, {parameters, fun, penalties}, {max,0}, preverror, options do
-    chi2fit observables, {parameters, fun, penalties}, {max-1,options[:pariter]}, preverror, options
-  end
-  def chi2fit observables, {parameters, fun, penalties}, {max,parmax}, preverror, options do
+  defp chi2fit observables, {parameters, fun, penalties}, max, {preverror, grid}, options do
+    grid? = options[:grid?] || false
+    parmax = options[:pariter] || 10
+
     vecg = gamma(observables, {parameters, fun, penalties, options})
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)),options)
     alpha = alpha(observables, {parameters, fun, penalties,options})
@@ -367,55 +373,147 @@ defmodule Chi2fit.Fit do
       error = cov |> diagonal
 
       flags = List.duplicate(false, length(parameters))
-      flags = flags |> List.replace_at(rem(max,length(parameters)),true) ## grid search
+      flags = if grid? do
+        flags |> List.replace_at(rem(max,length(parameters)),true) ## grid search
+      else
+        flags
+      end
 
       delta = cov |> Enum.map(&(dotproduct(&1,vecg)))
 
-      IO.puts "\n[#{max}]\tdelta=#{inspect delta}"
-      IO.puts "\tders=#{inspect Enum.zip(vecg,diagonal(alpha))}"
-      {params,_chi2} = parameters
-      |> vary_params(flags,vecg,diagonal(alpha))
-      |> Enum.reduce({parameters,chi2},
+      options[:onbegin] && options[:onbegin].(%{step: max, chi: chi2, derivatives: Enum.zip(vecg,diagonal(alpha))})
+
+      {params,_chi2,_} = parameters
+      |> vary_params(flags,vecg,diagonal(alpha),parmax)
+      |> Enum.reduce_while({parameters,chi2,{nil,nil}},
         fn
-          (factor,{pars,oldchi}) ->
+          (factor,{pars,oldchi,minimum}) ->
             dvec = factor |> from_diagonal |> Enum.map(&dotproduct(&1,delta))
-            vec = ExAlgebra.Vector.add(parameters,delta)
+            vec = ExAlgebra.Vector.add(parameters,dvec)
             try do
               newchi = chi2smooth observables,vec,{fun,penalties},options[:smoothing],options
-              if newchi < oldchi do
-                IO.puts "\n[-]\tdchi=#{newchi-oldchi}"
-                IO.puts "\tfactor=#{inspect factor}"
-                IO.puts "\tparameters=#{inspect parameters} => #{inspect vec}"
-                options[:onstep] && options[:onstep].(%{delta: dvec, chi2: newchi, params: vec})
-                {vec,newchi}
-              else
-                {pars,oldchi}
+
+              new_minimum = case minimum do
+                {nil,nil} ->
+                  current_par = pars |> filter_param(flags) |> Enum.sum
+                  par = vec |> filter_param(flags) |> Enum.sum
+                  cond do
+                    newchi < oldchi and par < current_par ->
+                      {nil,{pars,oldchi}}
+
+                    newchi < oldchi and par > current_par ->
+                      {{pars,oldchi},nil}
+
+                    newchi > oldchi and par < current_par ->
+                      {{vec,newchi},nil}
+
+                    newchi > oldchi and par > current_par ->
+                      {nil,{vec,newchi}}
+                  end
+
+                {left={left_pars,_},nil} ->
+                  current_par = pars |> filter_param(flags) |> Enum.sum
+                  left_par = left_pars |> filter_param(flags) |> Enum.sum
+                  par = vec |> filter_param(flags) |> Enum.sum
+                  cond do
+                    newchi < oldchi and par < current_par and par > left_par ->
+                      {left,{pars,oldchi}}
+
+                    newchi < oldchi and par > current_par ->
+                      {{pars,oldchi},nil}
+
+                    newchi > oldchi and par < current_par and par < left_par ->
+                      {{vec,newchi},nil}
+
+                    newchi > oldchi and par > current_par ->
+                      {left,{vec,newchi}}
+
+                    true ->
+                      {left,nil}
+                  end
+
+                {nil,right={right_pars,_}} ->
+                  current_par = pars |> filter_param(flags) |> Enum.sum
+                  right_par = right_pars |> filter_param(flags) |> Enum.sum
+                  par = vec |> filter_param(flags) |> Enum.sum
+                  cond do
+                    newchi < oldchi and par > current_par and par < right_par ->
+                      {{pars,oldchi},right}
+
+                    newchi < oldchi and par < current_par ->
+                      {nil,{pars,oldchi}}
+
+                    newchi > oldchi and par > current_par and par < right_par ->
+                      {nil,{vec,newchi}}
+
+                    newchi > oldchi and par < current_par ->
+                      {{vec,newchi},right}
+
+                    true ->
+                      {nil,right}
+                  end
+                  
+                local -> local
               end
+
+              case new_minimum do
+                {{left_pars,_lchi2},{right_pars,_rchi2}} ->
+                  left_par = left_pars |> filter_param(flags) |> Enum.sum
+                  right_par = right_pars |> filter_param(flags) |> Enum.sum
+
+                  try do
+                    {_, {left,right},{_vleft,_vright}} = newton(left_par, right_par, fn x->
+                      nvec = parameters |> List.replace_at(rem(max,length(parameters)), {x,1})
+                      der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},options[:smoothing],options) end,options)
+                    end, parmax, options)
+
+                    nvec = pars |> List.replace_at(rem(max,length(parameters)), (left+right)/2)
+                    newchi = chi2smooth observables,nvec,{fun,penalties},options[:smoothing],options
+
+                    if newchi<oldchi do
+                      options[:onstep] && options[:onstep].(%{delta: dvec, chi2: newchi, params: vec})
+                      {:halt, {nvec,newchi,:done}}
+                    else
+                      {:cont, {pars,oldchi,minimum}}
+                    end
+                  rescue
+                    ArgumentError -> {:cont, {pars,oldchi,minimum}}
+                  end
+
+                _otherwise ->
+                  cond do
+                    newchi < oldchi ->
+                      options[:onstep] && options[:onstep].(%{delta: dvec, chi2: newchi, params: vec})
+                      {:cont, {vec,newchi,new_minimum}}
+                    true ->
+                      {:cont, {pars,oldchi,minimum}}
+                  end
+                end
             rescue
               ArithmeticError ->
                 Logger.warn "chi2fit: arithmetic error [#{inspect vec}] [#{inspect System.stacktrace}]"
-                {pars,oldchi}
+                {:cont, {pars,oldchi,minimum}}
             end
         end)
 
       cond do
         Enum.all?(delta, &(&1 == 0)) -> 
-          chi2fit observables, {params,fun,penalties}, {max-1,options[:pariter]}, {cov,error}, options
+          chi2fit observables, {params,fun,penalties}, 0, {{cov,error}, nil}, options
 
         true ->
-          chi2fit observables, {params,fun,penalties}, {max,parmax-1}, {cov,error}, options
+          chi2fit observables, {params,fun,penalties}, max-1, {{cov,error}, grid}, options
       end
     catch
       {:impossible_inverse,error} ->
         Logger.warn "chi2: impossible inverse: #{error}"
-        chi2fit observables, {parameters,fun,penalties}, {max-1,options[:pariter]}, preverror, options
+        chi2fit observables, {parameters,fun,penalties}, 0, {preverror, nil}, options
       {:failed_to_reach_tolerance,_pars,error} ->
         Logger.warn "chi2: failed to reach tolerance: #{error}"
-        chi2fit observables, {parameters,fun,penalties}, {max-1,options[:pariter]}, preverror, options
+        chi2fit observables, {parameters,fun,penalties}, 0, {preverror, nil}, options
     rescue
       ArithmeticError ->
         Logger.warn "chi2: arithmetic error"
-        chi2fit observables, {parameters,fun,penalties}, {max-1,options[:pariter]}, preverror, options
+        chi2fit observables, {parameters,fun,penalties}, 0, {preverror, nil}, options
     end
 
   end

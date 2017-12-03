@@ -168,7 +168,7 @@ defmodule Chi2fit.Distribution do
     fn
       x when x == 0 -> 0.0
       x when x < 0 -> 0.0
-      x when x>0 ->
+      x when x > 0 ->
         phi(:math.sqrt(lambda/x) * (x/mu-1.0)) + :math.exp(2.0*lambda/mu) * phi(-:math.sqrt(lambda/x) * (x/mu+1.0))
     end
   end

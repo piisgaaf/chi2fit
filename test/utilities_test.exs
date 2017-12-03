@@ -35,7 +35,7 @@ defmodule UtilitiesTest do
     assert_in_delta :math.sqrt(3), r, 1.0e-4
   end
 
-  test "Newton-Fourier - no root in interval" do
+  test "Newton-Fourier - no (unique) root in interval" do
     assert_raise ArgumentError, fn -> newton(3.0,3.5,fn x->x*x-6.25 end, []) end
   end
 

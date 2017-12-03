@@ -30,7 +30,7 @@ defmodule Chi2fit.Cli do
 
   require Logger
 
-  import Chi2fit.Fit, only: [chi2fit: 5, chi2probe: 4, chi2: 4]
+  import Chi2fit.Fit, only: [chi2fit: 4, chi2probe: 4, chi2: 4]
   import Chi2fit.Utilities
   import Chi2fit.Matrix
   import Chi2fit.Distribution
@@ -125,15 +125,16 @@ defmodule Chi2fit.Cli do
     IO.puts "    --model simple|asimple|linear\tThe model (defaults to '#{@default_asymm}') to use for handling asymmetrical errors in the input data"
     IO.puts "    --probes <number>\t\t\tThe number of probes (defaults to '#{@default_probes}') to use for guessing parameter values at initialization"
     IO.puts "    --ranges \"[{...,...},...]\"\t\tRanges of parameters to search for optimum likelihood"
+    IO.puts "    --grid\t\t\t\tUses a grid search to fit one parameter at a time in a round robin fashion"
     IO.puts ""
     IO.puts "    Distributions:"
     IO.puts "    --cdf <cdf>\t\t\t\tThe distribution function (defaults to '#{@default_cdf}') to fit the data."
     IO.puts "    \t\t\t\t\tSupported values are 'wald|weibull|exponential|sep|sep0'"
     IO.puts "    --data <data>\t\t\tArray of data points to use in fitting"
-    IO.puts "    --method <method>\t\tThe integration method to use (defaults to '#{@default_int_method}'); applies to sep and sep0 only."
+    IO.puts "    --method <method>\t\t\tThe integration method to use (defaults to '#{@default_int_method}'); applies to sep and sep0 only."
     IO.puts "    \t\t\t\t\tSupported values are 'gauss|gauss2|gaus3|romberg|romberg2|romberg3'"
     IO.puts "    --tolerance <tolerance>\t\tThe target precision (defaults to '#{@default_tolerance}') for Romberg integration"
-    IO.puts "    --itermax <integer>\t\tThe maximum number of iterations to use in Romberg integration"
+    IO.puts "    --itermax <integer>\t\t\tThe maximum number of iterations to use in Romberg integration"
     IO.puts "    --npoints <points>\t\t\tThe number of points to use in Gauss integration (defaults to '#{@default_npoints}')"
     IO.puts ""
     IO.puts "    Output:"
@@ -175,6 +176,7 @@ defmodule Chi2fit.Cli do
       sample: :integer,
       plot: :boolean,
       fit: :boolean,
+      grid: :boolean,
       progress: :boolean,
       c: :boolean,
       x: :boolean] do
@@ -200,6 +202,7 @@ defmodule Chi2fit.Cli do
     |> Keyword.put_new(:smoothing,  false)
     |> Keyword.put_new(:plot?,      options[:plot] || false)
     |> Keyword.put_new(:fit?,       options[:fit] || false)
+    |> Keyword.put_new(:grid?,      options[:grid] || false)
     |> Keyword.put_new(:progress?,  options[:progress] || false)
     |> Keyword.put_new(:mcsample,   options[:sample] || :all)
     |> Keyword.put_new(:mcbootstrap,options[:bootstrap] || 1)
@@ -224,7 +227,7 @@ defmodule Chi2fit.Cli do
       {data,model, {_chi2, parameters,_errors}} = prepare_data sample, options
       try do
         IO.write "...fitting..."
-        fit = {_,_,pars} = chi2fit(data, {parameters, model[:fun], &penalties/2}, {options[:iterations],options[:pariter]}, nil, options)
+        fit = {_,_,pars} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
         jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options).options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
@@ -307,7 +310,16 @@ defmodule Chi2fit.Cli do
         IO.puts "    errors:\t\t#{inspect errors}\n"
   
         if options[:fit?] do
-          {chi2, alphainv, parameters} = chi2fit(data, {parameters, model[:fun], &penalties/2}, {options[:iterations],options[:pariter]}, nil, options)
+          options = options
+          |> Keyword.put_new(:onstep, fn %{chi2: newchi, params: vec} ->
+            IO.puts "\n[-]\tchi=#{newchi}"
+            IO.puts "\tparameters=#{inspect vec}"
+          end)
+          |> Keyword.put_new(:onbegin, fn %{step: step, chi: chi2, derivatives: ders} ->
+            IO.puts "\n[#{step}]\tchi2=#{chi2}"
+            IO.puts "\tderivatives(first,second)=#{inspect ders}"
+          end)
+          {chi2, alphainv, parameters} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
           IO.puts "    Degrees of freedom:\t#{length(data)-model[:df]}"

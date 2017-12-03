@@ -617,12 +617,12 @@ defmodule Chi2fit.Utilities do
   
   See [https://en.wikipedia.org/wiki/Newton%27s_method#Newton.E2.80.93Fourier_method]
   """
-  @spec newton(a::float,b::float,func::((x::float)->float),maxiter::non_neg_integer,options::Keyword.t) :: {float, {float,float}}
-  def newton(a,b,func,maxiter \\ 10, options), do: newton(a,b,func,maxiter,{(a+b)/2,{a,b}},options)
+  @spec newton(a::float,b::float,func::((x::float)->float),maxiter::non_neg_integer,options::Keyword.t) :: {float, {float,float}, {float,float}}
+  def newton(a,b,func,maxiter \\ 10, options), do: newton(a,b,func,maxiter,{(a+b)/2,{a,b},{nil,nil}},options)
 
   @default_rel_tolerance 1.0e-6
-  defp newton(_a,_b,_func,0,result,_options), do: result
-  defp newton(a,b,func,maxiter,{_,{left,right}},options) do
+  defp newton(_a,_b,func,0,{root,{l,r},_},_options), do: {root,{l,r},{func.(l),func.(r)}}
+  defp newton(a,b,func,maxiter,{prev,{left,right},{vleft,vright}},options) do
     tolerance = options[:tolerance] || @default_rel_tolerance
 
     x0 = func.(right)
@@ -640,10 +640,24 @@ defmodule Chi2fit.Utilities do
     z1 = left - z0/derx0
     root = (x1+z1)/2.0
 
-    if abs(x1-z1) < tolerance do
-      newton(a,b,func,0,{root,{z1,x1}},options)
-    else
-      newton(a,b,func,maxiter-1,{root,{z1,x1}},options)
+    cond do
+      z1 < left ->
+        newton(a,b,func,0,{prev,{left,right},{vleft,vright}},options)
+
+      x1 > right ->
+        newton(a,b,func,0,{prev,{left,right},{vleft,vright}},options)
+
+      z1 < x1 and abs(x1-z1) < tolerance ->
+        newton(a,b,func,0,{root,{z1,x1},{z0,x0}},options)
+
+      z1 > x1 and abs(x1-z1) < tolerance ->
+        newton(a,b,func,0,{root,{x1,z1},{z0,x0}},options)
+
+      z1 > x1 ->
+        newton(a,b,func,maxiter-1,{prev,{x1,z1},{z0,x0}},options)
+
+      true ->
+        newton(a,b,func,maxiter-1,{root,{z1,x1},{z0,x0}},options)
     end
   end
 
