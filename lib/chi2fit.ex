@@ -227,7 +227,7 @@ defmodule Chi2fit.Cli do
       {data,model, {_chi2, parameters,_errors}} = prepare_data sample, options
       try do
         IO.write "...fitting..."
-        fit = {_,_,pars} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
+        fit = {_,_,pars,_ranges} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
         jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options).options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
@@ -303,6 +303,7 @@ defmodule Chi2fit.Cli do
         if options[:output?], do: do_output(wdata, avgpars, model, sdpars |> Enum.map(&(&1*&1)) |> from_diagonal, options)
 
       true ->
+        ## TODO: pass the results from probing to the chi2fit function (parameter ranges & chi2 info)
         {data,model, {chi2, parameters,errors}} = prepare_data data, options
         IO.puts "\n\nInitial guess:"
         IO.puts "    chi2:\t\t#{chi2}"
@@ -319,7 +320,7 @@ defmodule Chi2fit.Cli do
             IO.puts "\n[#{step}]\tchi2=#{chi2}"
             IO.puts "\tderivatives(first,second)=#{inspect ders}"
           end)
-          {chi2, alphainv, parameters} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
+          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
           IO.puts "    Degrees of freedom:\t#{length(data)-model[:df]}"
@@ -329,6 +330,14 @@ defmodule Chi2fit.Cli do
           IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options),options)}"
           IO.puts "    parameters:\t\t#{inspect parameters}"
           IO.puts "    errors:\t\t#{inspect alphainv |> diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)}"
+          IO.puts "    ranges:"
+          ranges
+          |> Tuple.to_list
+          |> Enum.with_index
+          |> Enum.each(fn
+            {[mn,mx],0} -> IO.puts "\t\t\tchi2:\t\t#{mn}\t-\t#{mx}"
+            {[mn,mx],_} -> IO.puts "\t\t\tparameter:\t#{mn}\t-\t#{mx}"
+          end)
 
           if options[:output?], do: do_output(Enum.map(data, fn {x,_,_,_}->x end), parameters, model, alphainv, options)
         end

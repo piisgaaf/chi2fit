@@ -634,7 +634,7 @@ defmodule Chi2fit.Utilities do
 
     derx0 = der([{right,1}], fn [x]->func.(x) end, options)
 
-    if derx0 == 0, do: raise ArithmeticError, message: "Interval contains local minimum/maximum"
+    if derx0 == 0, do: raise ArithmeticError, message: "Interval contains local minimum/maximum [left/z0=#{left}/#{z0}; right/x0=#{right}/#{x0}; der=#{derx0}]"
 
     x1 = right - x0/derx0
     z1 = left - z0/derx0

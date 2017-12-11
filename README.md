@@ -10,7 +10,7 @@ by adding `chi2fit` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:chi2fit, "~> 1.0.0"}
+    {:chi2fit, "~> 0.6.0"}
   ]
 end
 ```
