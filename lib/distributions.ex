@@ -68,11 +68,29 @@ defmodule Chi2fit.Distribution do
   @doc """
   The Erlang distribution.
   """
-  @spec erlang(mean::number(),m::pos_integer()) :: distribution
-  def erlang(mean, m) when is_integer(m) and m>0 do
-    list = 1..m
-    fn () ->
-      -(mean/m)*:math.log(list |> Enum.reduce(1.0, fn (_,acc) -> :rand.uniform()*acc end))
+  @spec erlang(k::integer(),lambda::number()) :: distribution
+  def erlang(k,lambda) when is_integer(k) and k>0 do
+    fn ->
+      -1.0/lambda*:math.log(1..k |> Enum.reduce(1.0, fn _,acc -> :rand.uniform()*acc end))
+    end
+  end
+  
+  @doc """
+  The Erlang cumulative distribution function.
+  """
+  @spec erlangCDF(k::number(),lambda::number()) :: cdf
+  def erlangCDF(k,lambda) when k>0 do
+    fn
+      x ->
+        igamma(k,lambda*x)/gamma(k)
+#        kk = max(1,round k)
+#        {_,_,sum} = 0..kk-1 |> Enum.reduce(
+#          nil,
+#          fn
+#            0,_ -> {1.0,1.0,1.0}
+#            n,{fac,pow,sum} -> IO.puts "nnnnn=#{n}"; {n*fac,pow*lambda*x,sum+pow*lambda*x/(n*fac)}
+#          end)
+#        1.0 - sum * :math.exp(-lambda*x)
     end
   end
 
@@ -87,7 +105,7 @@ defmodule Chi2fit.Distribution do
   def weibull(1.5, [avg: average]), do: weibull(1.5, average/@gamma53)
   def weibull(2.0, [avg: average]), do: weibull(2.0, average/@gamma32)
   def weibull(alpha, beta) when is_number(alpha) and is_number(beta) do
-    fn () ->
+    fn ->
       u = :rand.uniform()
       beta*:math.pow(-:math.log(u),1.0/alpha)
     end
@@ -283,6 +301,10 @@ defmodule Chi2fit.Distribution do
         fun: fn (x,[k]) -> exponentialCDF(k).(x) end,
         df: 1
       ]
+      "erlang" -> [
+        fun: fn (x,[k,lambda]) -> erlangCDF(k,lambda).(x) end,
+        df: 2
+      ]
       "normal" -> [
         fun: fn (x,[mu,sigma]) -> normalCDF(mu,sigma).(x) end,
         df: 2
@@ -321,6 +343,25 @@ defmodule Chi2fit.Distribution do
       w >= 1.0 -> polar()
       true -> {w,v1,v2}
     end
+  end
+
+  def igamma(s,x) do
+    integrate :gauss, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
+  end
+
+  ## See Abramowitz & Stegun, Mathematical Handbook of Functions, formula 6.1.36
+  def gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
+  def gamma(x) when x>=1.0 do
+    z = x-1
+    1.0 -
+    0.577191652*z +
+    0.988205891*z*z -
+    0.897056937*z*z*z +
+    0.918206857*z*z*z*z -
+    0.756704078*z*z*z*z*z +
+    0.482199394*z*z*z*z*z*z -
+    0.193527818*z*z*z*z*z*z*z +
+    0.035868343*z*z*z*z*z*z*z*z
   end
 
 end

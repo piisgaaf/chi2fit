@@ -516,6 +516,7 @@ defmodule Chi2fit.Utilities do
   """
   @default_points 32
   @spec integrate(method, ((float)->float), a::float, b::float, options::Keyword.t) :: float
+  def integrate(method, func, a, b, options \\ [])
   def integrate(:gauss, func, a, b, options) do
     npoints = options[:points] || @default_points
 

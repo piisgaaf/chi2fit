@@ -20,6 +20,15 @@ defmodule FitTest do
 
   @moduletag distrib_mod: Chi2fit.Distribution
   @moduletag fit: true
+  @moduletag p_value: 0.005
+
+  ## See https://www.di-mgt.com.au/chisquare-calculator.html
+  @chi2_table  %{
+      {0.005,20} => 39.99684,
+      {0.005,200} => 255.26415,
+      {0.005,2000} => 2166.66430,
+      {0.005,20000} => 20518.92189
+    }
 
   doctest Chi2fit.Fit
 
@@ -31,12 +40,12 @@ defmodule FitTest do
     {:ok, data: convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))}), init: context[:params_init], cdf: context[:cdf]}
   end
 
-  defp assert_fit {expect_chi2,expect_params}, {data,init,cdf}, options do
+  defp assert_fit expect_params, {data,init,cdf}, options do
     extra_options = options[:extra_options] || []
     fit_options = Keyword.merge([model: :linear],extra_options)
 
     {chi2,cov,params,_ranges} = chi2fit data, {init,fn x,pars -> apply(options[:distrib_mod],cdf,pars).(x) end}, 100, fit_options
-    assert chi2 < expect_chi2
+    assert @chi2_table[{options.p_value,options[:size]}] && chi2 < @chi2_table[{options.p_value,50}]
 
     errors = cov |> Chi2fit.Matrix.diagonal
     Enum.zip([params,errors,expect_params])
@@ -55,7 +64,7 @@ defmodule FitTest do
   @tag params: [0.4,5.0]
   @tag params_init: [0.2,1.0]
   test "fit - weibull (20000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :weibull
@@ -64,7 +73,7 @@ defmodule FitTest do
   @tag params: [0.4,5.0]
   @tag params_init: [0.2,1.0]
   test "fit - weibull (2000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :weibull
@@ -73,7 +82,7 @@ defmodule FitTest do
   @tag params: [0.4,5.0]
   @tag params_init: [0.2,1.0]
   test "fit - weibull (200)", context do
-    assert_fit {2.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :weibull
@@ -82,7 +91,7 @@ defmodule FitTest do
   @tag params: [0.4,5.0]
   @tag params_init: [0.2,1.0]
   test "fit - weibull (20)", context do
-    assert_fit {2.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   ##
@@ -94,7 +103,7 @@ defmodule FitTest do
   @tag params: [11.2,2.3]
   @tag params_init: [10.0,2.0]
   test "fit - normal (20000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :normal
@@ -103,7 +112,7 @@ defmodule FitTest do
   @tag params: [11.2,2.3]
   @tag params_init: [10.0,2.0]
   test "fit - normal (2000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :normal
@@ -112,7 +121,7 @@ defmodule FitTest do
   @tag params: [11.2,2.3]
   @tag params_init: [10.0,2.0]
   test "fit - normal (200)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :normal
@@ -121,7 +130,7 @@ defmodule FitTest do
   @tag params: [11.2,2.3]
   @tag params_init: [10.0,3.0]
   test "fit - normal (20)", context do
-    assert_fit {2.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   ##
@@ -133,7 +142,7 @@ defmodule FitTest do
   @tag params: [1.7]
   @tag params_init: [1.0]
   test "fit - exponential (20000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :exponential
@@ -142,7 +151,7 @@ defmodule FitTest do
   @tag params: [1.7]
   @tag params_init: [1.0]
   test "fit - exponential (2000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :exponential
@@ -151,7 +160,7 @@ defmodule FitTest do
   @tag params: [1.7]
   @tag params_init: [1.0]
   test "fit - exponential (200)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :exponential
@@ -160,7 +169,7 @@ defmodule FitTest do
   @tag params: [1.7]
   @tag params_init: [1.0]
   test "fit - exponential (20)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   ##
@@ -172,7 +181,7 @@ defmodule FitTest do
   @tag params: [1.7,6.3]
   @tag params_init: [1.0,1.0]
   test "fit - wald (20000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :wald
@@ -181,7 +190,7 @@ defmodule FitTest do
   @tag params: [1.7,6.3]
   @tag params_init: [1.0,1.0]
   test "fit - wald (2000)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :wald
@@ -190,7 +199,7 @@ defmodule FitTest do
   @tag params: [1.7,6.3]
   @tag params_init: [1.0,1.0]
   test "fit - wald (200)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
   @tag distrib: :wald
@@ -199,7 +208,46 @@ defmodule FitTest do
   @tag params: [1.7,6.3]
   @tag params_init: [1.0,6.0]
   test "fit - wald (20)", context do
-    assert_fit {20.0,context[:params]}, {context[:data],context[:init],context[:cdf]}, context
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
+  end
+
+  ##
+  ## Erlang
+  ##
+  @tag distrib: :erlang
+  @tag cdf: :erlangCDF
+  @tag size: 20000
+  @tag params: [5,1.3]
+  @tag params_init: [4,1.0]
+  test "fit - erlang (20000)", context do
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
+  end
+
+  @tag distrib: :erlang
+  @tag cdf: :erlangCDF
+  @tag size: 2000
+  @tag params: [5,1.3]
+  @tag params_init: [4,1.0]
+  test "fit - erlang (2000)", context do
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
+  end
+
+  @tag distrib: :erlang
+  @tag cdf: :erlangCDF
+  @tag size: 200
+  @tag params: [5,1.3]
+  @tag params_init: [4,1.0]
+  test "fit - erlang (200)", context do
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
+  end
+
+  @tag distrib: :erlang
+  @tag cdf: :erlangCDF
+  @tag size: 20
+  @tag params: [5,1.3]
+  @tag params_init: [4,1.0]
+  test "fit - erlang (20)", context do
+    assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
 end
