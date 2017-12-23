@@ -150,8 +150,9 @@ defmodule Chi2fit.Fit do
 
   @spec gamma(pos_integer, observables, model) :: float
   defp gamma(k, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) do
+    smoothing? = options[:smoothing] || false
     params_k = parameters |> derive_par(k)
-    -0.5*der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},options[:smoothing],options) end, options
+    -0.5*der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
   end
 
   defp alpha(observables, {parameters, fun, penalties, options}) do
@@ -176,8 +177,9 @@ defmodule Chi2fit.Fit do
 
   @spec alpha({pos_integer,pos_integer}, observables, model) :: float
   defp alpha({k,j}, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) and j>0 and j<=length(parameters) do
+    smoothing? = options[:smoothing] || false
     params_kj = parameters |> derive_par(k) |> derive_par(j)
-    0.5*der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},options[:smoothing],options) end, options
+    0.5*der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
   end
 
   #######################################################################################################
@@ -346,7 +348,7 @@ defmodule Chi2fit.Fit do
 
     {chi, cov, parameters, ranges}
   end
-  defp chi2fit observables, {parameters, fun, penalties,}, 0, {nil,[]}, options do
+  defp chi2fit observables, {parameters, fun, penalties}, 0, {nil,[]}, options do
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
@@ -400,7 +402,8 @@ defmodule Chi2fit.Fit do
             dvec = factor |> from_diagonal |> Enum.map(&dotproduct(&1,delta))
             vec = ExAlgebra.Vector.add(parameters,dvec)
             try do
-              newchi = chi2smooth observables,vec,{fun,penalties},options[:smoothing],options
+              smoothing? = options[:smoothing] || false
+              newchi = chi2smooth observables,vec,{fun,penalties},smoothing?,options
               data = [{newchi,vec}|data]
 
               new_minimum = case minimum do
@@ -472,13 +475,14 @@ defmodule Chi2fit.Fit do
                   right_par = right_pars |> filter_param(flags) |> Enum.sum
 
                   try do
+                    smoothing? = options[:smoothing] || false
                     {_, {left,right},{_vleft,_vright}} = newton(left_par, right_par, fn x->
                       nvec = parameters |> List.replace_at(rem(max,length(parameters)), {x,1})
-                      der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},options[:smoothing],options) end,options)
+                      der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},smoothing?,options) end,options)
                     end, parmax, options)
 
                     nvec = pars |> List.replace_at(rem(max,length(parameters)), (left+right)/2)
-                    newchi = chi2smooth observables,nvec,{fun,penalties},options[:smoothing],options
+                    newchi = chi2smooth observables,nvec,{fun,penalties},smoothing?,options
                     data = [{newchi,nvec}|data]
 
                     if newchi<oldchi do

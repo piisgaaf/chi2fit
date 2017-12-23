@@ -87,7 +87,7 @@ defmodule Chi2fit.Cli do
     {maxdur,_} = bins |> List.last
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
 
-    data = convert_cdf({cdf,[mindur,maxdur]})
+    data = convert_cdf({cdf,workdata|>Enum.uniq|>Enum.sort|>Enum.map(fn x->x+0.5 end)})
 
     try do
       model = model(options[:name],options) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
@@ -252,7 +252,7 @@ defmodule Chi2fit.Cli do
       options[:ranges] == nil ->
         IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
         System.halt 1
-      true -> :ok
+      true -> options
     end
   end
 
@@ -263,8 +263,7 @@ defmodule Chi2fit.Cli do
     if options[:help], do: usage(0)
 
     ## Default options
-    validate options
-    options = add_defaults(options)
+    options = options |> validate |> add_defaults
 
     ## Read the data
     data = if options[:mcdata], do: elem(Code.eval_string(options[:mcdata]),0), else: read_data(filename)
@@ -305,6 +304,7 @@ defmodule Chi2fit.Cli do
       true ->
         ## TODO: pass the results from probing to the chi2fit function (parameter ranges & chi2 info)
         {data,model, {chi2, parameters,errors}} = prepare_data data, options
+
         IO.puts "\n\nInitial guess:"
         IO.puts "    chi2:\t\t#{chi2}"
         IO.puts "    pars:\t\t#{inspect parameters}"

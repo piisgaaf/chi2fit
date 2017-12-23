@@ -57,12 +57,13 @@ defmodule Chi2fit.Distribution do
   """
   @spec exponential(Keyword.t) :: distribution
   def exponential([avg: average]) do
-    fn () ->
+    fn ->
       u = :rand.uniform()
       -average*:math.log(u)
     end
   end
-  def exponentialCDF(rate), do: fn (t) -> 1.0 - :math.exp(-rate*t) end
+  def exponential(rate), do: exponential([avg: 1.0/rate])
+  def exponentialCDF(rate) when rate > 0.0, do: fn t -> 1.0 - :math.exp(-rate*t) end
 
   @doc """
   The Erlang distribution.
@@ -125,8 +126,21 @@ defmodule Chi2fit.Distribution do
   def normal(mean,sigma) when is_number(mean) and is_number(sigma) and sigma>=0 do
     fn () ->
       {w,v1,_} = polar()
-      y = :math.sqrt(-2*:math.log(w)/w)
-      mean + sigma*(v1*y)
+      y = v1*:math.sqrt(-2*:math.log(w)/w)
+      mean + sigma*y
+    end
+  end
+
+  @doc """
+  The normal or Gauss cumulative distribution
+  """
+  @spec normalCDF(mean::number(),sigma::number()) :: cdf
+  def normalCDF(mean,sigma) when is_number(mean) and is_number(sigma) and sigma>=0 do
+    fn
+      x when (x-mean)/sigma < 4.0 ->
+        0.5*:math.erfc(-(x-mean)/sigma/:math.sqrt(2.0)) 
+      x ->
+        0.5*( 1.0 + :math.erf((x-mean)/sigma/:math.sqrt(2.0)) )
     end
   end
 
@@ -147,19 +161,18 @@ defmodule Chi2fit.Distribution do
   @spec wald(mu::number(),lambda::number()) :: distribution
   def wald(mu,lambda) when is_number(mu) and is_number(lambda) do
    fn () ->
-       w = :rand.uniform()
+       w = normal(0.0,1.0).()
        y = w*w
-       z = mu + mu*mu*y/2/lambda + mu/2/lambda*:math.sqrt(4*mu*lambda*y+mu*mu*y*y)
-       case (bernoulli(mu/(mu+z))).() do
-         1 -> z
-         _else -> mu*mu/z
-       end
+       x = mu + mu*mu*y/2/lambda - mu/2/lambda*:math.sqrt(4*mu*lambda*y + mu*mu*y*y)
+
+       z = :rand.uniform()
+       if z <= mu/(mu+x), do: x, else: mu*mu/x
    end
   end
   def wald([avg: average],lambda), do: wald(average,lambda)
 
   @doc """
-  The Wald cumulative distribution function.
+  The Wald (Inverse Gauss) cumulative distribution function.
   """
   @spec waldCDF(number,number) :: cdf
   def waldCDF(mu,_) when mu < 0, do: raise ArithmeticError, "Wald is only defined for positive average"
@@ -270,6 +283,10 @@ defmodule Chi2fit.Distribution do
         fun: fn (x,[k]) -> exponentialCDF(k).(x) end,
         df: 1
       ]
+      "normal" -> [
+        fun: fn (x,[mu,sigma]) -> normalCDF(mu,sigma).(x) end,
+        df: 2
+      ]
       "sep" -> [
         fun: fn (x,[a,b,lambda,alpha]) -> sepCDF(a,b,lambda,alpha,options).(x) end,
         df: 4
@@ -292,9 +309,7 @@ defmodule Chi2fit.Distribution do
   end
   
   @spec phi(x :: float) :: float
-  defp phi(x) do
-   (1.0 + :math.erf(x/:math.sqrt(2.0)))/2.0
-  end
+  defp phi(x), do: normalCDF(0.0,1.0).(x)
 
   @spec polar() :: {number(), number(), number()}
   defp polar() do
@@ -303,7 +318,7 @@ defmodule Chi2fit.Distribution do
     w = v1*v1 + v2*v2
 
     cond do
-      w > 1.0 -> polar()
+      w >= 1.0 -> polar()
       true -> {w,v1,v2}
     end
   end

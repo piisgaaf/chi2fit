@@ -115,10 +115,10 @@ defmodule Chi2fit.Utilities do
       {0.2, 0.027223328910987405, 0.5233625708498564}
   
   """
-  @spec to_cdf_fun([{x::number,y::number}],pos_integer,algorithm) :: cdf
+  @spec to_cdf_fun([{x::number,y::number,n::integer}],pos_integer,algorithm) :: cdf
   def to_cdf_fun(data,numpoints,algorithm \\ :wilson) do
     fn (x) ->
-      y = data |> Enum.reverse |> Enum.find({nil,0.0}, fn ({xx,_})-> xx<=x end) |> elem(1)
+      y = data |> Enum.reverse |> Enum.find({nil,0.0}, fn ({xx,_,_})-> xx<=x end) |> elem(1)
       # t = 1.96
       t = 1.00
 
@@ -132,16 +132,24 @@ defmodule Chi2fit.Utilities do
         :wilson ->
           ylow = if y > 0 do
             splus = t*t - 1/numpoints + 4*numpoints*y*(1-y) + (4*y - 2)
-            srtplus = 1.0 + t*:math.sqrt(splus)
-            max(0.0, (2*numpoints*y + t*t - srtplus)/2/(numpoints + t*t))
+            if splus < 0.0 do
+              0.0
+            else
+              srtplus = 1.0 + t*:math.sqrt(splus)
+              max(0.0, (2*numpoints*y + t*t - srtplus)/2/(numpoints + t*t))
+            end
           else
             0.0
           end
 
           yhigh = if y < 1 do
             smin =  t*t - 1/numpoints + 4*numpoints*y*(1-y) - (4*y - 2)
-            srtmin =  1.0 + t*:math.sqrt(smin)
-            min(1.0, (2*numpoints*y + t*t + srtmin )/2/(numpoints + t*t))
+            if smin < 0.0 do
+              1.0
+            else
+              srtmin =  1.0 + t*:math.sqrt(smin)
+              min(1.0, (2*numpoints*y + t*t + srtmin )/2/(numpoints + t*t))
+            end
           else
             1.0
           end
@@ -187,16 +195,17 @@ defmodule Chi2fit.Utilities do
   
   [1] "Handbook of Monte Carlo Methods" by Kroese, Taimre, and Botev, section 8.4
   """
-  @correction 0.01
+  @correction 0.0001
   @spec empirical_cdf([{float,number}],integer,algorithm) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
   def empirical_cdf(data,binsize \\ 1,algorithm \\ :wilson) do
     {bins,sum} = data
       |> Enum.sort(fn ({x1,_},{x2,_})->x1<x2 end)
-      |> Enum.reduce({[],0}, fn ({x,y},{acc,sum}) -> {[{binsize*(x+1/2),y+sum}|acc],sum+y} end)
+      |> Enum.reduce({[],0}, fn ({x,y},{acc,sum}) -> {[{binsize*(x+1.0),y+sum}|acc],sum+y} end)
 
+    correction = max(3.0,trunc(Float.ceil(sum*@correction)))
     normbins = bins
       |> Enum.reverse
-      |> Enum.map(fn ({x,y})->{x,y/(sum+trunc(Float.ceil(sum*@correction)))} end)
+      |> Enum.map(fn ({x,y})->{x,y/(sum+correction),y} end)
 
     {normbins |> to_cdf_fun(length(bins),algorithm),
      normbins,
@@ -221,16 +230,25 @@ defmodule Chi2fit.Utilities do
   
   ## Example
   
-      iex> convert_cdf {fn x->{:math.exp(-x),:math.exp(-x)/16,:math.exp(-x)/4} end, [1,4]}
+      iex> convert_cdf {fn x->{:math.exp(-x),:math.exp(-x)/16,:math.exp(-x)/4} end, {1,4}}
       [{1, 0.36787944117144233, 0.022992465073215146, 0.09196986029286058},
        {2, 0.1353352832366127, 0.008458455202288294, 0.033833820809153176},
        {3, 0.049787068367863944, 0.0031116917729914965, 0.012446767091965986},
        {4, 0.01831563888873418, 0.0011447274305458862, 0.004578909722183545}]
 
   """
-  @spec convert_cdf({cdf,range :: [float,...]}) :: [{float,float,float,float}]
-  def convert_cdf({cdf,[mindur,maxdur]}) do
+  @type range :: {float,float} | [float,...]
+  @spec convert_cdf({cdf,range}) :: [{float,float,float,float}]
+  def convert_cdf({cdf,{mindur,maxdur}}) do
     round(mindur)..round(maxdur)
+    |> Stream.map(fn (x)->
+        {y,y1,y2} = cdf.(x)
+        {x,y,y1,y2}
+      end)
+    |> Enum.to_list
+  end
+  def convert_cdf({cdf,categories}) when is_list(categories) do
+    categories
     |> Stream.map(fn (x)->
         {y,y1,y2} = cdf.(x)
         {x,y,y1,y2}
@@ -665,6 +683,7 @@ defmodule Chi2fit.Utilities do
   Unzips lists of 1-, 2-, 3-, 4-, and 5-tuples.
   """
   @spec unzip(list::[tuple]) :: tuple
+  def unzip([]), do: {}
   def unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
   def unzip(list=[{_,_}|_]), do: Enum.unzip(list)
   def unzip(list=[{_,_,_}|_]) do
