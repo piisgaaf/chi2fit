@@ -83,14 +83,6 @@ defmodule Chi2fit.Distribution do
     fn
       x ->
         igamma(k,lambda*x)/gamma(k)
-#        kk = max(1,round k)
-#        {_,_,sum} = 0..kk-1 |> Enum.reduce(
-#          nil,
-#          fn
-#            0,_ -> {1.0,1.0,1.0}
-#            n,{fac,pow,sum} -> IO.puts "nnnnn=#{n}"; {n*fac,pow*lambda*x,sum+pow*lambda*x/(n*fac)}
-#          end)
-#        1.0 - sum * :math.exp(-lambda*x)
     end
   end
 
@@ -202,20 +194,6 @@ defmodule Chi2fit.Distribution do
       x when x < 0 -> 0.0
       x when x > 0 ->
         phi(:math.sqrt(lambda/x) * (x/mu-1.0)) + :math.exp(2.0*lambda/mu) * phi(-:math.sqrt(lambda/x) * (x/mu+1.0))
-    end
-  end
-
-  defp sepPDF(a,b,lambda,alpha) do
-    fn x ->
-      z = (x-a)/b
-      t = :math.pow(abs(z),alpha/2.0)
-      w = lambda*:math.sqrt(2.0/alpha)*t
-
-      if z > 0.0 do
-        :math.exp(-t*t/alpha) * 0.5 * ( 1.0 + :math.erf(w/:math.sqrt(2.0)) )
-      else
-        :math.exp(-t*t/alpha) * 0.5 * ( :math.erfc(w/:math.sqrt(2.0)) )
-      end
     end
   end
 
@@ -346,6 +324,21 @@ defmodule Chi2fit.Distribution do
     end
   end
 
+  @spec sepCDF(a::float,b::float,lambda::float,alpha::float) :: cdf
+  defp sepPDF(a,b,lambda,alpha) do
+    fn x ->
+      z = (x-a)/b
+      t = :math.pow(abs(z),alpha/2.0)
+      w = lambda*:math.sqrt(2.0/alpha)*t
+
+      if z > 0.0 do
+        :math.exp(-t*t/alpha) * 0.5 * ( 1.0 + :math.erf(w/:math.sqrt(2.0)) )
+      else
+        :math.exp(-t*t/alpha) * 0.5 * ( :math.erfc(w/:math.sqrt(2.0)) )
+      end
+    end
+  end
+
   @spec igamma(s::float,x::float) :: float
   defp igamma(s,x) do
     integrate :gauss, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
@@ -356,6 +349,7 @@ defmodule Chi2fit.Distribution do
   defp gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
   defp gamma(x) when x>=1.0, do: gammap(x-1.0)
   defp gamma(x) when x>= 0.0, do: gammap(x)/x
+
   defp gammap(z) when z>=0.0 and z<1.0 do
     1.0 -
     0.577191652*z +

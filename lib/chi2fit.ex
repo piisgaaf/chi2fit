@@ -42,7 +42,7 @@ defmodule Chi2fit.Cli do
   @default_probes 100_000
   @default_surface_file "cdf_surface.csv"
   @default_cdf "weibull"
-  @default_asymm :simple
+  @default_asymm :linear
   @default_int_method :romberg2
   @default_tolerance 1.0e-6
   @default_npoints 32
@@ -83,8 +83,8 @@ defmodule Chi2fit.Cli do
     end
 
     {cdf,bins,_,_} = get_cdf(workdata,1,:wilson)
-    {mindur,_} = bins |> hd
-    {maxdur,_} = bins |> List.last
+    {mindur,_,_} = bins |> hd
+    {maxdur,_,_} = bins |> List.last
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
 
     data = convert_cdf({cdf,workdata|>Enum.uniq|>Enum.sort|>Enum.map(fn x->x+0.5 end)})
@@ -248,10 +248,17 @@ defmodule Chi2fit.Cli do
   end
 
   defp validate options do
+    model = model(options[:cdf],options)
+    ranges = elem(Code.eval_string(options[:ranges]),0)
     cond do
       options[:ranges] == nil ->
         IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
         System.halt 1
+
+      length(ranges) != model[:df] ->
+        IO.puts :stderr, "ERROR: 'ranges' must be of length #{model[:df]} for '#{options[:cdf]}'"
+        System.halt 1
+
       true -> options
     end
   end
@@ -311,15 +318,19 @@ defmodule Chi2fit.Cli do
         IO.puts "    errors:\t\t#{inspect errors}\n"
   
         if options[:fit?] do
-          options = options
-          |> Keyword.put_new(:onstep, fn %{chi2: newchi, params: vec} ->
-            IO.puts "\n[-]\tchi=#{newchi}"
-            IO.puts "\tparameters=#{inspect vec}"
-          end)
-          |> Keyword.put_new(:onbegin, fn %{step: step, chi: chi2, derivatives: ders} ->
-            IO.puts "\n[#{step}]\tchi2=#{chi2}"
-            IO.puts "\tderivatives(first,second)=#{inspect ders}"
-          end)
+          options = if options[:debug?] do
+            options
+            |> Keyword.put_new(:onstep, fn %{chi2: newchi, params: vec} ->
+              IO.puts "\n[-]\tchi=#{newchi}"
+              IO.puts "\tparameters=#{inspect vec}"
+            end)
+            |> Keyword.put_new(:onbegin, fn %{step: step, chi: chi2, derivatives: ders} ->
+              IO.puts "\n[#{step}]\tchi2=#{chi2}"
+              IO.puts "\tderivatives(first,second)=#{inspect ders}"
+            end)
+          else
+            options
+          end
           {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
