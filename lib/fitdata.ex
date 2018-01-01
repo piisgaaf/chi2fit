@@ -138,6 +138,7 @@ defmodule Chi2fit.Fit do
             tmp*tmp + penalties.(x)
           rescue
             ArithmeticError -> @arithmic_penalty
+            ArgumentError -> @arithmic_penalty
           end
       end)
     |> Enum.sum

@@ -153,6 +153,7 @@ defmodule Chi2fit.Distribution do
   The normal or Gauss cumulative distribution
   """
   @spec normalCDF(mean::number(),sigma::number()) :: cdf
+  def normalCDF(_mean,sigma) when sigma<0, do: raise ArgumentError
   def normalCDF(mean,sigma) when is_number(mean) and is_number(sigma) and sigma>=0 do
     fn
       x when (x-mean)/sigma < 4.0 ->
@@ -345,14 +346,17 @@ defmodule Chi2fit.Distribution do
     end
   end
 
-  def igamma(s,x) do
+  @spec igamma(s::float,x::float) :: float
+  defp igamma(s,x) do
     integrate :gauss, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
   end
 
   ## See Abramowitz & Stegun, Mathematical Handbook of Functions, formula 6.1.36
-  def gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
-  def gamma(x) when x>=1.0 do
-    z = x-1
+  @spec gamma(x::float) :: float
+  defp gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
+  defp gamma(x) when x>=1.0, do: gammap(x-1.0)
+  defp gamma(x) when x>= 0.0, do: gammap(x)/x
+  defp gammap(z) when z>=0.0 and z<1.0 do
     1.0 -
     0.577191652*z +
     0.988205891*z*z -

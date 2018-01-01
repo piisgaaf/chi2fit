@@ -62,104 +62,8 @@ defmodule Chi2fit.Utilities do
     end) |> Enum.reduce([], fn (pair,acc)->[pair|acc] end) |> Enum.sort_by(fn ({k,_v})->k end)
   end
 
-  @doc """
-  Returns a cumulative distribution corresponding to the input data.
-  
-  ## Example
-  
-      iex> to_cdf [1,2,3,4,5], 0.5, 1
-      [{0.5, 0.0}, {1.5, 1.0}, {2.5, 2.0}, {3.5, 3.0}, {4.5, 4.0}, {5.5, 5.0}]
-      
-      iex> to_cdf [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9], 0.5, 2
-      [{0.5, 0.0}, {2.5, 2.0}, {4.5, 7.0}, {6.5, 12.0}, {8.5, 14.0}, {10.5, 15.0}]
-  """
-  @spec to_cdf([number],number,number) :: [ {float,float} ]
-  def to_cdf(list, bin, interval \\ 0), do: to_cdf(list, bin, interval, 0.0, [])
-
-  defp to_cdf([], _bin, _interval, _sum, result), do: Enum.reverse(result)
-  defp to_cdf(list, bin, interval, sum, result) do
-    {in_bin, out_bin} = list |> Enum.partition(fn (x)->x<=bin end)
-    to_cdf(out_bin, bin+interval, interval, sum+length(in_bin), [{bin,sum+length(in_bin)}|result])
-  end
-
   defmodule UnknownSampleErrorAlgorithmError do
     defexception message: "unknown sample error algorithm"
-  end
-
-  @doc """
-  Converts a list of x,y data into a Cumulative Distribution function.
-  
-  Supports two ways of assigning errors: Wald score or Wilson score. See [1]. Valie values for the `algorithm`
-  argument are `:wald` or `:wilson`.
-  
-  The second argument `numpoints` specifies the size of the original sample.
-  
-  The returned function returns tuples for its argument where the first element is the actual value of the
-  function and the second and third elements gice the minimum and maximum confidence bounds.
-
-  ## References
-  
-      [1] See https://en.wikipedia.org/wiki/Cumulative_frequency_analysis
-      [2] https://arxiv.org/pdf/1112.2593v3.pdf
-      [3] See https://en.wikipedia.org/wiki/Student%27s_t-distribution:
-          90% confidence ==> t = 1.645 for many data points (> 120)
-          70% confidence ==> t = 1.000
-          
-  ## Example
-  
-      iex(1)> fun = [1,2,3,4,5]
-      ...> |> to_cdf(0.5, 1)
-      ...> |> Enum.map(fn {x,y}->{x,y/5} end)
-      ...> |> to_cdf_fun(5,:wilson)
-      iex(2)> fun.(2.2)
-      {0.2, 0.027223328910987405, 0.5233625708498564}
-  
-  """
-  @spec to_cdf_fun([{x::number,y::number,n::integer}],pos_integer,algorithm) :: cdf
-  def to_cdf_fun(data,numpoints,algorithm \\ :wilson) do
-    fn (x) ->
-      y = data |> Enum.reverse |> Enum.find({nil,0.0}, fn ({xx,_,_})-> xx<=x end) |> elem(1)
-      # t = 1.96
-      t = 1.00
-
-      case algorithm do
-        :wald ->
-          sd = :math.sqrt(y*(1.0-y)/numpoints)
-          ylow = y - 2*y*t*sd
-          yhigh = y + 2*(1.0-y)*t*sd
-          {y,ylow,yhigh}
-
-        :wilson ->
-          ylow = if y > 0 do
-            splus = t*t - 1/numpoints + 4*numpoints*y*(1-y) + (4*y - 2)
-            if splus < 0.0 do
-              0.0
-            else
-              srtplus = 1.0 + t*:math.sqrt(splus)
-              max(0.0, (2*numpoints*y + t*t - srtplus)/2/(numpoints + t*t))
-            end
-          else
-            0.0
-          end
-
-          yhigh = if y < 1 do
-            smin =  t*t - 1/numpoints + 4*numpoints*y*(1-y) - (4*y - 2)
-            if smin < 0.0 do
-              1.0
-            else
-              srtmin =  1.0 + t*:math.sqrt(smin)
-              min(1.0, (2*numpoints*y + t*t + srtmin )/2/(numpoints + t*t))
-            end
-          else
-            1.0
-          end
-
-          {y,ylow,yhigh}
-
-        other ->
-          raise UnknownSampleErrorAlgorithmError, message: "unknown algorithm '#{inspect other}'"
-      end
-    end
   end
 
   @doc """
@@ -179,6 +83,9 @@ defmodule Chi2fit.Utilities do
   size of 1 means that 0 effort will be mapped to 1/2 effort (at the middle of the bin).
   This also prevents problems when the fited distribution cannot cope with an effort os zero.
   
+  Supports two ways of assigning errors: Wald score or Wilson score. See [1]. Valie values for the `algorithm`
+  argument are `:wald` or `:wilson`.
+
   In the handbook of MCMC [1] a cumulative distribution is constructed. For the largest 'x' value
   in the sample, the 'y' value is exactly one (1). In combination with the Wald score this
   gives zero errors on the value '1'. If the resulting distribution is used to fit a curve
@@ -193,7 +100,12 @@ defmodule Chi2fit.Utilities do
   
   ## References
   
-  [1] "Handbook of Monte Carlo Methods" by Kroese, Taimre, and Botev, section 8.4
+      [1] "Handbook of Monte Carlo Methods" by Kroese, Taimre, and Botev, section 8.4
+      [2] See https://en.wikipedia.org/wiki/Cumulative_frequency_analysis
+      [3] https://arxiv.org/pdf/1112.2593v3.pdf
+      [4] See https://en.wikipedia.org/wiki/Student%27s_t-distribution:
+          90% confidence ==> t = 1.645 for many data points (> 120)
+          70% confidence ==> t = 1.000
   """
   @correction 0.0001
   @spec empirical_cdf([{float,number}],integer,algorithm) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
@@ -256,51 +168,6 @@ defmodule Chi2fit.Utilities do
     |> Enum.to_list
   end
 
-  defp expand_pars(list,h) do
-    list |> Enum.map(
-          fn
-            ({{x,0,factor}}) -> {{x,0,factor}}
-            ({{x,0}}) -> {{x,0,1.0}}
-            ({{x,n,factor}}) when n>0 ->
-              xplus = x*(1.0+h)
-              xmin = x*(1.0-h)
-              dx = xplus-xmin
-              [{{xplus,n-1,factor*dx}},{xmin,n-1,factor*dx}] |> expand_pars(h) |> List.flatten 
-            ({{x,n}}) when n>0 ->
-              xplus = x*(1.0+h)
-              xmin = x*(1.0-h)
-              dx = xplus-xmin
-              [{{xplus,n-1,dx}},{xmin,n-1,dx}] |> expand_pars(h) |> List.flatten 
-            ({x,0,factor}) -> {x,0,factor}
-            ({x,0}) -> {x,0,1.0}
-            ({x,n,factor}) when n>0 ->
-              xplus = x*(1.0+h)
-              xmin = x*(1.0-h)
-              dx = xplus-xmin
-              [{xplus,n-1,factor*dx},{{xmin,n-1,factor*dx}}] |> expand_pars(h) |> List.flatten 
-            ({x,n}) when n>0 ->
-              xplus = x*(1.0+h)
-              xmin = x*(1.0-h)
-              dx = xplus-xmin
-              [{xplus,n-1,dx},{{xmin,n-1,dx}}] |> expand_pars(h) |> List.flatten 
-            (x) when is_number(x) -> {x,0,1.0}
-          end)
-  end
-
-  defp reduce_pars(list) do
-    list |> Enum.reduce([{[],1,1.0}],
-      fn
-        (list,acc) when is_list(list) ->
-          Enum.flat_map(list,
-            fn
-              ({{x,0,dx1}}) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],-n,dx1*dx2} end)
-              ({x,0,dx1}) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],n,dx1*dx2} end)
-            end)
-        ({x,0,dx1},acc) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],n,dx1*dx2} end)
-      end)
-      |> Enum.map(fn ({l,n,dx}) -> {Enum.reverse(l),n,dx} end)
-  end
-
   @doc """
   Calculates the partial derivative of a function and returns the value.
   
@@ -334,10 +201,6 @@ defmodule Chi2fit.Utilities do
         {result,acc/2.0}
       end,
       @default_h,4.0,options)
-  end
-
-  defp jacobian(x=[_|_], k, fun, options) when k>0 and k<=length(x) and is_function(fun,1) do
-    x |> List.update_at(k-1, fn (val) -> {val,1} end) |> der(fun,options)
   end
 
   @doc """
@@ -639,6 +502,138 @@ defmodule Chi2fit.Utilities do
   @spec newton(a::float,b::float,func::((x::float)->float),maxiter::non_neg_integer,options::Keyword.t) :: {float, {float,float}, {float,float}}
   def newton(a,b,func,maxiter \\ 10, options), do: newton(a,b,func,maxiter,{(a+b)/2,{a,b},{nil,nil}},options)
 
+  @doc """
+  Unzips lists of 1-, 2-, 3-, 4-, and 5-tuples.
+  """
+  @spec unzip(list::[tuple]) :: tuple
+  def unzip([]), do: {}
+  def unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
+  def unzip(list=[{_,_}|_]), do: Enum.unzip(list)
+  def unzip(list=[{_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2))
+    }
+  end
+  def unzip(list=[{_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3))
+    }
+  end
+  def unzip(list=[{_,_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3)),
+      list |> Enum.map(&elem(&1,4))
+    }
+  end
+
+  ##
+  ## Local functions
+  ##
+  
+  @spec to_cdf_fun([{x::number,y::number,n::integer}],pos_integer,algorithm) :: cdf
+  defp to_cdf_fun(data,numpoints,algorithm) do
+    fn (x) ->
+      y = data |> Enum.reverse |> Enum.find({nil,0.0}, fn ({xx,_,_})-> xx<=x end) |> elem(1)
+      # t = 1.96
+      t = 1.00
+
+      case algorithm do
+        :wald ->
+          sd = :math.sqrt(y*(1.0-y)/numpoints)
+          ylow = y - 2*y*t*sd
+          yhigh = y + 2*(1.0-y)*t*sd
+          {y,ylow,yhigh}
+
+        :wilson ->
+          ylow = if y > 0 do
+            splus = t*t - 1/numpoints + 4*numpoints*y*(1-y) + (4*y - 2)
+            if splus < 0.0 do
+              0.0
+            else
+              srtplus = 1.0 + t*:math.sqrt(splus)
+              max(0.0, (2*numpoints*y + t*t - srtplus)/2/(numpoints + t*t))
+            end
+          else
+            0.0
+          end
+
+          yhigh = if y < 1 do
+            smin =  t*t - 1/numpoints + 4*numpoints*y*(1-y) - (4*y - 2)
+            if smin < 0.0 do
+              1.0
+            else
+              srtmin =  1.0 + t*:math.sqrt(smin)
+              min(1.0, (2*numpoints*y + t*t + srtmin )/2/(numpoints + t*t))
+            end
+          else
+            1.0
+          end
+
+          {y,ylow,yhigh}
+
+        other ->
+          raise UnknownSampleErrorAlgorithmError, message: "unknown algorithm '#{inspect other}'"
+      end
+    end
+  end
+
+  defp expand_pars(list,h) do
+    list |> Enum.map(
+          fn
+            ({{x,0,factor}}) -> {{x,0,factor}}
+            ({{x,0}}) -> {{x,0,1.0}}
+            ({{x,n,factor}}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{{xplus,n-1,factor*dx}},{xmin,n-1,factor*dx}] |> expand_pars(h) |> List.flatten 
+            ({{x,n}}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{{xplus,n-1,dx}},{xmin,n-1,dx}] |> expand_pars(h) |> List.flatten 
+            ({x,0,factor}) -> {x,0,factor}
+            ({x,0}) -> {x,0,1.0}
+            ({x,n,factor}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{xplus,n-1,factor*dx},{{xmin,n-1,factor*dx}}] |> expand_pars(h) |> List.flatten 
+            ({x,n}) when n>0 ->
+              xplus = x*(1.0+h)
+              xmin = x*(1.0-h)
+              dx = xplus-xmin
+              [{xplus,n-1,dx},{{xmin,n-1,dx}}] |> expand_pars(h) |> List.flatten 
+            (x) when is_number(x) -> {x,0,1.0}
+          end)
+  end
+
+  defp reduce_pars(list) do
+    list |> Enum.reduce([{[],1,1.0}],
+      fn
+        (list,acc) when is_list(list) ->
+          Enum.flat_map(list,
+            fn
+              ({{x,0,dx1}}) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],-n,dx1*dx2} end)
+              ({x,0,dx1}) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],n,dx1*dx2} end)
+            end)
+        ({x,0,dx1},acc) -> Enum.map(acc, fn ({y,n,dx2})->{[x|y],n,dx1*dx2} end)
+      end)
+      |> Enum.map(fn ({l,n,dx}) -> {Enum.reverse(l),n,dx} end)
+  end
+
+  defp jacobian(x=[_|_], k, fun, options) when k>0 and k<=length(x) and is_function(fun,1) do
+    x |> List.update_at(k-1, fn (val) -> {val,1} end) |> der(fun,options)
+  end
+
   @default_rel_tolerance 1.0e-6
   defp newton(_a,_b,func,0,{root,{l,r},_},_options), do: {root,{l,r},{func.(l),func.(r)}}
   defp newton(a,b,func,maxiter,{prev,{left,right},{vleft,vright}},options) do
@@ -678,38 +673,6 @@ defmodule Chi2fit.Utilities do
       true ->
         newton(a,b,func,maxiter-1,{root,{z1,x1},{z0,x0}},options)
     end
-  end
-
-  @doc """
-  Unzips lists of 1-, 2-, 3-, 4-, and 5-tuples.
-  """
-  @spec unzip(list::[tuple]) :: tuple
-  def unzip([]), do: {}
-  def unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
-  def unzip(list=[{_,_}|_]), do: Enum.unzip(list)
-  def unzip(list=[{_,_,_}|_]) do
-    {
-      list |> Enum.map(&elem(&1,0)),
-      list |> Enum.map(&elem(&1,1)),
-      list |> Enum.map(&elem(&1,2))
-    }
-  end
-  def unzip(list=[{_,_,_,_}|_]) do
-    {
-      list |> Enum.map(&elem(&1,0)),
-      list |> Enum.map(&elem(&1,1)),
-      list |> Enum.map(&elem(&1,2)),
-      list |> Enum.map(&elem(&1,3))
-    }
-  end
-  def unzip(list=[{_,_,_,_,_}|_]) do
-    {
-      list |> Enum.map(&elem(&1,0)),
-      list |> Enum.map(&elem(&1,1)),
-      list |> Enum.map(&elem(&1,2)),
-      list |> Enum.map(&elem(&1,3)),
-      list |> Enum.map(&elem(&1,4))
-    }
   end
 
 end

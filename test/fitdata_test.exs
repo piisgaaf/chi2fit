@@ -250,4 +250,99 @@ defmodule FitTest do
     assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
 
+  ##
+  ## Various
+  ##
+  @tag distrib: :normal
+  @tag params: [1,2]
+  @tag size: 50
+  @tag various: :normal50
+  @tag :notest
+  test "normal (50)",context do
+    ## Normal
+    distrib = apply context[:distrib_mod], :normal, [33.0,2.4]
+    sample = 1..50 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:normalCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = normal; mu=33.0, sigma=2.4\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 48"
+    IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
+    IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
+  end
+  
+  @tag distrib: :weibull
+  @tag params: [1,2]
+  @tag size: 50
+  @tag various: :weibull_l50
+  @tag :notest
+  test "weibull [lean] (50)",context do
+    ## Weibull: mode<1.0
+    distrib = apply context[:distrib_mod], :weibull, [0.42,33.0]
+    sample = 1..50 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:weibullCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = weibull; alpha=0.42, beta=33.0\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 48"
+    IO.puts "(alpha,alpha_var) = #{p1},#{v1}"
+    IO.puts "(beta, beta_var)  = #{p2},#{v2}"
+  end
+  
+  @tag distrib: :weibull
+  @tag params: [1,2]
+  @tag size: 50
+  @tag various: :weibull_a50
+  @tag :notest
+  test "weibull [agile] (50)",context do
+    ## Weibull: 1.0<mode<2.0
+    distrib = apply context[:distrib_mod], :weibull, [1.42,33.0]
+    sample = 1..50 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:weibullCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = weibull; alpha=1.42, beta=33.0\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 48"
+    IO.puts "(alpha,alpha_var) = #{p1},#{v1}"
+    IO.puts "(beta, beta_var)  = #{p2},#{v2}"
+  end
+  
+  @tag distrib: :weibull
+  @tag params: [1,2]
+  @tag size: 50
+  @tag various: :weibull_w50
+  @tag :notest
+  test "weibull [waterfall] (50)",context do
+    ## Weibull: mode>2.0
+    distrib = apply context[:distrib_mod], :weibull, [2.42,33.0]
+    sample = 1..50 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:weibullCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = weibull; alpha=2.42, beta=33.0\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 48"
+    IO.puts "(alpha,alpha_var) = #{p1},#{v1}"
+    IO.puts "(beta, beta_var)  = #{p2},#{v2}"
+  end
+
 end

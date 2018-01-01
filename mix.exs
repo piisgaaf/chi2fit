@@ -24,6 +24,8 @@ defmodule Chi2fit.Mixfile do
       start_permanent: Mix.env == :prod,
       deps: deps(),
       escript: escript(),
+      aliases: aliases(),
+      preferred_cli_env: ["test": :test, "test_all": :test, "test_perf": :test],
       ## Hex stuff:
       description: description(),
       package: package(),
@@ -47,6 +49,13 @@ defmodule Chi2fit.Mixfile do
     ]
   end
   
+  defp aliases do
+    [
+      test_perf: "test --only performance",
+      test_all: "test --include performance"
+    ]
+  end
+
   defp escript do
     [
       main_module: Chi2fit.Cli
