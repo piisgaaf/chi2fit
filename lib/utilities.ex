@@ -107,14 +107,12 @@ defmodule Chi2fit.Utilities do
           90% confidence ==> t = 1.645 for many data points (> 120)
           70% confidence ==> t = 1.000
   """
-  @correction 0.0001
-  @spec empirical_cdf([{float,number}],integer,algorithm) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
-  def empirical_cdf(data,binsize \\ 1,algorithm \\ :wilson) do
+  @spec empirical_cdf([{float,number}],integer,algorithm,integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
+  def empirical_cdf(data,binsize \\ 1,algorithm \\ :wilson,correction \\ 0) do
     {bins,sum} = data
       |> Enum.sort(fn ({x1,_},{x2,_})->x1<x2 end)
       |> Enum.reduce({[],0}, fn ({x,y},{acc,sum}) -> {[{binsize*(x+1.0),y+sum}|acc],sum+y} end)
 
-    correction = max(3.0,trunc(Float.ceil(sum*@correction)))
     normbins = bins
       |> Enum.reverse
       |> Enum.map(fn ({x,y})->{x,y/(sum+correction),y} end)
@@ -130,11 +128,11 @@ defmodule Chi2fit.Utilities do
   
   Convenience function that chains `make_histogram/2` and `empirical_cdf/3`.
   """
-  @spec get_cdf([number], number, algorithm) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
-  def get_cdf(data, binsize \\ 1,algorithm \\ :wilson) do
+  @spec get_cdf([number], number, algorithm, integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
+  def get_cdf(data, binsize \\ 1,algorithm \\ :wilson, correction \\ 0) do
     data
     |> make_histogram(binsize)
-    |> empirical_cdf(binsize,algorithm)
+    |> empirical_cdf(binsize,algorithm,correction)
   end
 
   @doc """

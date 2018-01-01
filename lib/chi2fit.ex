@@ -17,15 +17,146 @@ defmodule Chi2fit.Cli do
   @moduledoc """
   Provides a command line interface for fitting data against a known cumulative distribution function.
   
+  Tool for fitting particular probability distributions to empirical cumulative distribution functions.
+  Distributions supported are Weibull, Wald (Inverse Gauss), Normal, Exponential, Erlang, and Skewed Exponential.
+
+  It uses the Chi-squared Pearson statistic as the likelihood function for fitting. This statistic applies to
+  empirical data that is categorial in nature.
+
+  It provides various options for controlling the fitting procedure and assignment of errors. It supports asymmetrical
+  errors in fitting the data.
+
+  ## Basic usage: scanning the surface
+  
+  As described above fitting the parameters is done by minimizing the chi-squared statistic. Usually this is a function of the
+  distribution paremeters.
+  
+  Scanning the surface is a simple way to have an initial guess of the parameters. The following command does a simple scan of
+  the chi-squared surface against data:
+
+  ```shell
+  $ chi2fit data.csv --ranges '[{0.8,1.2},{0.6,1.2}]' --cdf weibull
+
+  Initial guess:
+      chi2:		1399.3190035059733
+      pars:		[0.800467783803376, 29.98940654419653]
+      errors:		{[0.800467783803376, 0.800467783803376], [29.98940654419653, 29.98940654419653]}
+  ```
+
+  and the file `data.csv` is formatted as
+
+  ```
+  Lead Time
+  26
+  0
+  105
+  69
+  3
+  36
+  ...
+  ```
+
+  In this form the command will scan or probe the Chi-squared surface for the parameters within the provided range. It returns the found
+  minimum Chi-squared and the parameter values at this minimum. The reported error ranges correspond to a change of Chi-squared of +1.
+
+  Options available:
+  
+    * `probes` - The number of probes to use for guessing parameter values at initialization
+    * `progress` - Shows progress during 'probing' (shows progress every 1000 probes)
+      * `c` - Mark progress every 100th probe
+      * `x` - Mark progress every 10th probe
+
+  More options are described below and are available using the option `--help`.
+
+  ## Input data options
+  
+  Several options control how the input data is interpreted. These are:
+  
+    * `model` - determines how errors are assigned to the data points. Possible values include `simple|asimple|linear`
+    * `data` - instead of using the file for data, use this option to pass a list of data points
+    * `correction` - Estimate of number of events missed in the right tail of the sample
+
+  An example of specifying data on the command line is:
+
+  ```shell
+  $ chi2fit --ranges '[{0.8,1.2},{0.6,1.2}]' --cdf weibull --data '[2,3,4,5,5,4,4,7]'
+  ```
+
+  ## Distribution options
+
+  Distributions supported are: Wald, Weibull, Normal, Erlang, Exponential, and SEP (Skewed Exponential: 3 and 4 parameters).
+
+  For the distributions of SEP (4 parameters), and SEP0 (3 parameters) the following options exist:
+  
+    * `method` -  Supported values are 'gauss|gauss2|gaus3|romberg|romberg2|romberg3'
+  
+  Romberg integration supports the options:
+  
+    * `tolerance` - The target precision for Romberg integration
+    * `itermax` - The maximum number of iterations to use in Romberg integration
+    
+  Gauss integration supports the option:
+
+    * `npoints` - The number of points to use in Gauss integration (4, 8, 16, and 32)
+  
+  ## Fitting options
+
+  AFter probing the surface for an initial guess of the parameters, a fine grained search for the optimum can be done by enabling
+  the fit procedure. The algorithm implemented assumes that the initial guess is close enough to the minimum and uses a combination of
+  parameter estimation and Monte Carlo methods.
+  
+  An additional strategy is to use a so-called grid-search by changing only one parameter at a time. It selects the parameters in a
+  round robin fashion. Using Romberg iteration and Newton root finding algorithm the parameter value minimizing chi-squared is determined
+  while kepping the other parameters constant. Then the other parameters are varied. Especially fitting distributions with 3 or more
+  parameters may benefit from this strategy.
+  
+  Options controlling these are:
+
+    * `fit` - Enables the fine-grained fitting of parameters
+    * `iterations` - Number of iterations to use in the optimizing the Likelihood function
+    * `grid` - Uses a grid search to fit one parameter at a time in a round robin fashion
+
+  Sometimes the chi-squared surface is not smooth but numerically problematic to get stable. In this case smoothing the surface
+  may help. The next option enables this feature:
+
+    * `smoothing` - Smoothing of the likelihood function with a Gaussian kernel
+
+  The fitting procedures uses derivatives (first and second order) to estimate changes in the parameters that will result in
+  a better fit. Derivaties are calculated using Romberg differentiation. The accuracy and maximum number of iterations are
+  controlled by the options:
+  
+    * `tolerance` - The target precision for Romberg integration
+    * `itermax` - The maximum number of iterations to use in Romberg integration
+  
+  ## Bootstrapping
+
+  Bootstrapping can be enabled to estimate the errors in the parameters. The supported options are:
+  
+    * `bootstrap` - Enables bootstrapping. Specifies the number of iterations to perform
+    * `sample` - The sample size to use from the empirical distribution
+
+  ## Output options
+
+  These options are useful for printing data for generating charts of the data:
+
+    * `print` - Outputs the empirical input data with errors included
+    * `output` - Outputs the fitted distribution function values at the data points
+    * `surface` -  Outputs the Chi-squared surface to a file
+    * `smoothing` - Smoothing of the likelihood function with a Gaussian kernel
+
+  ## General options
+
+  Options available for scanning, fitting, and bootstrapping:
+
+    * `debug` - Outputs additional data for debugging purposes"
+  
   ## References
   
-      [1] R.A. Arndt and M.H. MacGregor, Methods in Computational Physics, Vol. 6 (1966) 256-296
+    [1] R.A. Arndt and M.H. MacGregor, Methods in Computational Physics, Vol. 6 (1966) 256-296
 
-      [2] Marius M. Nagels, Baryon-Baryon Scattering in a One-Boson-Exchange Potential Mode, PhD. Thesis, Nijmegen University, 1975
+    [2] Marius M. Nagels, Baryon-Baryon Scattering in a One-Boson-Exchange Potential Mode, PhD. Thesis, Nijmegen University, 1975
 
-      [3] Richard A. Arndt and Malcolm H. MacGregor,
-        Determination of the Nucleon-Nucleon Elastic-Scattering Matrix. IV. Comparison of Energy-Dependent and Energy-Independent Phase-Shift Analyses,
-        Physical Review Volume 142, Number 3, January 1966
+    [3] Richard A. Arndt and Malcolm H. MacGregor, Determination of the Nucleon-Nucleon Elastic-Scattering Matrix. IV. Comparison of Energy-Dependent and Energy-Independent Phase-Shift Analyses, Physical Review Volume 142, Number 3, January 1966
   """
 
   require Logger
@@ -72,7 +203,8 @@ defmodule Chi2fit.Cli do
   
   defp prepare_data(data, options) do
     mcsample = options[:mcsample]
-    
+    correction = options[:correction]
+
     workdata = cond do
       mcsample == :all -> data |> Enum.to_list
       true -> data |> Enum.take_random(mcsample)
@@ -82,7 +214,7 @@ defmodule Chi2fit.Cli do
       IO.puts "    Sample = #{inspect(workdata)}"
     end
 
-    {cdf,bins,_,_} = get_cdf(workdata,1,:wilson)
+    {cdf,bins,_,_} = get_cdf(workdata,1,:wilson,correction)
     {mindur,_,_} = bins |> hd
     {maxdur,_,_} = bins |> List.last
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
@@ -119,37 +251,44 @@ defmodule Chi2fit.Cli do
     IO.puts "Usage: #{__ENV__.file |> String.split("/") |> Enum.reverse |> hd} <options> <data file>"
     IO.puts "    --help\t\t\t\tShows this help"
     IO.puts ""
+    IO.puts "    --ranges \"[{...,...},...]\"\t\tRanges of parameters to search for minimum likelihood"
+    IO.puts "    --cdf <cdf>\t\t\t\tThe distribution function (defaults to '#{@default_cdf}') to fit the data."
+    IO.puts "    \t\t\t\t\tSupported values are 'wald|weibull|exponential|sep|sep0'"
+    IO.puts ""
+    IO.puts "    Input data:"
+    IO.puts "    --model simple|asimple|linear\tThe model (defaults to '#{@default_asymm}') to use for handling asymmetrical errors in the input data"
+    IO.puts "    --data <data>\t\t\tArray of data points to use in fitting"
+    IO.puts "    --correction <integer>\t\tEstimate of number of events missed in the right tail of the sample"
+    IO.puts ""
     IO.puts "    Fitting data to a CDF:"
     IO.puts "    --fit\t\t\t\tTry to fit the parameters"
     IO.puts "    --iterations <number>\t\tNumber of iterations (defaults to '#{@default_iterations}') to use in the optimizing the Likelihood function"
-    IO.puts "    --model simple|asimple|linear\tThe model (defaults to '#{@default_asymm}') to use for handling asymmetrical errors in the input data"
     IO.puts "    --probes <number>\t\t\tThe number of probes (defaults to '#{@default_probes}') to use for guessing parameter values at initialization"
-    IO.puts "    --ranges \"[{...,...},...]\"\t\tRanges of parameters to search for optimum likelihood"
+    IO.puts "    --pariter <number>\t\t\tThe maximum number of parameter variations to try (Monte Carlo) and maximum number of iterations in Newton root finding algorithm"
     IO.puts "    --grid\t\t\t\tUses a grid search to fit one parameter at a time in a round robin fashion"
     IO.puts ""
     IO.puts "    Distributions:"
-    IO.puts "    --cdf <cdf>\t\t\t\tThe distribution function (defaults to '#{@default_cdf}') to fit the data."
-    IO.puts "    \t\t\t\t\tSupported values are 'wald|weibull|exponential|sep|sep0'"
-    IO.puts "    --data <data>\t\t\tArray of data points to use in fitting"
     IO.puts "    --method <method>\t\t\tThe integration method to use (defaults to '#{@default_int_method}'); applies to sep and sep0 only."
     IO.puts "    \t\t\t\t\tSupported values are 'gauss|gauss2|gaus3|romberg|romberg2|romberg3'"
     IO.puts "    --tolerance <tolerance>\t\tThe target precision (defaults to '#{@default_tolerance}') for Romberg integration"
     IO.puts "    --itermax <integer>\t\t\tThe maximum number of iterations to use in Romberg integration"
     IO.puts "    --npoints <points>\t\t\tThe number of points to use in Gauss integration (defaults to '#{@default_npoints}')"
     IO.puts ""
+    IO.puts "    Bootstrapping:"
+    IO.puts "    --bootstrap <integer>\t\tEnables bootstrapping. Specifies the number of iterations to perform."
+    IO.puts "    --sample <size>\t\t\tThe sample size to use from the empirical distribution"
+    IO.puts ""
     IO.puts "    Output:"
     IO.puts "    --print\t\t\t\tOutputs the input data"
     IO.puts "    --output\t\t\t\tOutputs the fitted distribution function values at the data points"
     IO.puts "    --surface <file>\t\t\tOutputs the Chi-squared surface to a file (defaults to '#{@default_surface_file}')"
     IO.puts "    --smoothing\t\t\t\tSmoothing of the likelihood function"
-    IO.puts "    --plot\t\t\t\tPlots a linear relation between x and y for the chosen CDF"
     IO.puts ""
     IO.puts "    General options:"
     IO.puts "    --progress\t\t\t\tShows progress during 'probing'"
     IO.puts "    --c\t\t\t\t\tMark progress every 100th probe"
     IO.puts "    --x\t\t\t\t\tMark progress every 10th probe"
     IO.puts "    --debug\t\t\t\tOutputs additional data for debugging purposes"
-    IO.puts "    --sample <size>\t\t\tThe sample size to use from the empirical distribution"
     System.halt(code)
   end
 
@@ -161,6 +300,7 @@ defmodule Chi2fit.Cli do
       cdf: :string,
       data: :string,
       bootstrap: :integer,
+      correction: :integer,
       output: :boolean,
       surface: :string,
       iterations: :integer,
@@ -174,13 +314,13 @@ defmodule Chi2fit.Cli do
       ranges: :string,
       smoothing: :boolean,
       sample: :integer,
-      plot: :boolean,
       fit: :boolean,
       grid: :boolean,
       progress: :boolean,
       c: :boolean,
       x: :boolean] do
         {options, [filename], []} -> {options,filename}
+        {options, [], []} -> {options,nil}
         _else -> usage(1)
     end
   end
@@ -199,8 +339,8 @@ defmodule Chi2fit.Cli do
     |> Keyword.put_new(:pariter,    @default_parameter_iterations)
     |> Keyword.put_new(:probes,     @default_probes)
     |> Keyword.put_new(:ranges,     nil)
+    |> Keyword.put_new(:correction, options[:correction] || 0)
     |> Keyword.put_new(:smoothing,  false)
-    |> Keyword.put_new(:plot?,      options[:plot] || false)
     |> Keyword.put_new(:fit?,       options[:fit] || false)
     |> Keyword.put_new(:grid?,      options[:grid] || false)
     |> Keyword.put_new(:progress?,  options[:progress] || false)
@@ -228,7 +368,7 @@ defmodule Chi2fit.Cli do
       try do
         IO.write "...fitting..."
         fit = {_,_,pars,_ranges} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
-        jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options).options)
+        jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options),options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
       catch
@@ -240,17 +380,27 @@ defmodule Chi2fit.Cli do
           IO.puts"..#{msg}...skipping"
           nil
   
-        {chi2, alphainv, parameters} ->
+        {chi2, alphainv, parameters,_ranges} ->
           IO.puts "(chi2=#{chi2}; dof=#{length(sample)-model[:df]})"
           {chi2, alphainv, parameters}
       end
     end
   end
 
-  defp validate options do
+  defp validate options, filename do
     model = model(options[:cdf],options)
-    ranges = elem(Code.eval_string(options[:ranges]),0)
+    ranges = options[:ranges] && elem(Code.eval_string(options[:ranges]),0)
     cond do
+      filename == nil && options[:data] == nil ->
+        IO.puts :stderr, "ERROR: please specify either a data file or 'data'"
+        System.halt 1
+      filename != nil && options[:data] != nil ->
+        IO.puts :stderr, "ERROR: please specify either a data file or 'data'"
+        System.halt 1
+      filename && !File.exists?(filename) ->
+        IO.puts "ERROR: failed to open file '#{filename}'"
+        System.halt 1
+
       options[:ranges] == nil ->
         IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
         System.halt 1
@@ -270,7 +420,7 @@ defmodule Chi2fit.Cli do
     if options[:help], do: usage(0)
 
     ## Default options
-    options = options |> validate |> add_defaults
+    options = options |> validate(filename) |> add_defaults
 
     ## Read the data
     data = if options[:mcdata], do: elem(Code.eval_string(options[:mcdata]),0), else: read_data(filename)
@@ -278,10 +428,11 @@ defmodule Chi2fit.Cli do
     cond do
       options[:mcbootstrap]>1 and options[:fit?] ->
         wdata = if options[:mcsample] == :all, do: data, else: data |> Enum.take_random(options[:mcsample])
-        boot = bootstrap(options[:mcbootstrap], wdata, kernel(options),options) |> Enum.filter(&is_tuple/1)
+        boot = bootstrap(options[:mcbootstrap], wdata, kernel(options),options)
+        boot = boot |> Enum.filter(&is_tuple/1)
 
         # Compute average, average sd, sd error, and maximum lag that occured
-        model = model(options[:name],options) |> Keyword.put(:probe, options[:ranges])
+        model = model(options[:name],options) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
         avgchi2 = (boot |> Stream.map(fn ({chi2,_,_}) -> chi2 end) |> Enum.sum)/length(boot)
         sdchi2 = :math.sqrt((boot |> Stream.map(fn {chi2,_,_}->(chi2-avgchi2)*(chi2-avgchi2) end) |> Enum.sum))/length(boot)
 
