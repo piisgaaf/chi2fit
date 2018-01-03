@@ -167,6 +167,121 @@ defmodule Chi2fit.Utilities do
   end
 
   @doc """
+  Calculates the nth moment of the sample.
+  
+  ## Example
+  
+      iex> moment [1,2,3,4,5,6], 1
+      3.5
+  """
+  @spec moment(sample::[number],n::pos_integer) :: float
+  def moment(sample,n) when length(sample)>0 and is_integer(n) and n>0 do
+    (sample |> Stream.map(fn x-> :math.pow(x,n) end) |> Enum.sum)/length(sample)
+  end
+
+  @doc """
+  Calculates the nth centralized moment of the sample.
+  
+  ## Example
+  
+      iex> momentc [1,2,3,4,5,6], 1
+      0.0
+  
+      iex> momentc [1,2,3,4,5,6], 2
+      2.9166666666666665
+  """
+  @spec momentc(sample::[number],n::pos_integer) :: float
+  def momentc(sample,n) when length(sample)>0 and is_integer(n) and n>0 do
+    mean = sample |> moment(1)
+    sample |> momentc(n,mean)
+  end
+  
+  @doc """
+  Calculates the nth centralized moment of the sample.
+  
+  ## Example
+  
+      iex> momentc [1,2,3,4,5,6], 2, 3.5
+      2.9166666666666665
+  """
+  @spec momentc(sample::[number],n::pos_integer,mu::float) :: float
+  def momentc(sample,n,mu) when length(sample)>0 and is_integer(n) and n>0 do
+    (sample |> Stream.map(fn x-> :math.pow(x-mu,n) end) |> Enum.sum)/length(sample)
+  end
+
+  @doc """
+  Calculates the nth normalized moment of the sample.
+  
+  ## Example
+  
+      iex> momentn [1,2,3,4,5,6], 1
+      0.0
+  
+      iex> momentn [1,2,3,4,5,6], 2
+      1.0
+  
+      iex> momentn [1,2,3,4,5,6], 4
+      1.7314285714285718
+  """
+  @spec momentn(sample::[number],n::pos_integer) :: float
+  def momentn(sample,n) when length(sample)>0 and is_integer(n) and n>0 do
+    mean = sample |> moment(1)
+    sample |> momentn(n,mean)
+  end
+
+  @doc """
+  Calculates the nth normalized moment of the sample.
+  
+  ## Example
+  
+      iex> momentn [1,2,3,4,5,6], 4, 3.5
+      1.7314285714285718
+  """
+  @spec momentn(sample::[number],n::pos_integer,mu::float) :: float
+  def momentn(sample,n,mu) when length(sample)>0 and is_integer(n) and n>0 do
+    sigma = :math.sqrt(sample |> momentc(2,mu))
+    (sample |> momentc(n,mu))/:math.pow(sigma,n)
+  end
+
+  @doc """
+  Calculates the nth normalized moment of the sample.
+  """
+  @spec momentn(sample::[number],n::pos_integer,mu::float,sigma::float) :: float
+  def momentn(sample,n,mu,sigma) when length(sample)>0 and is_integer(n) and n>0 and sigma>0.0 do
+    (sample |> momentc(n,mu))/:math.pow(sigma,n)
+  end
+
+  @type cullenfrey :: [{squared_skewness::float,kurtosis::float}|nil]
+  
+  @doc """
+  Generates a Cullen & Frey plot for the sample data.
+  """
+  @spec cullen_frey(sample::[number], n::integer) :: cullenfrey
+  def cullen_frey(sample,n \\ 100) do
+    bootstrap(n,sample,
+      fn
+        data,_i ->
+          mean = data |> moment(1)
+          sigma = :math.sqrt(data |> momentc(2))
+          skewness = data |> momentn(3,mean,sigma)
+          kurtosis = data |> momentn(4,mean,sigma)
+          {skewness*skewness,kurtosis}
+      end)
+  end
+
+  @doc """
+  Extracts data point with standard deviation from CUllen & Frey plot data.
+  """
+  @spec cullen_frey_point(data::cullenfrey) :: {{x::float,dx::float},{y::float,dy::float}}
+  def cullen_frey_point(data) do
+    {skew,kurt} = data |> Stream.filter(fn x -> x end) |> Enum.unzip
+    {
+      {moment(skew,1),momentc(skew,2)},
+      {moment(kurt,1),momentc(kurt,2)}
+    }
+  end
+
+  @doc """
   Calculates the partial derivative of a function and returns the value.
   
   ## Examples
@@ -316,8 +431,8 @@ defmodule Chi2fit.Utilities do
       `:filename` - The filename to use for storing intermediate results
   
   """
-  @spec bootstrap(total :: integer, data :: [number], fun :: (([number],integer)->number), options :: Keyword.t) :: [number]
-  def bootstrap(total, data, fun, options) do
+  @spec bootstrap(total :: integer, data :: [number], fun :: (([number],integer)->number), options :: Keyword.t) :: [any]
+  def bootstrap(total, data, fun, options \\ []) do
     safe = options |> Keyword.get(:safe, false)
 
     {start,continuation} = case safe do

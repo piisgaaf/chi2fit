@@ -270,27 +270,58 @@ defmodule Chi2fit.Distribution do
     case name do
       "wald" -> [
         fun: fn (x,[k,lambda]) -> waldCDF(k,lambda).(x) end,
-        df: 2
+        df: 2,
+        skewness: fn [k,lambda] -> 3*:math.sqrt(k/lambda) end,
+        kurtosis: fn [k,lambda] -> 15*k/lambda end
       ]
       "weibull" -> [
         fun: fn (x,[k,lambda]) -> weibullCDF(k,lambda).(x) end,
-        df: 2
+        df: 2,
+        skewness: fn
+          [k,lambda] ->
+            sigma = lambda*:math.sqrt(gamma(1+2/k) - gamma(1+1/k)*gamma(1+1/k))
+            gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*k/sigma - :math.pow(k/sigma,3)
+           end,
+        kurtosis: fn
+          [k,lambda] ->
+            sigma = lambda*:math.sqrt(gamma(1+2/k) - gamma(1+1/k)*gamma(1+1/k))
+            skew = gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*k/sigma - :math.pow(k/sigma,3)
+            gamma(1+4/k)*:math.pow(lambda/sigma,4) - 4*k/sigma*skew - 6*:math.pow(k/sigma,2) - :math.pow(k/sigma,4) - 3.0
+          end
       ]
       "exponential" -> [
         fun: fn (x,[k]) -> exponentialCDF(k).(x) end,
-        df: 1
+        df: 1,
+        skewness: fn _ -> 2 end,
+        kurtosis: fn _ -> 6 end
       ]
       "erlang" -> [
         fun: fn (x,[k,lambda]) -> erlangCDF(k,lambda).(x) end,
-        df: 2
+        df: 2,
+        skewness: fn [k,_] -> 2/:math.sqrt(k) end,
+        kurtosis: fn [k,_] -> 6/k end
       ]
       "normal" -> [
         fun: fn (x,[mu,sigma]) -> normalCDF(mu,sigma).(x) end,
-        df: 2
+        df: 2,
+        skewness: fn _ -> 0 end,
+        kurtosis: fn _ -> 0 end
       ]
       "sep" -> [
         fun: fn (x,[a,b,lambda,alpha]) -> sepCDF(a,b,lambda,alpha,options).(x) end,
-        df: 4
+        df: 4,
+        skewness: fn
+          [_a,_b,lambda,_alpha] ->
+            delta = lambda/:math.sqrt(1+lambda*lambda)
+            pi = :math.pi()
+            0.5*(4-pi)*:math.pow(delta*:math.sqrt(2/pi),3)/:math.pow(1-2*delta*delta/pi,1.5)
+          end,
+        kurtosis: fn
+           [_a,_b,lambda,_alpha] ->
+             delta = lambda/:math.sqrt(1+lambda*lambda)
+             pi = :math.pi()
+             2*(pi-3)*:math.pow(delta*:math.sqrt(2/pi),4)/:math.pow(1-2*delta*delta/pi,2)
+          end
       ]
       "sep0" -> [
         fun: fn (x,[b,lambda,alpha]) -> sepCDF(0.0,b,lambda,alpha,options).(x) end,
@@ -299,6 +330,32 @@ defmodule Chi2fit.Distribution do
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
+  end
+
+  @doc """
+  Guesses what distribution is likely to fit the sample data
+  """
+  @spec guess(sample::[number], n::integer) :: [any]
+  def guess(sample,n \\ 100) when length(sample)>0 and is_integer(n) and n>0 do
+    {{skewness,err_s},{kurtosis,err_k}} = sample |> cullen_frey(n) |> cullen_frey_point
+    ["exponential","normal","erlang","wald","sep","weibull"]
+    |> Enum.flat_map(
+      fn
+        distrib ->
+          model = model(distrib)
+          params = 1..model[:df]
+          r = 1..100
+          |> Enum.map(fn _ -> Enum.map(params, fn _ -> 10*:rand.uniform end) end)
+          |> Enum.map(fn
+            pars ->
+              s = model[:skewness].(pars)
+              k = model[:kurtosis].(pars)
+              ((skewness-s)/err_s)*((skewness-s)/err_s) + ((kurtosis-k)/err_k)*((kurtosis-k)/err_k)
+          end)
+          |> Enum.min
+          [{distrib,r}]
+      end)
+    |> Enum.sort(fn {_,r1},{_,r2} -> r1<r2 end)
   end
 
   ##
@@ -324,7 +381,7 @@ defmodule Chi2fit.Distribution do
     end
   end
 
-  @spec sepCDF(a::float,b::float,lambda::float,alpha::float) :: cdf
+  @spec sepPDF(a::float,b::float,lambda::float,alpha::float) :: cdf
   defp sepPDF(a,b,lambda,alpha) do
     fn x ->
       z = (x-a)/b
