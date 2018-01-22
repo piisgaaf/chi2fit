@@ -401,13 +401,18 @@ defmodule Chi2fit.Distribution do
     integrate :gauss, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
   end
 
-  ## See Abramowitz & Stegun, Mathematical Handbook of Functions, formula 6.1.36
+  @doc """
+  Calculates the gamma function of its argument up to 8 figures
+  
+  ## Reference
+   See Abramowitz & Stegun, Mathematical Handbook of Functions, formula 6.1.36
+  """
   @spec gamma(x::float) :: float
-  defp gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
-  defp gamma(x) when x>=1.0, do: gammap(x-1.0)
-  defp gamma(x) when x>= 0.0, do: gammap(x)/x
+  def gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
+  def gamma(x) when x>=1.0, do: gammap(x-1.0)
+  def gamma(x) when x>= 0.0, do: gammap(x)/x
 
-  defp gammap(z) when z>=0.0 and z<1.0 do
+  def gammap(z) when z>=0.0 and z<1.0 do
     1.0 -
     0.577191652*z +
     0.988205891*z*z -
