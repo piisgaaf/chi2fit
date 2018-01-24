@@ -270,7 +270,7 @@ defmodule Chi2fit.Utilities do
   end
 
   @doc """
-  Extracts data point with standard deviation from CUllen & Frey plot data.
+  Extracts data point with standard deviation from Cullen & Frey plot data.
   """
   @spec cullen_frey_point(data::cullenfrey) :: {{x::float,dx::float},{y::float,dy::float}}
   def cullen_frey_point(data) do
