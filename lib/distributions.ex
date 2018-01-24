@@ -279,14 +279,16 @@ defmodule Chi2fit.Distribution do
         df: 2,
         skewness: fn
           [k,lambda] ->
+            mu = lambda*gamma(1+1/k)
             sigma = lambda*:math.sqrt(gamma(1+2/k) - gamma(1+1/k)*gamma(1+1/k))
-            gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*k/sigma - :math.pow(k/sigma,3)
+            gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*mu/sigma - :math.pow(mu/sigma,3)
            end,
         kurtosis: fn
           [k,lambda] ->
+            mu = lambda*gamma(1+1/k)
             sigma = lambda*:math.sqrt(gamma(1+2/k) - gamma(1+1/k)*gamma(1+1/k))
-            skew = gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*k/sigma - :math.pow(k/sigma,3)
-            gamma(1+4/k)*:math.pow(lambda/sigma,4) - 4*k/sigma*skew - 6*:math.pow(k/sigma,2) - :math.pow(k/sigma,4) - 3.0
+            skew = gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*mu/sigma - :math.pow(mu/sigma,3)
+            gamma(1+4/k)*:math.pow(lambda/sigma,4) - 4*mu/sigma*skew - 6*:math.pow(mu/sigma,2) - :math.pow(mu/sigma,4) - 3.0
           end
       ]
       "exponential" -> [
