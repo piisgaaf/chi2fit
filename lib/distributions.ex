@@ -335,27 +335,37 @@ defmodule Chi2fit.Distribution do
   @doc """
   Guesses what distribution is likely to fit the sample data
   """
-  @spec guess(sample::[number], n::integer) :: [any]
-  def guess(sample,n \\ 100) when length(sample)>0 and is_integer(n) and n>0 do
+  @spec guess(sample::[number], n::integer, list::[String.t] | String.t) :: [any]
+  def guess(sample,n \\ 100,list \\ ["exponential","normal","erlang","wald","sep","weibull"])
+  def guess(sample,n,list) when length(sample)>0 and is_integer(n) and n>0 and is_list(list) do
     {{skewness,err_s},{kurtosis,err_k}} = sample |> cullen_frey(n) |> cullen_frey_point
-    ["exponential","normal","erlang","wald","sep","weibull"]
+    list
     |> Enum.flat_map(
       fn
         distrib ->
-          model = model(distrib)
-          params = 1..model[:df]
-          r = 1..100
-          |> Enum.map(fn _ -> Enum.map(params, fn _ -> 10*:rand.uniform end) end)
-          |> Enum.map(fn
-            pars ->
-              s = model[:skewness].(pars)
-              k = model[:kurtosis].(pars)
-              ((skewness-s)/err_s)*((skewness-s)/err_s) + ((kurtosis-k)/err_k)*((kurtosis-k)/err_k)
-          end)
+          r = sample
+          |> guess(n,distrib)
+          |> Enum.map(fn {s,k}->((skewness-s)/err_s)*((skewness-s)/err_s) + ((kurtosis-k)/err_k)*((kurtosis-k)/err_k) end)
           |> Enum.min
           [{distrib,r}]
       end)
     |> Enum.sort(fn {_,r1},{_,r2} -> r1<r2 end)
+  end
+  def guess(sample,n,distrib) when length(sample)>0 and is_integer(n) and n>0 do
+    model = model(distrib)
+    params = 1..model[:df]
+    1..n
+    |> Enum.map(fn _ -> Enum.map(params, fn _ -> 10*:rand.uniform end) end)
+    |> Enum.flat_map(fn
+      pars ->
+        try do
+          s = model[:skewness].(pars)
+          k = model[:kurtosis].(pars)
+          [{s,k}]
+        rescue
+          _error -> []
+        end
+    end)
   end
 
   ##
