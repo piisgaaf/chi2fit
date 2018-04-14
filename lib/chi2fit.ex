@@ -261,6 +261,7 @@ defmodule Chi2fit.Cli do
     IO.puts "    --correction <integer>\t\tEstimate of number of events missed in the right tail of the sample"
     IO.puts ""
     IO.puts "    Fitting data to a CDF:"
+    IO.puts "    --guess <number>\t\t\tGuess what distribution fits best. Use <number> of bootstraps."
     IO.puts "    --fit\t\t\t\tTry to fit the parameters"
     IO.puts "    --iterations <number>\t\tNumber of iterations (defaults to '#{@default_iterations}') to use in the optimizing the Likelihood function"
     IO.puts "    --probes <number>\t\t\tThe number of probes (defaults to '#{@default_probes}') to use for guessing parameter values at initialization"
@@ -297,6 +298,7 @@ defmodule Chi2fit.Cli do
       help: :boolean,
       debug: :boolean,
       print: :boolean,
+      guess: :integer,
       cdf: :string,
       data: :string,
       bootstrap: :integer,
@@ -388,8 +390,6 @@ defmodule Chi2fit.Cli do
   end
 
   defp validate options, filename do
-    model = model(options[:cdf],options)
-    ranges = options[:ranges] && elem(Code.eval_string(options[:ranges]),0)
     cond do
       filename == nil && options[:data] == nil ->
         IO.puts :stderr, "ERROR: please specify either a data file or 'data'"
@@ -398,16 +398,28 @@ defmodule Chi2fit.Cli do
         IO.puts :stderr, "ERROR: please specify either a data file or 'data'"
         System.halt 1
       filename && !File.exists?(filename) ->
-        IO.puts "ERROR: failed to open file '#{filename}'"
+        IO.puts :stderr, "ERROR: failed to open file '#{filename}'"
         System.halt 1
 
-      options[:ranges] == nil ->
-        IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
+      options[:guess] != nil && options[:guess] < 100 ->
+        IO.puts :stderr, "ERROR: 'guess' needs 100 or more bootstraps"
         System.halt 1
 
-      length(ranges) != model[:df] ->
-        IO.puts :stderr, "ERROR: 'ranges' must be of length #{model[:df]} for '#{options[:cdf]}'"
-        System.halt 1
+      options[:guess] == nil ->
+        model = model(options[:cdf],options)
+        ranges = options[:ranges] && elem(Code.eval_string(options[:ranges]),0)
+
+        cond do
+          options[:ranges] == nil ->
+            IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
+            System.halt 1
+
+          length(ranges) != model[:df] ->
+            IO.puts :stderr, "ERROR: 'ranges' must be of length #{model[:df]} for '#{options[:cdf]}'"
+            System.halt 1
+
+          true -> options
+        end
 
       true -> options
     end
@@ -424,6 +436,16 @@ defmodule Chi2fit.Cli do
 
     ## Read the data
     data = if options[:mcdata], do: elem(Code.eval_string(options[:mcdata]),0), else: read_data(filename)
+
+    ## Guess
+    if options[:guess] do
+      IO.puts String.pad_trailing(~s(Distribution),20)<>"Score"
+      IO.puts String.pad_trailing(~s(------------),20)<>"_____"
+      data
+      |> guess(options[:guess])
+      |> Enum.each(fn {name,score} -> IO.puts String.pad_trailing(name,20)<>"#{score}" end)
+      System.halt 0
+    end
 
     cond do
       options[:mcbootstrap]>1 and options[:fit?] ->
