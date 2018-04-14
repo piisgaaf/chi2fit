@@ -210,14 +210,14 @@ defmodule Chi2fit.Matrix do
           throw :no_v0
         end
       end
+    rescue
+      _e in ArithmeticError ->
+        throw :no_inverse
     catch
       {:impossible_inverse,v,error} ->
         throw {:failed_to_reach_tolerance,v,error}
       :no_v0 ->
         throw :failed_to_find_v0
-    rescue
-      _e in ArithmeticError ->
-        throw :no_inverse
     end
   end
 

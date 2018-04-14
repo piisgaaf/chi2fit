@@ -66,6 +66,13 @@ defmodule Chi2fit.Distribution do
   def exponentialCDF(rate) when rate > 0.0, do: fn t -> 1.0 - :math.exp(-rate*t) end
 
   @doc """
+  The Poisson distribution.
+  """
+  def poissonCDF(rate) when rate > 0.0 do
+    fn t -> 1.0 - igamma(Float.floor(t+1),rate)/gamma(Float.floor(t+1)) end
+  end
+
+  @doc """
   The Erlang distribution.
   """
   @spec erlang(k::integer(),lambda::number()) :: distribution
@@ -296,6 +303,12 @@ defmodule Chi2fit.Distribution do
         df: 1,
         skewness: fn _ -> 2 end,
         kurtosis: fn _ -> 6 end
+      ]
+      "poisson" -> [
+        fun: fn (x,[lambda]) -> poissonCDF(lambda).(x) end,
+        df: 1,
+        skewness: fn [lambda] -> 1/:math.sqrt(lambda) end,
+        kurtosis: fn [lambda] -> 1/lambda end
       ]
       "erlang" -> [
         fun: fn (x,[k,lambda]) -> erlangCDF(k,lambda).(x) end,

@@ -355,6 +355,9 @@ defmodule Chi2fit.Fit do
 
     {:ok,cov} = try do
         alpha |> inverse
+      rescue
+        ArithmeticError ->
+          throw {:inverse_error, ArithmeticError, chi2, parameters}
       catch
         {:impossible_inverse,error} ->
           throw {:inverse_error, error, chi2, parameters}
@@ -362,9 +365,6 @@ defmodule Chi2fit.Fit do
         {:failed_to_reach_tolerance,_pars,error} ->
           throw {:failed_to_reach_tolerance, error, chi2, parameters}
 
-      rescue
-        ArithmeticError ->
-          throw {:inverse_error, ArithmeticError, chi2, parameters}
       end
 
     error = cov |> diagonal
@@ -519,18 +519,18 @@ defmodule Chi2fit.Fit do
         true ->
           chi2fit observables, {params,fun,penalties}, max-1, {{cov,error},ranges}, options
       end
+    rescue
+      ArithmeticError ->
+        Logger.warn "chi2: arithmetic error"
+        stack = System.stacktrace
+        IO.puts "#{inspect stack}"
+        chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
     catch
       {:impossible_inverse,error} ->
         Logger.warn "chi2: impossible inverse: #{error}"
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
       {:failed_to_reach_tolerance,_pars,error} ->
         Logger.warn "chi2: failed to reach tolerance: #{error}"
-        chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
-    rescue
-      ArithmeticError ->
-        Logger.warn "chi2: arithmetic error"
-        stack = System.stacktrace
-        IO.puts "#{inspect stack}"
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
     end
 
