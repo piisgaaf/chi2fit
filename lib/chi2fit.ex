@@ -188,6 +188,7 @@ defmodule Chi2fit.Cli do
     surface? = options[:surface?]
     
     {:ok, file} = if surface?, do: File.open(surface, [:write]), else: {:ok,nil}
+    options = options |> Keyword.put_new(:surfacefile,file)
     result = chi2probe(data, model[:probe], {model[:fun], penalties}, options)
     if file, do: File.close(file)
     result
@@ -432,7 +433,13 @@ defmodule Chi2fit.Cli do
     if options[:help], do: usage(0)
 
     ## Default options
-    options = options |> validate(filename) |> add_defaults
+    options = try do
+      options |> validate(filename) |> add_defaults
+    rescue
+      Chi2fit.Distribution.UnsupportedDistributionError ->
+        IO.puts :stderr, "ERROR: Unsupported distribution '#{options[:cdf]}'"
+        System.halt 1
+    end
 
     ## Read the data
     data = if options[:mcdata], do: elem(Code.eval_string(options[:mcdata]),0), else: read_data(filename)

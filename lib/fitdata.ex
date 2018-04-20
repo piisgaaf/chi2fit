@@ -257,6 +257,7 @@ defmodule Chi2fit.Fit do
     try do
       parameters = parranges |> sample
       chi2 = chi2smooth observables,parameters,{fun,penalties},options[:smoothing],options
+      if options[:surfacefile], do: IO.puts options[:surfacefile], "#{Enum.join(parameters,",")},#{chi2}"
       chi2probe(observables, parranges, {fun,penalties}, num-1,
         case best do
           nil ->
