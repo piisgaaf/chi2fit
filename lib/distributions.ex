@@ -422,9 +422,43 @@ defmodule Chi2fit.Distribution do
     end
   end
 
-  @spec igamma(s::float,x::float) :: float
-  defp igamma(s,x) do
-    integrate :romberg, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
+  @spec igamma(a::float,x::float) :: float
+  def igamma(a,x) do
+##    integrate :romberg, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
+    p1 =  9.4368392235e-3
+    p2 = -1.0782666481e-4
+    p3 = -5.8969657295e-6
+    p4 =  2.8939523781e-7
+    p5 =  1.0043326298e-1
+    p6 =  5.5637848465e-1
+    
+    q1 =  1.1464706419E-01
+    q2 =  2.6963429121E+00
+    q3 = -2.9647038257E+0
+    q4 =  2.1080724954E+00
+    
+    r1 =  0.0
+    r2 =  1.1428716184E+00
+    r3 = -6.6981186438E-03
+    r4 =  1.0480765092E-04
+    
+    s1 =  1.0356711153E+00
+    s2 =  2.3423452308E+00
+    s3 = -3.6174503174E-01
+    s4 = -3.1376557650E+00
+    s5 =  2.9092306039E+00
+
+    c1 = 1.0 + p1*a + p2*a*a + p3*a*a*a + p4*a*a*a*a + p5*(:math.exp(-a*p6)-1.0)
+    c2 = q1 + q2/a + q3/a/a + q4/a/a/a
+    c3 = r1 + r2*a + r3*a*a + r4*a*a*a
+    c4 = s1 + s2/a + s3/a/a + s4/a/a/a + s5/a/a/a/a
+    
+    w = 0.5*(1.0 + :math.tanh(c2*(x-c3)))
+    f1 = :math.exp(-x)*:math.pow(x,a)
+    f2 = 1/a + c1*x/a/a/(a+1) + (c1*x)*(c1*x)/a/(a+1)/(a+2)
+    f3 = 1.0-w
+
+    f1*f2*f3 + gamma(a)*w*(1.0-:math.pow(c4,-x))
   end
 
   @doc """
