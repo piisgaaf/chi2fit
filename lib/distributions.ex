@@ -86,6 +86,7 @@ defmodule Chi2fit.Distribution do
   The Erlang cumulative distribution function.
   """
   @spec erlangCDF(k::number(),lambda::number()) :: cdf
+  def erlangCDF(k,lambda) when k<0 or lambda<0, do: raise ArithmeticError, "Erlang is only defined for positive shape and mode"
   def erlangCDF(k,lambda) when k>0 do
     fn
       x ->
@@ -423,7 +424,7 @@ defmodule Chi2fit.Distribution do
 
   @spec igamma(s::float,x::float) :: float
   defp igamma(s,x) do
-    integrate :gauss, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
+    integrate :romberg, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
   end
 
   @doc """

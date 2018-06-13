@@ -91,6 +91,7 @@ defmodule Chi2fit.Fit do
     end
   end
 
+  defp likelihood_contrib(_model, _,_,_, f) when f<0.0 or f>1.0, do: @arithmic_penalty
   defp likelihood_contrib(:linear, y,y1,y2,f), do: dchi2_linear y,y1,y2,f
   defp likelihood_contrib(:simple, y,y1,y2,f), do: dchi2_simple y,y1,y2,f
   defp likelihood_contrib(:asimple, y,y1,y2,f), do: dchi2_asimple y,y1,y2,f
@@ -258,6 +259,7 @@ defmodule Chi2fit.Fit do
       parameters = parranges |> sample
       chi2 = chi2smooth observables,parameters,{fun,penalties},options[:smoothing],options
       if options[:surfacefile], do: IO.puts options[:surfacefile], "#{Enum.join(parameters,",")},#{chi2}"
+      if options[:save], do: options[:save].(parameters,chi2)
       chi2probe(observables, parranges, {fun,penalties}, num-1,
         case best do
           nil ->
