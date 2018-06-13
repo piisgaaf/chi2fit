@@ -194,6 +194,7 @@ defmodule Chi2fit.Matrix do
   @spec inverse(matrix, options :: Keyword.t) :: {:ok,inverse :: matrix} | :failed_to_find_v0 | :no_inverse | {:failed_to_reach_tolerance,inverse :: matrix,error :: float}
   def inverse(matrix, options \\ [])
   def inverse([[x]], _options), do: {:ok,[[1.0/x]]}
+  def inverse([[x1,x2],[y1,y2]], _options) when x1*y2-x2*y1==0.0, do: throw {:impossible_inverse,"Zero determinant"}
   def inverse([[x1,x2],[y1,y2]], _options), do: {:ok,[[y2,-x2],[-y1,x1]] |> scalar_multiply(1.0/(x1*y2-x2*y1))}
   def inverse(matrix, options) do
     max_iter = options[:max_iterations] || @default_inverse_iterations

@@ -370,7 +370,7 @@ defmodule Chi2fit.Distribution do
     model = model(distrib)
     params = 1..model[:df]
     1..n
-    |> Enum.map(fn _ -> Enum.map(params, fn _ -> 10*:rand.uniform end) end)
+    |> Enum.map(fn _ -> Enum.map(params, fn _ -> 50*:rand.uniform end) end)
     |> Enum.flat_map(fn
       pars ->
         try do
@@ -433,8 +433,8 @@ defmodule Chi2fit.Distribution do
    See Abramowitz & Stegun, Mathematical Handbook of Functions, formula 6.1.36
   """
   @spec gamma(x::float) :: float
-  def gamma(x) when x>=2.0, do: (x-1)*gamma(x-1)
-  def gamma(x) when x>=1.0, do: gammap(x-1.0)
+  def gamma(x) when x>= 2.0, do: (x-1)*gamma(x-1)
+  def gamma(x) when x>= 1.0, do: gammap(x-1.0)
   def gamma(x) when x>= 0.0, do: gammap(x)/x
 
   def gammap(z) when z>=0.0 and z<1.0 do

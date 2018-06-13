@@ -263,7 +263,7 @@ defmodule Chi2fit.Fit do
           nil ->
             {chi2,parameters,[{chi2,parameters}]}
           {oldchi2,_,saved} when chi2<oldchi2 ->
-            options[:mark][:*].()
+            is_function(options[:mark][:*]) && options[:mark][:*].()
             {chi2,parameters,[{chi2,parameters}|Enum.filter(saved,fn ({x,_})-> x < chi2+1.0 end)]}
           {oldchi2,oldpars,saved} when chi2<oldchi2+1.0 ->
             {oldchi2,oldpars,[{chi2,parameters}|saved]}
