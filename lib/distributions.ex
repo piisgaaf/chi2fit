@@ -69,7 +69,7 @@ defmodule Chi2fit.Distribution do
   The Poisson distribution.
   """
   def poissonCDF(rate) when rate > 0.0 do
-    fn t -> 1.0 - igamma(Float.floor(t+1),rate)/gamma(Float.floor(t+1)) end
+    fn t -> 1.0 - Exboost.Math.gamma_p(Float.floor(t+1),rate) end
   end
 
   @doc """
@@ -87,12 +87,7 @@ defmodule Chi2fit.Distribution do
   """
   @spec erlangCDF(k::number(),lambda::number()) :: cdf
   def erlangCDF(k,lambda) when k<0 or lambda<0, do: raise ArithmeticError, "Erlang is only defined for positive shape and mode"
-  def erlangCDF(k,lambda) when k>0 do
-    fn
-      x ->
-        igamma(k,lambda*x)/gamma(k)
-    end
-  end
+  def erlangCDF(k,lambda) when k>0, do: &Exboost.Math.gamma_p(k,lambda*&1)
 
   @gamma53 0.902745292950933611297
   @gamma32 0.886226925452758013649
@@ -234,6 +229,52 @@ defmodule Chi2fit.Distribution do
     end
   end
 
+  @doc """
+  Fréhet or inverse Weibull distribution.
+  """
+  @spec frechet(scale::number(),shape::number()) :: distribution
+  def frechet(scale,shape) when is_number(scale) and is_number(shape) do
+   fn ->
+     u = :rand.uniform()
+     scale * :math.pow(-:math.log(u),-1.0/shape)
+   end
+  end
+
+  @doc """
+  The Fréchet distribution, also known inverse Weibull distribution.
+  """
+  @spec frechetCDF(scale :: float,shape :: float) :: cdf
+  def frechetCDF(scale,shape) when scale>0 and shape>0 do
+    fn
+      x when x==0.0 ->
+        0.0
+      x ->
+        :math.exp(-:math.pow(x/scale,-shape))
+    end
+  end
+
+  @doc """
+  Fréhet or inverse Weibull distribution.
+  """
+  @spec nakagami(scale::number(),shape::number()) :: distribution
+  def nakagami(scale,shape) do
+    fn ->
+      u = :rand.uniform()
+      :math.sqrt(Exboost.Math.gamma_p_inv(shape,u)/shape)*scale
+    end
+  end
+
+  @doc """
+  The Fréchet distribution, also known inverse Weibull distribution.
+  """
+  @spec nakagamiCDF(scale :: float,shape :: float) :: cdf
+  def nakagamiCDF(scale,shape) when scale>0 and shape>0 do
+    fn
+      x ->
+        Exboost.Math.tgamma_lower(shape,shape*(x/scale)*(x/scale))
+    end
+  end
+
   ###
   ### Special distributions
   ###
@@ -275,6 +316,8 @@ defmodule Chi2fit.Distribution do
   """
   @spec model(name::String.t, options::Keyword.t) :: [fun: cdf, df: pos_integer()]
   def model(name, options \\ []) do
+    import Exboost.Math, only: [tgamma: 1]
+
     case name do
       "wald" -> [
         fun: fn (x,[k,lambda]) -> waldCDF(k,lambda).(x) end,
@@ -287,16 +330,16 @@ defmodule Chi2fit.Distribution do
         df: 2,
         skewness: fn
           [k,lambda] ->
-            mu = lambda*gamma(1+1/k)
-            sigma = lambda*:math.sqrt(gamma(1+2/k) - gamma(1+1/k)*gamma(1+1/k))
-            gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*mu/sigma - :math.pow(mu/sigma,3)
+            mu = lambda*tgamma(1+1/k)
+            sigma = lambda*:math.sqrt(tgamma(1+2/k) - tgamma(1+1/k)*tgamma(1+1/k))
+            tgamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*mu/sigma - :math.pow(mu/sigma,3)
            end,
         kurtosis: fn
           [k,lambda] ->
-            mu = lambda*gamma(1+1/k)
-            sigma = lambda*:math.sqrt(gamma(1+2/k) - gamma(1+1/k)*gamma(1+1/k))
-            skew = gamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*mu/sigma - :math.pow(mu/sigma,3)
-            gamma(1+4/k)*:math.pow(lambda/sigma,4) - 4*mu/sigma*skew - 6*:math.pow(mu/sigma,2) - :math.pow(mu/sigma,4) - 3.0
+            mu = lambda*tgamma(1+1/k)
+            sigma = lambda*:math.sqrt(tgamma(1+2/k) - tgamma(1+1/k)*tgamma(1+1/k))
+            skew = tgamma(1+3/k)*:math.pow(lambda/sigma,3) - 3*mu/sigma - :math.pow(mu/sigma,3)
+            tgamma(1+4/k)*:math.pow(lambda/sigma,4) - 4*mu/sigma*skew - 6*:math.pow(mu/sigma,2) - :math.pow(mu/sigma,4) - 3.0
           end
       ]
       "exponential" -> [
@@ -304,6 +347,49 @@ defmodule Chi2fit.Distribution do
         df: 1,
         skewness: fn _ -> 2 end,
         kurtosis: fn _ -> 6 end
+      ]
+      "frechet" -> [
+        fun: fn (x,[scale,shape]) -> frechetCDF(scale,shape).(x) end,
+        df: 2,
+        skewness: fn
+          [_scale,shape] ->
+            g1 = tgamma(1.0-1.0/shape)
+            g2 = tgamma(1.0-2.0/shape)
+            g3 = tgamma(1.0-3.0/shape)
+            (g3 - 3*g2*g1 + 2*g1*g1*g1)/:math.pow(g2 - g1*g1,1.5)
+          end,
+        kurtosis: fn
+          [_scale,shape] ->
+            g1 = tgamma(1.0-1.0/shape)
+            g2 = tgamma(1.0-2.0/shape)
+            g3 = tgamma(1.0-3.0/shape)
+            g4 = tgamma(1.0-4.0/shape)
+            -6 + (g4 - 4*g3*g1 + 3*g2*g2)/:math.pow(g2 - g1*g1,2.0)
+          end
+      ]
+      "nakagami" -> [
+        fun: fn (x,[scale,shape]) -> nakagamiCDF(scale,shape).(x) end,
+        df: 2,
+        skewness: fn
+          [_scale,shape] ->
+            g = tgamma(shape)
+            g1_2 = tgamma(shape+0.5)
+            g1 = tgamma(shape+1.0)
+            g3_2 = tgamma(shape+1.5)
+            num = 2*g1_2*g1_2*g1_2 + g*g*( g3_2 - 3*shape*g1_2 )
+            den = g*g*g*:math.pow(shape*(1.0-shape*g1_2*g1_2/g1/g1),1.5)
+            num/den
+          end,
+        kurtosis: fn
+          [_scale,shape] ->
+            g = tgamma(shape)
+            g1_2 = tgamma(shape+0.5)
+            g2 = tgamma(shape+2.0)
+            gdouble = tgamma(2*shape)
+            num = -6*g1_2*g1_2*g1_2*g1_2 - 3*shape*shape*g*g*g*g + g*g*g*g2 + :math.pow(2,3-4*shape)*(4*shape-1)*:math.pi*gdouble*gdouble
+            den = :math.pow(abs(g1_2*g1_2 - shape*g*g),2)
+            num/den
+          end
       ]
       "poisson" -> [
         fun: fn (x,[lambda]) -> poissonCDF(lambda).(x) end,
@@ -352,7 +438,7 @@ defmodule Chi2fit.Distribution do
   Guesses what distribution is likely to fit the sample data
   """
   @spec guess(sample::[number], n::integer, list::[String.t] | String.t) :: [any]
-  def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull"])
+  def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull","frechet","nakagami"])
   def guess(sample,n,list) when length(sample)>0 and is_integer(n) and n>0 and is_list(list) do
     {{skewness,err_s},{kurtosis,err_k}} = sample |> cullen_frey(n) |> cullen_frey_point
     list
@@ -420,68 +506,6 @@ defmodule Chi2fit.Distribution do
         :math.exp(-t*t/alpha) * 0.5 * ( :math.erfc(w/:math.sqrt(2.0)) )
       end
     end
-  end
-
-  @spec igamma(a::float,x::float) :: float
-  def igamma(a,x) do
-##    integrate :romberg, fn t-> :math.pow(t,s-1)*:math.exp(-t) end, 0,x
-    p1 =  9.4368392235e-3
-    p2 = -1.0782666481e-4
-    p3 = -5.8969657295e-6
-    p4 =  2.8939523781e-7
-    p5 =  1.0043326298e-1
-    p6 =  5.5637848465e-1
-    
-    q1 =  1.1464706419E-01
-    q2 =  2.6963429121E+00
-    q3 = -2.9647038257E+0
-    q4 =  2.1080724954E+00
-    
-    r1 =  0.0
-    r2 =  1.1428716184E+00
-    r3 = -6.6981186438E-03
-    r4 =  1.0480765092E-04
-    
-    s1 =  1.0356711153E+00
-    s2 =  2.3423452308E+00
-    s3 = -3.6174503174E-01
-    s4 = -3.1376557650E+00
-    s5 =  2.9092306039E+00
-
-    c1 = 1.0 + p1*a + p2*a*a + p3*a*a*a + p4*a*a*a*a + p5*(:math.exp(-a*p6)-1.0)
-    c2 = q1 + q2/a + q3/a/a + q4/a/a/a
-    c3 = r1 + r2*a + r3*a*a + r4*a*a*a
-    c4 = s1 + s2/a + s3/a/a + s4/a/a/a + s5/a/a/a/a
-    
-    w = 0.5*(1.0 + :math.tanh(c2*(x-c3)))
-    f1 = :math.exp(-x)*:math.pow(x,a)
-    f2 = 1/a + c1*x/a/a/(a+1) + (c1*x)*(c1*x)/a/(a+1)/(a+2)
-    f3 = 1.0-w
-
-    f1*f2*f3 + gamma(a)*w*(1.0-:math.pow(c4,-x))
-  end
-
-  @doc """
-  Calculates the gamma function of its argument up to 8 figures
-  
-  ## Reference
-   See Abramowitz & Stegun, Mathematical Handbook of Functions, formula 6.1.36
-  """
-  @spec gamma(x::float) :: float
-  def gamma(x) when x>= 2.0, do: (x-1)*gamma(x-1)
-  def gamma(x) when x>= 1.0, do: gammap(x-1.0)
-  def gamma(x) when x>= 0.0, do: gammap(x)/x
-
-  def gammap(z) when z>=0.0 and z<1.0 do
-    1.0 -
-    0.577191652*z +
-    0.988205891*z*z -
-    0.897056937*z*z*z +
-    0.918206857*z*z*z*z -
-    0.756704078*z*z*z*z*z +
-    0.482199394*z*z*z*z*z*z -
-    0.193527818*z*z*z*z*z*z*z +
-    0.035868343*z*z*z*z*z*z*z*z
   end
 
 end

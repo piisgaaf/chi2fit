@@ -91,7 +91,6 @@ defmodule Chi2fit.Fit do
     end
   end
 
-  defp likelihood_contrib(_model, _,_,_, f) when f<0.0 or f>1.0, do: @arithmic_penalty
   defp likelihood_contrib(:linear, y,y1,y2,f), do: dchi2_linear y,y1,y2,f
   defp likelihood_contrib(:simple, y,y1,y2,f), do: dchi2_simple y,y1,y2,f
   defp likelihood_contrib(:asimple, y,y1,y2,f), do: dchi2_asimple y,y1,y2,f
