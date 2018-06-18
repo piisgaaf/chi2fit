@@ -177,10 +177,9 @@ defmodule Chi2fit.Cli do
   @default_int_method :romberg2
   @default_tolerance 1.0e-6
   @default_npoints 32
-  @default_binsize 1
+  @default_binsize 1.0
   @default_binoffset 0.5
   @default_error_score :wilson
-  @default_bin {@default_binsize,0.5}
 
   @jac_threshold 0.01
   
@@ -209,6 +208,8 @@ defmodule Chi2fit.Cli do
   defp prepare_data(data, options) do
     mcsample = options[:mcsample]
     correction = options[:correction]
+    binsize = options[:binsize]
+    binoffset = options[:binoffset]
 
     workdata = cond do
       mcsample == :all -> data |> Enum.to_list
@@ -219,7 +220,7 @@ defmodule Chi2fit.Cli do
       IO.puts "    Sample = #{inspect(workdata)}"
     end
 
-    {cdf,bins,_,_} = get_cdf(workdata,@default_bin,@default_error_score,correction)
+    {cdf,bins,_,_} = get_cdf(workdata,{binsize,binoffset},@default_error_score,correction)
     {mindur,_,_} = bins |> hd
     {maxdur,_,_} = bins |> List.last
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
@@ -264,6 +265,8 @@ defmodule Chi2fit.Cli do
     IO.puts "    --model simple|asimple|linear\tThe model (defaults to '#{@default_asymm}') to use for handling asymmetrical errors in the input data"
     IO.puts "    --data <data>\t\t\tArray of data points to use in fitting"
     IO.puts "    --correction <integer>\t\tEstimate of number of events missed in the right tail of the sample"
+    IO.puts "    --binsize <float>\t\t\tThe size of the bins for the input data (defaults to '#{@default_binsize}')"
+    IO.puts "    --binoffset <float>\t\t\tThe offset of the bin (smaller than binsize) (defaults to '#{@default_binoffset}')"
     IO.puts ""
     IO.puts "    Fitting data to a CDF:"
     IO.puts "    --guess <number>\t\t\tGuess what distribution fits best. Use <number> of bootstraps."
@@ -306,6 +309,8 @@ defmodule Chi2fit.Cli do
       guess: :integer,
       cdf: :string,
       data: :string,
+      binsize: :float,
+      binoffset: :float,
       bootstrap: :integer,
       correction: :integer,
       output: :boolean,
@@ -354,6 +359,8 @@ defmodule Chi2fit.Cli do
     |> Keyword.put_new(:mcsample,   options[:sample] || :all)
     |> Keyword.put_new(:mcbootstrap,options[:bootstrap] || 1)
     |> Keyword.put_new(:mcdata,     options[:data] || false)
+    |> Keyword.put_new(:binsize,    @default_binsize)
+    |> Keyword.put_new(:binoffset,  @default_binoffset)
     
     options
     |> Keyword.put_new(:mark,       [
@@ -404,6 +411,10 @@ defmodule Chi2fit.Cli do
         System.halt 1
       filename && !File.exists?(filename) ->
         IO.puts :stderr, "ERROR: failed to open file '#{filename}'"
+        System.halt 1
+        
+      options[:binsize] < options[:binoffset] ->
+        IO.puts :stderr, "ERROR: 'binsize' must be larger than 'binoffset'"
         System.halt 1
 
       options[:guess] != nil && options[:guess] < 100 ->
