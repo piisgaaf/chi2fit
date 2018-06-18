@@ -36,7 +36,7 @@ defmodule FitTest do
     distrib = apply context[:distrib_mod], context[:distrib], context[:params]
 
     sample = 1..context[:size] |> Enum.map(fn _->distrib.() end)
-    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    {cdf,bins,_,_} = get_cdf(sample,{1,0.5},:wilson)
     {:ok, data: convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))}), init: context[:params_init], cdf: context[:cdf]}
   end
 
@@ -218,7 +218,7 @@ defmodule FitTest do
   @tag cdf: :erlangCDF
   @tag size: 20000
   @tag params: [5,1.3]
-  @tag params_init: [4,1.0]
+  @tag params_init: [4.0,1.0]
   test "fit - erlang (20000)", context do
     assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
@@ -227,7 +227,7 @@ defmodule FitTest do
   @tag cdf: :erlangCDF
   @tag size: 2000
   @tag params: [5,1.3]
-  @tag params_init: [4,1.0]
+  @tag params_init: [4.0,1.0]
   test "fit - erlang (2000)", context do
     assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
@@ -236,7 +236,7 @@ defmodule FitTest do
   @tag cdf: :erlangCDF
   @tag size: 200
   @tag params: [5,1.3]
-  @tag params_init: [4,1.0]
+  @tag params_init: [4.0,1.0]
   test "fit - erlang (200)", context do
     assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
@@ -245,7 +245,7 @@ defmodule FitTest do
   @tag cdf: :erlangCDF
   @tag size: 20
   @tag params: [5,1.3]
-  @tag params_init: [4,1.0]
+  @tag params_init: [4.0,1.0]
   test "fit - erlang (20)", context do
     assert_fit context[:params], {context[:data],context[:init],context[:cdf]}, context
   end
@@ -272,6 +272,75 @@ defmodule FitTest do
     IO.puts "distrib = normal; mu=33.0, sigma=2.4\n"
     IO.puts "chi2 = #{chi2}"
     IO.puts "dof = 48"
+    IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
+    IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
+  end
+  
+  @tag distrib: :normal
+  @tag params: [1,2]
+  @tag size: 500
+  @tag various: :normal500
+  @tag :notest
+  test "normal (500)",context do
+    ## Normal
+    distrib = apply context[:distrib_mod], :normal, [33.0,2.4]
+    sample = 1..500 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:normalCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = normal; mu=33.0, sigma=2.4\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 498"
+    IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
+    IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
+  end
+  
+  @tag distrib: :normal
+  @tag params: [1,2]
+  @tag size: 1000
+  @tag various: :normal1000
+  @tag :notest
+  test "normal (1000)",context do
+    ## Normal
+    distrib = apply context[:distrib_mod], :normal, [33.0,2.4]
+    sample = 1..1000 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:normalCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = normal; mu=33.0, sigma=2.4\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 998"
+    IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
+    IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
+  end
+  
+  @tag distrib: :normal
+  @tag params: [1,2]
+  @tag size: 2000
+  @tag various: :normal2000
+  @tag :notest
+  test "normal (2000)",context do
+    ## Normal
+    distrib = apply context[:distrib_mod], :normal, [33.0,2.4]
+    sample = 1..2000 |> Enum.map(fn _->distrib.() end)
+    {cdf,bins,_,_} = get_cdf(sample,1,:wilson)
+    data = convert_cdf({cdf, bins|>Enum.map(&elem(&1,0))})
+    {chi2,cov,params,_ranges} = chi2fit data, {[1.0,30.0],fn x,pars -> apply(context[:distrib_mod],:normalCDF,pars).(x) end}, 100, [model: :linear]
+    [p1,p2] = params
+    [[v1,_],[_,v2]] = cov
+
+    IO.puts "\n\n============================================"
+    IO.puts "distrib = normal; mu=33.0, sigma=2.4\n"
+    IO.puts "chi2 = #{chi2}"
+    IO.puts "dof = 1998"
     IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
     IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
   end

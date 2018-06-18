@@ -177,6 +177,10 @@ defmodule Chi2fit.Cli do
   @default_int_method :romberg2
   @default_tolerance 1.0e-6
   @default_npoints 32
+  @default_binsize 1
+  @default_binoffset 0.5
+  @default_error_score :wilson
+  @default_bin {@default_binsize,0.5}
 
   @jac_threshold 0.01
   
@@ -215,12 +219,12 @@ defmodule Chi2fit.Cli do
       IO.puts "    Sample = #{inspect(workdata)}"
     end
 
-    {cdf,bins,_,_} = get_cdf(workdata,1,:wilson,correction)
+    {cdf,bins,_,_} = get_cdf(workdata,@default_bin,@default_error_score,correction)
     {mindur,_,_} = bins |> hd
     {maxdur,_,_} = bins |> List.last
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
 
-    data = convert_cdf({cdf,workdata|>Enum.uniq|>Enum.sort|>Enum.map(fn x->x+0.5 end)})
+    data = convert_cdf({cdf,bins|>Enum.map(&elem(&1,0))})
 
     try do
       model = model(options[:name],options) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
@@ -426,6 +430,10 @@ defmodule Chi2fit.Cli do
     end
   end
 
+  ## When called from 'mix run -e ...'
+  def main, do: main(System.argv())
+  
+  ## When called from escript
   def main args do
     {options, filename} = parse_args(args)
 

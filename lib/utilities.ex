@@ -37,10 +37,10 @@ defmodule Chi2fit.Utilities do
   @type method :: :gauss | :gauss2 | :gauss3 | :romberg | :romberg2 | :romberg3
 
   @doc """
-  Converts a list of number to frequency data.
+  Converts a list of numbers to frequency data.
   
   The data is divived into bins of size `binsize` and the number of data points inside a bin are counted. A map
-  is returned with the bin's index as a key and value the number of data points in that bin.
+  is returned with the bin's index as a key and as value the number of data points in that bin.
   
   ## Examples
   
@@ -50,17 +50,19 @@ defmodule Chi2fit.Utilities do
       iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9]
       [{1, 1}, {2, 1}, {3, 2}, {4, 3}, {5, 3}, {6, 2}, {7, 1}, {8, 1}, {9, 1}]
       
-      iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9], 3
-      [{0, 2}, {1, 8}, {2, 4}, {3, 1}]
+      iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9], 3, 1.5
+      [{0, 1}, {1, 6}, {2, 6}, {3, 2}]
 
   """
-  @spec make_histogram([number],number) :: %{required(number) => pos_integer}
-  def make_histogram(list,binsize \\ 1) do
+  @spec make_histogram([number],number,number) :: [{non_neg_integer,pos_integer}]
+  def make_histogram(list,binsize \\ 1.0,offset \\ 0.5)
+  def make_histogram(list,binsize,offset) when binsize>offset do
     Enum.reduce(list, %{}, fn
       (number,acc) ->
-        acc |> Map.update(trunc(number/binsize),1,&(1+&1))
+        acc |> Map.update(if(number<offset,do: 0, else: trunc((number-offset)/binsize)+1),1,&(1+&1))
     end) |> Enum.reduce([], fn (pair,acc)->[pair|acc] end) |> Enum.sort_by(fn ({k,_v})->k end)
   end
+  def make_histogram(_list,_binsize,_offset), do: raise ArgumentError, message: "binsize must be larger than bin offset"
 
   defmodule UnknownSampleErrorAlgorithmError do
     defexception message: "unknown sample error algorithm"
@@ -107,11 +109,12 @@ defmodule Chi2fit.Utilities do
           90% confidence ==> t = 1.645 for many data points (> 120)
           70% confidence ==> t = 1.000
   """
-  @spec empirical_cdf([{float,number}],integer,algorithm,integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
-  def empirical_cdf(data,binsize \\ 1,algorithm \\ :wilson,correction \\ 0) do
+  @spec empirical_cdf([{float,number}],{number,number},algorithm,integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
+  def empirical_cdf(data,bin \\ {1.0,0.5},algorithm \\ :wilson,correction \\ 0)
+  def empirical_cdf(data,{binsize,offset},algorithm,correction) do
     {bins,sum} = data
       |> Enum.sort(fn ({x1,_},{x2,_})->x1<x2 end)
-      |> Enum.reduce({[],0}, fn ({x,y},{acc,sum}) -> {[{binsize*(x+1.0),y+sum}|acc],sum+y} end)
+      |> Enum.reduce({[],0}, fn ({n,y},{acc,sum}) -> {[{offset+binsize*n,y+sum}|acc],sum+y} end)
 
     normbins = bins
       |> Enum.reverse
@@ -128,11 +131,12 @@ defmodule Chi2fit.Utilities do
   
   Convenience function that chains `make_histogram/2` and `empirical_cdf/3`.
   """
-  @spec get_cdf([number], number, algorithm, integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
-  def get_cdf(data, binsize \\ 1,algorithm \\ :wilson, correction \\ 0) do
+  @spec get_cdf([number], number|{number,number}, algorithm, integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
+  def get_cdf(data, binsize \\ {1.0,0.5},algorithm \\ :wilson, correction \\ 0)
+  def get_cdf(data, {binsize,offset},algorithm, correction) do
     data
-    |> make_histogram(binsize)
-    |> empirical_cdf(binsize,algorithm,correction)
+    |> make_histogram(binsize,offset)
+    |> empirical_cdf({binsize,offset},algorithm,correction)
   end
 
   @doc """
@@ -149,22 +153,9 @@ defmodule Chi2fit.Utilities do
   """
   @type range :: {float,float} | [float,...]
   @spec convert_cdf({cdf,range}) :: [{float,float,float,float}]
-  def convert_cdf({cdf,{mindur,maxdur}}) do
-    round(mindur)..round(maxdur)
-    |> Stream.map(fn (x)->
-        {y,y1,y2} = cdf.(x)
-        {x,y,y1,y2}
-      end)
-    |> Enum.to_list
-  end
-  def convert_cdf({cdf,categories}) when is_list(categories) do
-    categories
-    |> Stream.map(fn (x)->
-        {y,y1,y2} = cdf.(x)
-        {x,y,y1,y2}
-      end)
-    |> Enum.to_list
-  end
+  def convert_cdf({cdf,{mindur,maxdur}}), do: round(mindur)..round(maxdur) |> y_with_errors(cdf)
+  def convert_cdf({cdf,categories}) when is_list(categories), do: categories |> y_with_errors(cdf)
+  defp y_with_errors(list,cdf), do: list |> Enum.map(&Tuple.insert_at(cdf.(&1),0,&1)) 
 
   @doc """
   Calculates the nth moment of the sample.

@@ -252,9 +252,10 @@ defmodule Chi2fit.Distribution do
         :math.exp(-:math.pow(x/scale,-shape))
     end
   end
+  def frechetCDF(_scale,_shape), do: raise ArithmeticError, "Fréchet is only defined for positive scale and shape"
 
   @doc """
-  Fréhet or inverse Weibull distribution.
+  Nakagami distribution.
   """
   @spec nakagami(scale::number(),shape::number()) :: distribution
   def nakagami(scale,shape) do
@@ -265,7 +266,7 @@ defmodule Chi2fit.Distribution do
   end
 
   @doc """
-  The Fréchet distribution, also known inverse Weibull distribution.
+  The Nakagami distribution.
   """
   @spec nakagamiCDF(scale :: float,shape :: float) :: cdf
   def nakagamiCDF(scale,shape) when scale>0 and shape>0 do
@@ -274,6 +275,7 @@ defmodule Chi2fit.Distribution do
         Exboost.Math.tgamma_lower(shape,shape*(x/scale)*(x/scale))
     end
   end
+  def nakagamiCDF(_scale,_shape), do: raise ArithmeticError, "Nakagami is only defined for positive scale and shape"
 
   ###
   ### Special distributions
@@ -308,7 +310,12 @@ defmodule Chi2fit.Distribution do
       "wald" - The Wald or Inverse Gauss distribution,
       "weibull" - The Weibull distribution,
       "exponential" - The exponential distribution,
+      "poisson" - The Poisson distribution,
+      "normal" - The normal or Gaussian distribution,
+      "fechet" - The Fréchet distribution,
+      "nakagami" - The Nakagami distribution,
       "sep" - The Skewed Exponential Power distribution (Azzalini),
+      "erlang" - The Erlang distribution,
       "sep0" - The Skewed Exponential Power distribution (Azzalini) with location parameter set to zero (0).
       
   ## Options
@@ -407,7 +414,7 @@ defmodule Chi2fit.Distribution do
         fun: fn (x,[mu,sigma]) -> normalCDF(mu,sigma).(x) end,
         df: 2,
         skewness: fn _ -> 0 end,
-        kurtosis: fn _ -> 0 end
+        kurtosis: fn [_mu,sigma] -> 3*sigma*sigma*sigma*sigma end
       ]
       "sep" -> [
         fun: fn (x,[a,b,lambda,alpha]) -> sepCDF(a,b,lambda,alpha,options).(x) end,
@@ -439,7 +446,7 @@ defmodule Chi2fit.Distribution do
   """
   @spec guess(sample::[number], n::integer, list::[String.t] | String.t) :: [any]
   def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull","frechet","nakagami"])
-  def guess(sample,n,list) when length(sample)>0 and is_integer(n) and n>0 and is_list(list) do
+  def guess(sample,n,list) when is_integer(n) and n>0 and is_list(list) do
     {{skewness,err_s},{kurtosis,err_k}} = sample |> cullen_frey(n) |> cullen_frey_point
     list
     |> Enum.flat_map(
@@ -453,7 +460,7 @@ defmodule Chi2fit.Distribution do
       end)
     |> Enum.sort(fn {_,r1},{_,r2} -> r1<r2 end)
   end
-  def guess(sample,n,distrib) when length(sample)>0 and is_integer(n) and n>0 do
+  def guess(_sample,n,distrib) when is_integer(n) and n>0 do
     model = model(distrib)
     params = 1..model[:df]
     1..n

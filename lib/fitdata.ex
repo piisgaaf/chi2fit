@@ -69,6 +69,7 @@ defmodule Chi2fit.Fit do
 
   defp nopenalties(_,_), do: 0.0
 
+  @cutoff 0.0001
   defp dchi2_simple(y, y1, y2,f),            do: (f-y)/abs(y-(y1+y2)/2)
   defp dchi2_asimple(y, y1,_y2,f) when f<y,  do: (y-f)/(y-y1)
   defp dchi2_asimple(y,_y1,_y2,f) when y==f, do: 0.0
@@ -83,6 +84,8 @@ defmodule Chi2fit.Fit do
       f==1.0 and y2==1.0 -> 1.0
       f==0.0 and y1==0.0 -> 1.0
       f==y -> 0.0
+      f<@cutoff and f<y1 -> dchi2_linear(y,y1,y2,min(@cutoff,y1))
+      f>(1-@cutoff) and f>y2 -> dchi2_linear(y,y1,y2,max(1-@cutoff,y2))
       # Extreme punishment
       f==1.0 -> 1_000_000
       f==0.0 -> 1_000_000
