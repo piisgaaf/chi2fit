@@ -120,7 +120,7 @@ defmodule Chi2fit.Utilities do
       |> Enum.reverse
       |> Enum.map(fn ({x,y})->{x,y/(sum+correction),y} end)
 
-    {normbins |> to_cdf_fun(length(bins),algorithm),
+    {normbins |> to_cdf_fun(sum,algorithm),
      normbins,
      length(bins),
      sum}
