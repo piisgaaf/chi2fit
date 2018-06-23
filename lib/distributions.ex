@@ -65,9 +65,26 @@ defmodule Chi2fit.Distribution do
   def exponential(rate), do: exponential([avg: 1.0/rate])
   def exponentialCDF(rate) when rate > 0.0, do: fn t -> 1.0 - :math.exp(-rate*t) end
 
+  @step 500
+  @expstep :math.exp(@step)
+  defp iterate(p,r) when p<1 and r>0 and r>@step, do: iterate(p*@expstep,r-@step)
+  defp iterate(p,r) when p<1 and r>0, do: iterate(p*:math.exp(r),0)
+  defp iterate(p,r), do: {p,r}
+
+  defp _poisson(rate, k \\ 0, p \\ 1.0)
+  defp _poisson(rate,k,p) do
+    k = k+1
+    p = p*:rand.uniform()
+    {p,rate} = iterate p,rate
+    if p>1, do: _poisson(rate,k,p), else: k-1
+  end
+
   @doc """
   The Poisson distribution.
+  
+  For the implementation, see https://en.wikipedia.org/wiki/Poisson_distribution, 'Generating Poisson-distributed random variables'
   """
+  def poisson(rate), do: fn -> _poisson(rate) end
   def poissonCDF(rate) when rate > 0.0 do
     fn t -> 1.0 - Exboost.Math.gamma_p(Float.floor(t+1),rate) end
   end
