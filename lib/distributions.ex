@@ -20,7 +20,7 @@ defmodule Chi2fit.Distribution do
 
   import Chi2fit.Utilities
   
-  @type distribution() :: ((...) :: number())
+  @type distribution() :: ((...) :: term())
   @type cdf() :: ((number) :: number())
 
   defmodule UnsupportedDistributionError do
@@ -278,7 +278,7 @@ defmodule Chi2fit.Distribution do
   def nakagami(scale,shape) do
     fn ->
       u = :rand.uniform()
-      :math.sqrt(Exboost.Math.gamma_p_inv(shape,u)/shape)*scale
+      scale*:math.sqrt(Exboost.Math.gamma_p_inv(shape,u)/shape)
     end
   end
 
@@ -301,8 +301,10 @@ defmodule Chi2fit.Distribution do
   @doc """
   Distribution for flipping coins.
   """
-  @spec coin(integer) :: distribution
-  def coin(value), do: uniform([0.0,value])
+  @spec coin() :: distribution
+  def coin() do
+    fn -> if(:rand.uniform()<0.5, do: :heads, else: :tails) end
+  end
 
   @doc """
   Distribution simulating a dice (1..6)
