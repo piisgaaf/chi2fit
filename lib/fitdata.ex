@@ -279,7 +279,8 @@ defmodule Chi2fit.Fit do
       ArithmeticError ->
         chi2probe(observables, parranges, {fun,penalties}, num-1, best, options)
       err ->
-        reraise err, "Error!"
+        stacktrace = System.stacktrace
+        reraise err, stacktrace
     end
   end
 
