@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "0.8.7",
+      version: "0.8.8",
       elixir: "~> 1.6",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -49,7 +49,7 @@ defmodule Chi2fit.Mixfile do
       {:exboost, "~> 0.2"}
     ]
   end
-  
+
   defp aliases do
     [
       test_perf: "test --only performance",
