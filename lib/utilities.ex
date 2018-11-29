@@ -246,6 +246,8 @@ defmodule Chi2fit.Utilities do
   
   @doc """
   Generates a Cullen & Frey plot for the sample data.
+  
+  The kurtosis returned is the 'excess kurtosis'.
   """
   @spec cullen_frey(sample::[number], n::integer) :: cullenfrey
   def cullen_frey(sample,n \\ 100) do
@@ -256,7 +258,7 @@ defmodule Chi2fit.Utilities do
           sigma = :math.sqrt(data |> momentc(2))
           skewness = data |> momentn(3,mean,sigma)
           kurtosis = data |> momentn(4,mean,sigma)
-          {skewness*skewness,kurtosis}
+          {skewness*skewness,kurtosis-3.0}
       end)
   end
 

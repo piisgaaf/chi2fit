@@ -325,6 +325,8 @@ defmodule Chi2fit.Distribution do
   @doc """
   Returns the model for a name.
   
+  The kurtosis is the so-called 'excess kurtosis'.
+  
   Supported disributions:
       "wald" - The Wald or Inverse Gauss distribution,
       "weibull" - The Weibull distribution,
@@ -433,7 +435,7 @@ defmodule Chi2fit.Distribution do
         fun: fn (x,[mu,sigma]) -> normalCDF(mu,sigma).(x) end,
         df: 2,
         skewness: fn _ -> 0 end,
-        kurtosis: fn [_mu,sigma] -> 3*sigma*sigma*sigma*sigma end
+        kurtosis: fn [_mu,_sigma] -> 0 end
       ]
       "sep" -> [
         fun: fn (x,[a,b,lambda,alpha]) -> sepCDF(a,b,lambda,alpha,options).(x) end,
