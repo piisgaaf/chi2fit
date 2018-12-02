@@ -86,7 +86,7 @@ defmodule Chi2fit.Distribution do
   """
   def poisson(rate), do: fn -> _poisson(rate) end
   def poissonCDF(rate) when rate > 0.0 do
-    fn t -> 1.0 - Exboost.Math.gamma_p(Float.floor(t+1),rate) end
+    fn t -> 1.0 - Exboost.Math.gamma_p(Float.floor(t+1.0),rate) end
   end
 
   @doc """
