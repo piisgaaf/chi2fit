@@ -500,7 +500,7 @@ defmodule Chi2fit.Fit do
                     end
                   rescue
                     ArgumentError -> {:cont, {pars,oldchi,minimum,data}}
-                    ArithmicError -> {:cont, {pars,oldchi,minimum,data}}
+                    ArithmeticError -> {:cont, {pars,oldchi,minimum,data}}
                   end
 
                 _otherwise ->
