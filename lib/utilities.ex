@@ -39,12 +39,15 @@ defmodule Chi2fit.Utilities do
   @doc """
   Converts a list of numbers to frequency data.
   
-  The data is divived into bins of size `binsize` and the number of data points inside a bin are counted. A map
+  The data is divided into bins of size `binsize` and the number of data points inside a bin are counted. A map
   is returned with the bin's index as a key and as value the number of data points in that bin.
   
   ## Examples
   
       iex> make_histogram [1,2,3]
+      [{1, 1}, {2, 1}, {3, 1}]
+      
+      iex> make_histogram [1,2,3], 1.0, 0
       [{1, 1}, {2, 1}, {3, 1}]
       
       iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9]
@@ -59,7 +62,7 @@ defmodule Chi2fit.Utilities do
   def make_histogram(list,binsize,offset) when binsize>offset do
     Enum.reduce(list, %{}, fn
       (number,acc) ->
-        acc |> Map.update(if(number<offset,do: 0, else: trunc((number-offset)/binsize)+1),1,&(1+&1))
+        acc |> Map.update(if(number<=offset,do: 0, else: trunc(Float.ceil((number-offset)/binsize))),1,&(1+&1))
     end) |> Enum.reduce([], fn (pair,acc)->[pair|acc] end) |> Enum.sort_by(fn ({k,_v})->k end)
   end
   def make_histogram(_list,_binsize,_offset), do: raise ArgumentError, message: "binsize must be larger than bin offset"
@@ -157,6 +160,18 @@ defmodule Chi2fit.Utilities do
   def convert_cdf({cdf,categories}) when is_list(categories), do: categories |> y_with_errors(cdf)
   defp y_with_errors(list,cdf), do: list |> Enum.map(&Tuple.insert_at(cdf.(&1),0,&1)) 
 
+  @doc """
+  Converts raw data to binned data with (asymmetrical) errors.
+  """
+  @spec to_bins(data :: [number], binsize :: {number,number}) :: [{float,float,float,float}]
+  def to_bins(data,binsize \\ {1.0,0.5}) do
+    # Convert the raw data to binned data (histogram or frequency data):
+    {cdf,bins,_,_} = get_cdf data, binsize
+
+    # Add the errors based on the binomial distribution (Wilson score):
+    convert_cdf {cdf,bins|>Enum.map(&elem(&1,0))}
+  end
+  
   @doc """
   Calculates the nth moment of the sample.
   
@@ -394,7 +409,7 @@ defmodule Chi2fit.Utilities do
   @spec error([{gamma :: number,k :: pos_integer}], :initial_sequence_method) :: {var :: number, lag :: number}
   def error(nauto, :initial_sequence_method) do
     ## For reversible Markov Chains
-    gamma = nauto |> Stream.chunk(2) |> Stream.map(fn ([{x,k},{y,_}])->{k/2,x+y} end) |> Enum.to_list
+    gamma = nauto |> Stream.chunk_every(2) |> Stream.map(fn ([{x,k},{y,_}])->{k/2,x+y} end) |> Enum.to_list
     gamma0 = nauto |> Stream.take(1) |> Enum.to_list |> (&(elem(hd(&1),0))).()
     m = gamma |> Stream.take_while(fn ({_k,x})->x>0 end) |> Enum.count
     gammap = gamma |> Stream.take_while(fn ({_k,x})->x>0 end) |> Stream.map(fn {_,x}->x end) |> Stream.concat([0.0]) |> Enum.to_list
@@ -437,7 +452,7 @@ defmodule Chi2fit.Utilities do
       :cont ->
         file = options |> Keyword.fetch!(:filename)
         {:ok,:storage} = :dets.open_file :storage, type: :set, file: file, auto_save: 1000, estimated_no_objects: total
-        objects = :dets.select(:storage, [{{:'_',:'$1'},[],[:'$1']}])
+        objects = :dets.select(:storage, [{{:_,:'$1'},[],[:'$1']}])
         {length(objects)+1,objects}
       _ ->
         {1,[]}
@@ -782,6 +797,22 @@ defmodule Chi2fit.Utilities do
       true ->
         newton(a,b,func,maxiter-1,{root,{z1,x1},{z0,x0}},options)
     end
+  end
+
+  @doc """
+  Outputs and formats the errors that result from a call to chi2/4
+  
+  Errors are tuples of length 2 and larger: {[min1,max1], [min2,max2], ...}.
+  """
+  @spec puts_errors(device :: IO.device(), errors :: tuple()) :: none()
+  def puts_errors(device \\ :stdio, errors) do
+    errors
+    |> Tuple.to_list
+    |> Enum.with_index
+    |> Enum.each(fn
+        {[mn,mx],0} -> IO.puts device, "\t\t\tchi2:\t\t#{mn}\t-\t#{mx}"
+        {[mn,mx],_} -> IO.puts device, "\t\t\tparameter:\t#{mn}\t-\t#{mx}"
+    end)
   end
 
 end

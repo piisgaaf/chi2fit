@@ -19,13 +19,13 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "0.8.11",
+      version: "0.9.0",
       elixir: "~> 1.6",
       start_permanent: Mix.env == :prod,
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
-      preferred_cli_env: ["test": :test, "test_all": :test, "test_perf": :test],
+      preferred_cli_env: [test: :test, test_all: :test, test_perf: :test],
       ## Hex stuff:
       description: description(),
       package: package(),

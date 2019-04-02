@@ -26,6 +26,25 @@ Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_do
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/chi2fit](https://hexdocs.pm/chi2fit).
 
+## Docker & Jupyter Notebooks
+
+`Chi2fit` can be used from with Jupyter Notebooks. The easiest way is to create a docker image and run it.
+The docker image is based on [IElixir](https://github.com/pprzetacznik/IElixir).
+
+The image is built using:
+
+```shell
+$ docker build -f docker/Dockerfile .
+```
+
+Run the image with the command:
+
+```shell
+$  docker run -p 8888:8888 --hostname 127.0.0.1 -v /tmp:/app/notebooks <docker image id>
+```
+
+In Jupyter use one of the provided example notebooks to learn how Chi2fit is set-up from within a notebook.
+
 ## Basic Usage
 
 The following command does a simple fit against data:

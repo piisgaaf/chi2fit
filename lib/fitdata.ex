@@ -67,7 +67,7 @@ defmodule Chi2fit.Fit do
 
   @arithmic_penalty 1_000_000_000
 
-  defp nopenalties(_,_), do: 0.0
+  def nopenalties(_,_), do: 0.0
 
   @cutoff 0.0001
   defp dchi2_simple(y, y1, y2,f),            do: (f-y)/abs(y-(y1+y2)/2)
