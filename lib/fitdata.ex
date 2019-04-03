@@ -231,22 +231,23 @@ defmodule Chi2fit.Fit do
       `model` - See chi2/3 and chi2/4
 
   """
-  @spec chi2probe(observables, [float], (...->any), Keyword.t) :: {chi2::float,[parameters::float],{[float],[float]}}
+  @spec chi2probe(observables, [float], (...->any), Keyword.t) :: {chi2::float,[parameters::float],{[float],[float]}} | {chi2::float,[parameters::float],{[float],[float]},[{float,[float]}]}
   def chi2probe(observables, parranges, fun_penalties, options) do
     chi2probe(observables, parranges, fun_penalties, options[:num] || options[:probes], nil, options)
   end
 
-  defp chi2probe(_observables, _parranges, {_fun,_penalties}, 0, best, _options) do
+  defp chi2probe(_observables, _parranges, {_fun,_penalties}, 0, best, options) do
     ## Refactor this!!!!!
     {chi2,parameters,saved} = best
     {_chis,plists} = saved |> Enum.unzip
-    {chi2,parameters,
+    result = {chi2,parameters,
       plists
       |> Enum.map(&List.to_tuple/1)
       |> unzip
       |> Tuple.to_list
       |> Enum.map(fn plist -> [ Enum.min(plist),Enum.max(plist) ] end)
       |> List.to_tuple}
+    if options[:saved?], do: Tuple.append(result,saved), else: result
   end
   defp chi2probe(observables, parranges, {fun,penalties}, num, best, options) do
     if options[:progress] do
@@ -339,9 +340,14 @@ defmodule Chi2fit.Fit do
       `model` - The same values as in chi2/3 and chi2/4
       `grid?` - Performs a grid search: per step, tries to fit only one parameter and keeps the others fixed; selects the parameter in
       a round-robin fashion
+      `probes` -- a list of tuples containing the result of the `chi2probe` function. Each tuple contains the chi2 value and parameter list.
+      Defaults to the empty list.
   """
   @spec chi2fit(observables, model, iterations::pos_integer, options::Keyword.t) :: {chi2,cov,params}
-  def chi2fit(observables, model, max \\ 100, options \\ []), do: chi2fit(observables, model, max, {nil,[]}, options)
+  def chi2fit(observables, model, max \\ 100, options \\ []) do
+    probes = options[:probes] || []
+    chi2fit observables, model, max, {nil,probes}, options
+  end
 
   defp chi2fit(observables, {parameters, fun}, max, data, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, max, data, options
   defp chi2fit(observables, {parameters, fun, penalties}, 0, {{cov,_error}, params}, options) do

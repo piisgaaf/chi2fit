@@ -53,4 +53,4 @@ ADD notebooks/*.ipynb ./
 
 RUN set -xe \
   && mkdir -p /app/notebooks \
-  && chmod o+w /app/notebooks
+  && chmod -R o+w /app/notebooks
