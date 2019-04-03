@@ -1,7 +1,7 @@
 # Chi2fit
 
 Tool for fitting particular probability distributions to empirical cumulative distribution functions.
-Distributions supported are Weibull, Wald (Inverse Gauss), Normal, Exponential, Erlang, and Skewed Exponential.
+Distributions supported are Weibull, Wald (Inverse Gauss), Normal, Exponential, Poisson, Erlang, and Skewed Exponential.
 
 It uses the Chi-squared Pearson statistic as the likelihood function for fitting. This statistic applies to
 empirical data that is categorial in nature.
@@ -17,7 +17,7 @@ by adding `chi2fit` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:chi2fit, "~> 0.6.0"}
+    {:chi2fit, "~> 0.9"}
   ]
 end
 ```
@@ -28,7 +28,7 @@ be found at [https://hexdocs.pm/chi2fit](https://hexdocs.pm/chi2fit).
 
 ## Docker & Jupyter Notebooks
 
-`Chi2fit` can be used from with Jupyter Notebooks. The easiest way is to create a docker image and run it.
+`Chi2fit` can be used together with Jupyter Notebooks. The easiest way is to create a docker image and run it.
 The docker image is based on [IElixir](https://github.com/pprzetacznik/IElixir).
 
 The image is built using:
@@ -45,7 +45,11 @@ $  docker run -p 8888:8888 --hostname 127.0.0.1 -v /tmp:/app/notebooks <docker i
 
 In Jupyter use one of the provided example notebooks to learn how Chi2fit is set-up from within a notebook.
 
-## Basic Usage
+## Using the prebuilt docker container
+
+Instead of building the docker image yourself, docker images are available at [https://hub.docker.com/r/pietertje/chi2fit](https://hub.docker.com/r/pietertje/chi2fit). Af starting the container the log shows the url to connect to the jupyter notebook.
+
+## Basic usage: command line
 
 The following command does a simple fit against data:
 
@@ -75,6 +79,13 @@ In this form the command will scan or probe the Chi-squared surface for the para
 minimum Chi-squared and the parameter values at this minimum. The reported error ranges correspond to a change of Chi-squared of +1.
 
 More options are available using the option `--help`.
+
+## Basic usage: jupyter notebook
+
+The repository contains the notebooks:
+
+* `chi2fit.ipynb` - simple template containing the minimal set-up to get started
+* `BacklogForecasting.ipynb` - elaborate example using data to forecast the completion date of a backlog of work items
 
 ## Documentation
 
