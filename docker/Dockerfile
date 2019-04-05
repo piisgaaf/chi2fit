@@ -14,10 +14,10 @@
 
 FROM pprzetacznik/ielixir
 
-USER root
-
 # Set the working directory
 WORKDIR /app
+
+USER root
 
 # Environment variables
 ENV BOOSTLIB=/usr/lib/x86_64-linux-gnu/
@@ -35,6 +35,10 @@ RUN set -xe \
                 libntl-dev' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
+
+# Install gnuplot
+RUN set -xe \
+  && apt-get install -y --no-install-recommends gnuplot
 
 WORKDIR /app/chi2fit
 ADD mix.* ./

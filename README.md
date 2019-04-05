@@ -84,9 +84,22 @@ More options are available using the option `--help`.
 
 The repository contains the notebooks:
 
-* `chi2fit.ipynb` - simple template containing the minimal set-up to get started
-* `BacklogForecasting.ipynb` - elaborate example using data to forecast the completion date of a backlog of work items
+* `chi2fit.ipynb` - simple template containing the minimal set-up to get started,
+* `BacklogForecasting.ipynb` - elaborate example using data to forecast the completion date of a backlog of work items,
+* `BacklogForecasting-plots.ipynb` - same as `BacklogForecasting.ipynb` but with plots using `GnuPlot`; see below.
 
+Plots are supported using the package [:gnuplot](https://hex.pm/gnuplot).
+On MacOS execute the following command from the shell to display the GnuPlot window:
+
+```shell
+$ socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"$DISPLAY\"
+```
+
+On a Mac using `port` the tool `socat` is installed by the command:
+
+```shell
+$ sudo port install socat
+```  
 ## Documentation
 
 For detailed documentation please visit [https://hexdocs.pm/chi2fit](https://hexdocs.pm/chi2fit).
