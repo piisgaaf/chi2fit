@@ -38,8 +38,8 @@ defmodule Chi2fit.Fit do
 
   require Logger
 
-  import Chi2fit.Matrix
-  import Chi2fit.Utilities
+  alias Chi2fit.Matrix, as: M
+  alias Chi2fit.Utilities, as: U
 
   @typedoc "Observation with symmetric errors 'dy'."
   @type observable_symm ::  {x :: float, y :: float, dy :: float}
@@ -60,11 +60,23 @@ defmodule Chi2fit.Fit do
   @type chi2 :: float
 
   @typedoc "Covariance matrix"
-  @type cov :: Chi2fit.Matrix.matrix
+  @type cov :: Chi2fit.Matrix.matrix()
 
   @typedoc "List of parameter ranges"
   @type params :: [{float,float}]
 
+  @typedoc "Tuple with chi-squared, parameter values, and parameter errors at the found minimum (see `chi2probe/4`)"
+  @type chi2probe_simple :: {chi2(),[parameters::float],{[float],[float]}}
+  
+  @typedoc "Tuple with chi-squared, parameter values, parameter errors, and list of intermediate fit results (see `chi2probe/4`)"
+  @type chi2probe_saved :: {chi2(),[parameters::float],{[float],[float]},[{float,[float]}]}
+  
+  @typedoc "Result of chi-squared probe (see &chi2probe/4)"
+  @type chi2probe :: chi2probe_simple() | chi2probe_saved()
+  
+  @typedoc "Tuple holding chi-squared value, covariance matrix, parameter values, and parameter errors at the minimum chi2fit(see `chi2fit/4`)"
+  @type chi2fit :: {chi2(), cov(), parameters :: [float], errors :: [float]}
+  
   @arithmic_penalty 1_000_000_000
 
   def nopenalties(_,_), do: 0.0
@@ -156,7 +168,7 @@ defmodule Chi2fit.Fit do
   defp gamma(k, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) do
     smoothing? = options[:smoothing] || false
     params_k = parameters |> derive_par(k)
-    -0.5*der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
+    -0.5*U.der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
   end
 
   defp alpha(observables, {parameters, fun, penalties, options}) do
@@ -183,7 +195,7 @@ defmodule Chi2fit.Fit do
   defp alpha({k,j}, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) and j>0 and j<=length(parameters) do
     smoothing? = options[:smoothing] || false
     params_kj = parameters |> derive_par(k) |> derive_par(j)
-    0.5*der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
+    0.5*U.der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
   end
 
   #######################################################################################################
@@ -215,7 +227,7 @@ defmodule Chi2fit.Fit do
   
   It does so by randomly selecting parameter value combinations and calculate the chi-squared for the list
   of observations based on the selected parameter values. This routine is used to roughly probe the chi-squared
-  surface and perform more detailed and expensive calculations to precisely determine the minimum by `chi2fit/5`.
+  surface and perform more detailed and expensive calculations to precisely determine the minimum by `chi2fit/4`.
   
   Returns the minimum chi-squared found, the parameter values, and all probes that resulted in chi-squared difference
   less than 1 with the minimum. The parameter values found in this set correspond with the errors in determining
@@ -228,10 +240,10 @@ defmodule Chi2fit.Fit do
       key `*` is called when a new chi-squared minimum has been found,
       `smoothing` - boolean value indicating whether the chi-squared is smoothened using a Gauss distribution. This
       is used in case the surface is rough because of numerical instabilities to smoothen the surface,
-      `model` - See chi2/3 and chi2/4
+      `model` - See `chi2/3` and `chi2/4`
 
   """
-  @spec chi2probe(observables, [float], (...->any), Keyword.t) :: {chi2::float,[parameters::float],{[float],[float]}} | {chi2::float,[parameters::float],{[float],[float]},[{float,[float]}]}
+  @spec chi2probe(observables, [float], (...->any), Keyword.t) :: chi2probe()
   def chi2probe(observables, parranges, fun_penalties, options) do
     chi2probe(observables, parranges, fun_penalties, options[:num] || options[:probes], nil, options)
   end
@@ -243,7 +255,7 @@ defmodule Chi2fit.Fit do
     result = {chi2,parameters,
       plists
       |> Enum.map(&List.to_tuple/1)
-      |> unzip
+      |> U.unzip
       |> Tuple.to_list
       |> Enum.map(fn plist -> [ Enum.min(plist),Enum.max(plist) ] end)
       |> List.to_tuple}
@@ -337,13 +349,13 @@ defmodule Chi2fit.Fit do
       `onstep` - call back function; it is called with a map with keys `delta`, `chi2`, and `params`,
       `smoothing` - boolean value indicating whether the chi-squared is smoothened using a Gauss distribution. This
       is used in case the surface is rough because of numerical instabilities to smoothen the surface,
-      `model` - The same values as in chi2/3 and chi2/4
+      `model` - The same values as in `chi2/3` and `chi2/4`
       `grid?` - Performs a grid search: per step, tries to fit only one parameter and keeps the others fixed; selects the parameter in
       a round-robin fashion
-      `probes` -- a list of tuples containing the result of the `chi2probe` function. Each tuple contains the chi2 value and parameter list.
+      `probes` -- a list of tuples containing the result of the `chi2probe/4` function. Each tuple contains the chi2 value and parameter list.
       Defaults to the empty list.
   """
-  @spec chi2fit(observables, model, iterations::pos_integer, options::Keyword.t) :: {chi2,cov,params}
+  @spec chi2fit(observables, model, iterations::pos_integer, options::Keyword.t) :: chi2fit()
   def chi2fit(observables, model, max \\ 100, options \\ []) do
     probes = options[:probes] || []
     chi2fit observables, model, max, {nil,probes}, options
@@ -366,7 +378,7 @@ defmodule Chi2fit.Fit do
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
     {:ok,cov} = try do
-        alpha |> inverse
+        alpha |> M.inverse
       rescue
         ArithmeticError ->
           throw {:inverse_error, ArithmeticError, chi2, parameters}
@@ -379,7 +391,7 @@ defmodule Chi2fit.Fit do
 
       end
 
-    error = cov |> diagonal
+    error = cov |> M.diagonal
     chi2fit observables, {parameters, fun, penalties}, 0, {{cov,error},[{chi2,parameters}]}, options
   end
   defp chi2fit observables, {parameters, fun, penalties}, max, {preverror,ranges}, options do
@@ -393,8 +405,8 @@ defmodule Chi2fit.Fit do
     ranges = [{chi2,parameters}|ranges]
 
     try do
-      {:ok,cov} = alpha |> inverse
-      error = cov |> diagonal
+      {:ok,cov} = alpha |> M.inverse
+      error = cov |> M.diagonal
 
       flags = if grid? do
         List.duplicate(false, length(parameters))
@@ -403,16 +415,16 @@ defmodule Chi2fit.Fit do
         List.duplicate(true, length(parameters))
       end
 
-      delta = cov |> Enum.map(&(dotproduct(&1,vecg)))
+      delta = cov |> Enum.map(&(M.dotproduct(&1,vecg)))
 
-      options[:onbegin] && options[:onbegin].(%{step: max, chi: chi2, derivatives: Enum.zip(vecg,diagonal(alpha))})
+      options[:onbegin] && options[:onbegin].(%{step: max, chi: chi2, derivatives: Enum.zip(vecg,M.diagonal(alpha))})
 
       {params,_chi2,_,ranges} = parameters
-      |> vary_params(flags,vecg,diagonal(alpha),parmax)
+      |> vary_params(flags,vecg,M.diagonal(alpha),parmax)
       |> Enum.reduce_while({parameters,chi2,{nil,nil},ranges},
         fn
           (factor,{pars,oldchi,minimum,data}) ->
-            dvec = factor |> from_diagonal |> Enum.map(&dotproduct(&1,delta))
+            dvec = factor |> M.from_diagonal |> Enum.map(&M.dotproduct(&1,delta))
             vec = ExAlgebra.Vector.add(parameters,dvec)
             try do
               smoothing? = options[:smoothing] || false
@@ -489,9 +501,9 @@ defmodule Chi2fit.Fit do
 
                   try do
                     smoothing? = options[:smoothing] || false
-                    {_, {left,right},{_vleft,_vright}} = newton(left_par, right_par, fn x->
+                    {_, {left,right},{_vleft,_vright}} = U.newton(left_par, right_par, fn x->
                       nvec = parameters |> List.replace_at(rem(max,length(parameters)), {x,1})
-                      der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},smoothing?,options) end,options)
+                      U.der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},smoothing?,options) end,options)
                     end, parmax, options)
 
                     nvec = pars |> List.replace_at(rem(max,length(parameters)), (left+right)/2)
@@ -547,6 +559,57 @@ defmodule Chi2fit.Fit do
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
     end
 
+  end
+
+  @doc """
+  Finds the point in the data where the chi-squared has a jump when fitting the model
+  """
+  @spec find_change(other :: [number()],options :: Keyword.t) :: [{chi :: float,[float]}]
+  def find_change(other, options), do: find_change(other, [], [], options)
+
+  defp find_change([], _, acc, _), do: Enum.reverse(acc)
+  defp find_change(other, data, acc, options) do
+      binsize = options[:bin] || 1
+      initial = options[:init]
+      model = options[:fitmodel]
+
+      [first|last] = other
+      
+      hist = U.to_bins [first|data], {binsize,0}
+      {chi,params,_,_} = chi2probe hist, [initial], {model[:fun], &nopenalties/2}, options
+      find_change(last,[first|data],[{chi,params}|acc],options)
+  end
+
+  @doc """
+  Partitions the data list in segments with similar chi-squared values when fitting the model
+  """
+  @spec find_all(nil | [number],options :: Keyword.t) :: [[float()]]
+  def find_all(data,options), do: find_all(data,[],options)
+  
+  defp find_all(data, acc, options)
+  defp find_all(nil, acc, _options), do: Enum.reverse(acc)
+  defp find_all(data, acc, options) do
+      threshold = options[:threshold] || 10
+      [first|rest] = data
+      |> find_change(options)
+      |> Enum.zip(data)
+      |> Stream.chunk_while(
+          {0,nil,[]},
+          fn
+              {{chi,params},d},{0,nil,[]} -> {:cont,{chi,params,[d]}}
+              {_,d},           {:done,saved} -> {:cont,{:done,[d|saved]}}
+              {{chi,params},d},{lastchi,_pars,saved} when chi<10*lastchi or chi<threshold
+                  -> {:cont,{chi,params,[d|saved]}}
+              {{_chi,_params},d},{lastchi,pars,saved}
+                  -> {:cont,{lastchi,pars,Enum.reverse(saved)},{:done,[d]}}
+          end,
+          fn
+              {:done,saved} -> {:cont,Enum.reverse(saved),[]}
+              {chi,params,saved} -> {:cont,{chi,params,Enum.reverse(saved)},[]}
+          end
+      )
+      |> Enum.into([])
+      find_all(List.last(rest),[first|acc],options)
   end
 
 end

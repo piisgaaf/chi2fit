@@ -27,14 +27,24 @@ defmodule Chi2fit.Utilities do
 
   import Chi2fit.FFT
   
+  alias Chi2fit.Distribution, as: D
+  alias Chi2fit.Fit, as: F
+  alias Chi2fit.Matrix, as: M
+  
   @typedoc "Cumulative Distribution Function"
   @type cdf :: ((number)->{number,number,number})
+
+  @typedoc "Binned data with error bounds specified through low and high values"
+  @type ecdf :: [{float,float,float,float}]
 
   @typedoc "Algorithm used to assign errors to frequencey data: Wald score and Wilson score."
   @type algorithm :: :wilson | :wald
 
   @typedoc "Supported numerical integration methods"
   @type method :: :gauss | :gauss2 | :gauss3 | :romberg | :romberg2 | :romberg3
+
+  @typedoc "Average and standard deviationm (error)"
+  @type avgsd :: {avg :: float, sd :: float}
 
   @doc """
   Converts a list of numbers to frequency data.
@@ -163,7 +173,7 @@ defmodule Chi2fit.Utilities do
   @doc """
   Converts raw data to binned data with (asymmetrical) errors.
   """
-  @spec to_bins(data :: [number], binsize :: {number,number}) :: [{float,float,float,float}]
+  @spec to_bins(data :: [number], binsize :: {number,number}) :: ecdf()
   def to_bins(data,binsize \\ {1.0,0.5}) do
     # Convert the raw data to binned data (histogram or frequency data):
     {cdf,bins,_,_} = get_cdf data, binsize
@@ -800,9 +810,9 @@ defmodule Chi2fit.Utilities do
   end
 
   @doc """
-  Outputs and formats the errors that result from a call to chi2/4
+  Outputs and formats the errors that result from a call to `Chi2fit.Fit.chi2/4`
   
-  Errors are tuples of length 2 and larger: {[min1,max1], [min2,max2], ...}.
+  Errors are tuples of length 2 and larger: `{[min1,max1], [min2,max2], ...}`.
   """
   @spec puts_errors(device :: IO.device(), errors :: tuple()) :: none()
   def puts_errors(device \\ :stdio, errors) do
@@ -813,6 +823,62 @@ defmodule Chi2fit.Utilities do
         {[mn,mx],0} -> IO.puts device, "\t\t\tchi2:\t\t#{mn}\t-\t#{mx}"
         {[mn,mx],_} -> IO.puts device, "\t\t\tparameter:\t#{mn}\t-\t#{mx}"
     end)
+  end
+
+  @doc """
+  Forecasts how many time periods are needed to complete `size` items
+  """
+  @spec forecast(fun :: (() -> non_neg_integer),size :: pos_integer, tries :: pos_integer) :: pos_integer
+  def forecast(fun, size, tries \\ 0)
+  def forecast(fun, size, tries) when size>0 do
+      forecast(fun, size-fun.(),tries+1)
+  end
+  def forecast(_fun,_size,tries), do: tries
+
+  @doc """
+  Basic Monte Carlo simulation to repeatedly run a simulation multiple times.
+  """
+  @spec mc(iterations :: pos_integer, fun :: ((pos_integer) -> float), all? :: boolean) :: {avg :: float, sd :: float, tries :: [float]} | {avg :: float, sd :: float}
+  def mc(iterations,fun,all? \\ false) do
+      tries = 1..iterations |> Enum.map(fn _ -> fun.() end)
+      avg = moment tries, 1
+      sd = :math.sqrt momentc(tries,2)
+      if all?, do: {avg,sd,tries}, else: {avg,sd}
+  end
+
+  @doc """
+  Displays results of the function `Chi2fit.Fit.chi2probe/4`
+  """
+  @spec display(device :: IO.device(), F.chi2probe() | avgsd()) :: none()
+  def display(device \\ :stdio, results)
+  def display(device,{chi2, parameters,errors,_saved}) do
+      IO.puts device,"Initial guess:"
+      IO.puts device,"    chi2:\t\t#{chi2}"
+      IO.puts device,"    pars:\t\t#{inspect parameters}"
+      IO.puts device,"    ranges:\t\t#{inspect errors}\n"
+  end
+  def display(device,{avg,sd}) do
+      IO.puts device,"50% with      #{:math.ceil(avg)}"
+      IO.puts device,"84% within    #{:math.ceil(avg+sd)} iterations"
+      IO.puts device,"97.5% within  #{:math.ceil(avg+2*sd)} iterations"
+      IO.puts device,"99.85% within #{:math.ceil(avg+3*sd)} iterations"
+  end
+  
+  @doc """
+  Displays results of the function `Chi2fit.Fit.chi2fit/4`
+  """
+  @spec display(device :: IO.device(),hdata :: ecdf(),model :: D.model(),F.chi2fit(),options :: Keyword.t) :: none()
+  def display(device \\ :stdio,hdata,model,{chi2, cov, parameters, errors},options) do
+      param_errors = cov |> M.diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)
+
+      IO.puts device,"Final:"
+      IO.puts device,"    chi2:\t\t#{chi2}"
+      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-model[:df]}"
+      IO.puts device,"    gradient:\t\t#{inspect jacobian(parameters,&F.chi2(hdata,fn x->model[:fun].(x,&1) end,fn _->0.0 end,options),options)}"
+      IO.puts device,"    parameters:\t\t#{inspect parameters}"
+      IO.puts device,"    errors:\t\t#{inspect param_errors}"
+      IO.puts device,"    ranges:"
+      puts_errors device,errors
   end
 
 end

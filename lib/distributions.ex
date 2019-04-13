@@ -20,9 +20,15 @@ defmodule Chi2fit.Distribution do
 
   import Chi2fit.Utilities
   
+  @typedoc "A probability distribution function"
   @type distribution() :: ((...) :: term())
+  
+  @typedoc "Cumulative Distribution function"
   @type cdf() :: ((number) :: number())
 
+  @typedoc "Keyword list containing the CDF function and the number of parameters"
+  @type model :: [fun: cdf(), df: pos_integer()]
+  
   defmodule UnsupportedDistributionError do
     defexception message: "Unsupported distribution function"
   end
@@ -342,7 +348,7 @@ defmodule Chi2fit.Distribution do
   ## Options
   Available only for the SEP distribution, see 'sepCDF/5'.
   """
-  @spec model(name::String.t, options::Keyword.t) :: [fun: cdf, df: pos_integer()]
+  @spec model(name::String.t, options::Keyword.t) :: model()
   def model(name, options \\ []) do
     import Exboost.Math, only: [tgamma: 1]
 
