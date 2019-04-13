@@ -425,6 +425,12 @@ defmodule Chi2fit.Distribution do
         skewness: fn [lambda] -> 1/:math.sqrt(lambda) end,
         kurtosis: fn [lambda] -> 1/lambda end
       ]
+      {"poisson", period} when is_number(period) and period>0 -> [
+        fun: fn (x,[lambda]) -> poissonCDF(lambda*period).(x) end,
+        df: 1,
+        skewness: fn [lambda] -> 1/:math.sqrt(lambda*period) end,
+        kurtosis: fn [lambda] -> 1/lambda/period end
+      ]
       "erlang" -> [
         fun: fn (x,[k,lambda]) -> erlangCDF(k,lambda).(x) end,
         df: 2,
