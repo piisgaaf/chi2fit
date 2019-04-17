@@ -828,12 +828,12 @@ defmodule Chi2fit.Utilities do
   @doc """
   Forecasts how many time periods are needed to complete `size` items
   """
-  @spec forecast(fun :: (() -> non_neg_integer),size :: pos_integer, tries :: pos_integer) :: pos_integer
-  def forecast(fun, size, tries \\ 0)
-  def forecast(fun, size, tries) when size>0 do
-      forecast(fun, size-fun.(),tries+1)
+  @spec forecast(fun :: (() -> non_neg_integer),size :: pos_integer, tries :: pos_integer, update :: (() -> number)) :: number
+  def forecast(fun, size, tries \\ 0,update \\ fn -> 1 end)
+  def forecast(fun, size, tries, update) when size>0 do
+      forecast(fun, size-fun.(),tries+update.(),update)
   end
-  def forecast(_fun,_size,tries), do: tries
+  def forecast(_fun,_size,tries,_update), do: tries
 
   @doc """
   Basic Monte Carlo simulation to repeatedly run a simulation multiple times.
@@ -842,8 +842,61 @@ defmodule Chi2fit.Utilities do
   def mc(iterations,fun,all? \\ false) do
       tries = 1..iterations |> Enum.map(fn _ -> fun.() end)
       avg = moment tries, 1
-      sd = :math.sqrt momentc(tries,2)
+      sd = :math.sqrt momentc(tries,2,avg)
       if all?, do: {avg,sd,tries}, else: {avg,sd}
+  end
+
+  @doc """
+  Calculates the systematic errors for bins due to uncertainty in assigning data to bins.
+  """
+  @spec binerror(data :: [number], dist :: (() -> number), options :: Keyword.t) :: [{bin :: number, avg :: number, error :: number}]
+  def binerror(data, dist, options \\ []) do
+    binsize = options[:bin] || 1
+    iterations = options[:iterations] || 100
+    cutoff = options[:cutoff] || 0.01
+    {startofday,endofday} = options[:workhours] || {8.0,17.0}
+    drop? = options[:drop] || false
+    1..iterations
+    |> Stream.map(fn _ ->
+            data
+            |> Stream.map(fn t ->
+                    other = 24.0 - (endofday-startofday)
+                    case t+dist.() do
+                        sum when sum > endofday/24.0 -> sum + other/24.0
+                        sum when sum < startofday/24.0 -> sum - other/24.0
+                        sum -> sum
+                    end
+                end)
+            |> Enum.sort(&(&1>&2))
+            |> Stream.chunk_every(2,1,:discard)
+            |> Stream.map(fn [x,y]->x-y end)
+            |> Stream.transform(nil,fn x,_acc ->
+                  {
+                    cond do
+                      x < cutoff and drop? -> []
+                      x < cutoff -> [cutoff]
+                      true -> [x]
+                    end,
+                    nil
+                  }
+                end)
+            |> to_bins({binsize,0})
+            |> Stream.map(fn {a,b,_,_}->{a,[b]} end)
+            |> Map.new()
+        end)
+    |> Enum.reduce(%{}, fn map,acc -> Map.merge(map,acc, fn _k, v1,v2 -> v1++v2 end) end)
+    |> Stream.map(fn {k,list} ->
+            {xs,lows,highs} = unzip list
+            avg = moment xs,1
+            avg_low = moment lows,1
+            avg_high = moment highs,1
+            sd = :math.sqrt momentc xs,2,avg
+            {k,avg,avg_low,avg_high,sd}
+        end)
+    |> Stream.map(fn {x,y,ylow,yhigh,err} ->
+            {x,y,max(0.0,y-:math.sqrt((y-ylow)*(y-ylow)+err*err)),min(1.0,y+:math.sqrt((yhigh-y)*(yhigh-y)+err*err))}
+        end)
+    |> Enum.sort(fn t1,t2 -> elem(t1,0)<elem(t2,0) end)
   end
 
   @doc """

@@ -78,6 +78,7 @@ defmodule Chi2fit.Fit do
   @type chi2fit :: {chi2(), cov(), parameters :: [float], errors :: [float]}
   
   @arithmic_penalty 1_000_000_000
+  @extreme_punishment 1_000_000
 
   def nopenalties(_,_), do: 0.0
 
@@ -96,11 +97,12 @@ defmodule Chi2fit.Fit do
       f==1.0 and y2==1.0 -> 1.0
       f==0.0 and y1==0.0 -> 1.0
       f==y -> 0.0
+      #
       f<@cutoff and f<y1 -> dchi2_linear(y,y1,y2,min(@cutoff,y1))
       f>(1-@cutoff) and f>y2 -> dchi2_linear(y,y1,y2,max(1-@cutoff,y2))
       # Extreme punishment
-      f==1.0 -> 1_000_000
-      f==0.0 -> 1_000_000
+      f==1.0 -> @extreme_punishment
+      f==0.0 -> @extreme_punishment
       delta>0 -> (1.0-y2)/(1.0-f) * delta/splus
       true ->          y1/f       * delta/smin
     end
