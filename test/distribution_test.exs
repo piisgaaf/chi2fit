@@ -50,7 +50,7 @@ defmodule Chi2fitDistributionTest do
     total = 10_000_000
     chunk = 10
 
-    data = 1..total |> Stream.map(fn (_)->exponential([avg: 5.0]).() end) |> Stream.chunk(chunk) |> Stream.map(&Enum.sum/1)
+    data = 1..total |> Stream.map(fn (_)->exponential([avg: 5.0]).() end) |> Stream.chunk_every(chunk) |> Stream.map(&Enum.sum/1)
     avg = Enum.sum(data)/(total/chunk)
     sd = :math.sqrt(Enum.reduce(data, 0, fn (x,sum)->sum+(x-avg)*(x-avg) end)/(total/chunk))
     assert_in_delta 50.0, avg, 0.2

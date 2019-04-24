@@ -849,53 +849,73 @@ defmodule Chi2fit.Utilities do
   @doc """
   Calculates the systematic errors for bins due to uncertainty in assigning data to bins.
   """
+  @hours 24.0
   @spec binerror(data :: [number], dist :: (() -> number), options :: Keyword.t) :: [{bin :: number, avg :: number, error :: number}]
   def binerror(data, dist, options \\ []) do
     binsize = options[:bin] || 1
     iterations = options[:iterations] || 100
     cutoff = options[:cutoff] || 0.01
     {startofday,endofday} = options[:workhours] || {8.0,17.0}
+    workhours = endofday - startofday
     drop? = options[:drop] || false
+    correct? = options[:correct] || false
+
     1..iterations
     |> Stream.map(fn _ ->
-            data
-            |> Stream.map(fn t ->
-                    other = 24.0 - (endofday-startofday)
-                    case t+dist.() do
-                        sum when sum > endofday/24.0 -> sum + other/24.0
-                        sum when sum < startofday/24.0 -> sum - other/24.0
-                        sum -> sum
-                    end
-                end)
-            |> Enum.sort(&(&1>&2))
-            |> Stream.chunk_every(2,1,:discard)
-            |> Stream.map(fn [x,y]->x-y end)
-            |> Stream.transform(nil,fn x,_acc ->
-                  {
-                    cond do
-                      x < cutoff and drop? -> []
-                      x < cutoff -> [cutoff]
-                      true -> [x]
-                    end,
-                    nil
-                  }
-                end)
-            |> to_bins({binsize,0})
-            |> Stream.map(fn {a,b,_,_}->{a,[b]} end)
-            |> Map.new()
-        end)
+        data
+        |> Stream.map(fn t ->
+            other = @hours - workhours
+            case t+dist.() do
+                sum when sum > endofday/@hours -> sum + other/@hours
+                sum when sum < startofday/@hours -> sum - other/@hours
+                sum -> sum
+            end
+          end)
+        |> Enum.sort(&(&1>&2))
+        |> Stream.map(fn x ->
+            if correct? do
+              frac = x-trunc(x)
+              min(
+                max(0.0,frac-startofday/@hours),
+                workhours/@hours
+              )*@hours/workhours
+            else
+              x
+            end
+          end)
+        |> Stream.chunk_every(2,1,:discard)
+        |> Stream.map(fn [x,y]->x-y end)
+        |> Stream.transform(nil,fn x,_acc ->
+              {
+                cond do
+                  x < cutoff and drop? -> []
+                  x < cutoff -> [cutoff]
+                  true -> [x]
+                end,
+                nil
+              }
+            end)
+        |> to_bins({binsize,0})
+        |> Stream.map(fn {x,y,low,high}->{x,[{y,low,high}]} end)
+        |> Map.new()
+      end)
     |> Enum.reduce(%{}, fn map,acc -> Map.merge(map,acc, fn _k, v1,v2 -> v1++v2 end) end)
     |> Stream.map(fn {k,list} ->
-            {xs,lows,highs} = unzip list
-            avg = moment xs,1
-            avg_low = moment lows,1
-            avg_high = moment highs,1
-            sd = :math.sqrt momentc xs,2,avg
-            {k,avg,avg_low,avg_high,sd}
-        end)
+        {xs,lows,highs} = unzip list
+        avg = moment xs,1
+        avg_low = moment lows,1
+        avg_high = moment highs,1
+        sd = :math.sqrt momentc xs,2,avg
+        {k,avg,avg_low,avg_high,sd}
+      end)
     |> Stream.map(fn {x,y,ylow,yhigh,err} ->
-            {x,y,max(0.0,y-:math.sqrt((y-ylow)*(y-ylow)+err*err)),min(1.0,y+:math.sqrt((yhigh-y)*(yhigh-y)+err*err))}
-        end)
+        {
+          x,
+          y,
+          max(0.0,y-:math.sqrt((y-ylow)*(y-ylow)+err*err)),
+          min(1.0,y+:math.sqrt((yhigh-y)*(yhigh-y)+err*err))
+        }
+      end)
     |> Enum.sort(fn t1,t2 -> elem(t1,0)<elem(t2,0) end)
   end
 
@@ -911,10 +931,10 @@ defmodule Chi2fit.Utilities do
       IO.puts device,"    ranges:\t\t#{inspect errors}\n"
   end
   def display(device,{avg,sd}) do
-      IO.puts device,"50% with      #{:math.ceil(avg)}"
-      IO.puts device,"84% within    #{:math.ceil(avg+sd)} iterations"
-      IO.puts device,"97.5% within  #{:math.ceil(avg+2*sd)} iterations"
-      IO.puts device,"99.85% within #{:math.ceil(avg+3*sd)} iterations"
+      IO.puts device,"50% within    #{:math.ceil(avg)} units"
+      IO.puts device,"84% within    #{:math.ceil(avg+sd)} units"
+      IO.puts device,"97.5% within  #{:math.ceil(avg+2*sd)} units"
+      IO.puts device,"99.85% within #{:math.ceil(avg+3*sd)} units"
   end
   
   @doc """
@@ -932,6 +952,53 @@ defmodule Chi2fit.Utilities do
       IO.puts device,"    errors:\t\t#{inspect param_errors}"
       IO.puts device,"    ranges:"
       puts_errors device,errors
+  end
+
+  @doc """
+  Maps the time of a day into the working hour period
+  
+  Scales the resulting part of the day between 0..1.
+  
+  ## Arguments
+  
+      `t` - date and time of day as a float; the integer part specifies the day and the fractional part the hour of the day
+      `startofday` - start of the work day in hours
+      `endofday` - end of the working day in hours
+  
+  ## Example
+  
+      iex> map2workhours(43568.1, 8, 18)
+      43568.0
+  
+      iex> map2workhours(43568.5, 8, 18)
+      43568.4
+  
+  """
+  @spec map2workhours(t :: number, startofday :: number, endofday :: number) :: number
+  def map2workhours(t,startofday,endofday)
+    when startofday>0 and startofday<endofday and endofday<@hours do
+    frac = t - trunc(t)
+    hours = endofday - startofday
+    trunc(t) + min(max(0.0,frac - startofday/@hours),hours/@hours) * @hours/hours
+  end
+
+  @doc """
+  Maps the date to weekdays such that weekends are eliminated; it does so with respect to a given Saturday
+  
+  ## Example
+  
+      iex> map2weekdays(43568.123,43566)
+      43566.123
+  
+      iex> map2weekdays(43574.123,43566)
+      43571.123
+  
+  """
+  @spec map2weekdays(t :: number, sat :: pos_integer) :: number
+  def map2weekdays(t, sat) when is_integer(sat) do
+    offset = rem trunc(t)-sat, 7
+    part_of_day = t - trunc(t)
+    sat + 5*div(trunc(t)-sat,7) + max(0.0,offset-2.0) + part_of_day
   end
 
 end
