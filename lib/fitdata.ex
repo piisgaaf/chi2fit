@@ -273,8 +273,9 @@ defmodule Chi2fit.Fit do
       end
     end
     try do
+      smoothing = options[:smoothing] || false
       parameters = parranges |> sample
-      chi2 = chi2smooth observables,parameters,{fun,penalties},options[:smoothing],options
+      chi2 = chi2smooth observables,parameters,{fun,penalties},smoothing,options
       if options[:surfacefile], do: IO.puts options[:surfacefile], "#{Enum.join(parameters,",")},#{chi2}"
       if options[:save], do: options[:save].(parameters,chi2)
       chi2probe(observables, parranges, {fun,penalties}, num-1,
@@ -375,7 +376,7 @@ defmodule Chi2fit.Fit do
 
     {chi, cov, parameters, ranges}
   end
-  defp chi2fit observables, {parameters, fun, penalties}, 0, {nil,[]}, options do
+  defp chi2fit observables, {parameters, fun, penalties}, 0, {nil,ranges}, options do
     chi2 = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
     alpha = alpha(observables, {parameters, fun, penalties, options})
 
@@ -394,9 +395,9 @@ defmodule Chi2fit.Fit do
       end
 
     error = cov |> M.diagonal
-    chi2fit observables, {parameters, fun, penalties}, 0, {{cov,error},[{chi2,parameters}]}, options
+    chi2fit observables, {parameters, fun, penalties}, 0, {{cov,error},[{chi2,parameters}|ranges]}, options
   end
-  defp chi2fit observables, {parameters, fun, penalties}, max, {preverror,ranges}, options do
+  defp chi2fit(observables, {parameters, fun, penalties}, max, {preverror,ranges}, options) when max>0 do
     grid? = options[:grid?] || false
     parmax = options[:pariter] || 10
 
@@ -578,7 +579,7 @@ defmodule Chi2fit.Fit do
       [first|last] = other
       
       hist = U.to_bins [first|data], {binsize,0}
-      {chi,params,_,_} = chi2probe hist, [initial], {model[:fun], &nopenalties/2}, options
+      [chi,params|_rest] = chi2probe(hist, [initial], {model[:fun], &nopenalties/2}, options) |> Tuple.to_list
       find_change(last,[first|data],[{chi,params}|acc],options)
   end
 

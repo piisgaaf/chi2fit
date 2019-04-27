@@ -47,7 +47,8 @@ In Jupyter use one of the provided example notebooks to learn how Chi2fit is set
 
 ## Using the prebuilt docker container
 
-Instead of building the docker image yourself, docker images are available at [https://hub.docker.com/r/pietertje/chi2fit](https://hub.docker.com/r/pietertje/chi2fit). Af starting the container the log shows the url to connect to the jupyter notebook.
+Instead of building the docker image yourself, docker images are available at [https://hub.docker.com/r/pietertje/chi2fit](https://hub.docker.com/r/pietertje/chi2fit). After starting the container the log
+shows the url to connect to the jupyter notebook.
 
 ## Basic usage: command line
 
@@ -86,9 +87,10 @@ The repository contains the notebooks:
 
 * `chi2fit.ipynb` - simple template containing the minimal set-up to get started,
 * `BacklogForecasting.ipynb` - elaborate example using data to forecast the completion date of a backlog of work items,
-* `BacklogForecasting-plots.ipynb` - same as `BacklogForecasting.ipynb` but with plots using `GnuPlot`; see below.
+* `BacklogForecasting-plots.ipynb` - same as `BacklogForecasting.ipynb` but with plots using `GnuPlot`; see below,
+* `BacklogForecasting-non-equilibrium.ipynb` - illustration of binning and changing delivery rate
 
-Plots are supported using the package [:gnuplot](https://hex.pm/gnuplot).
+Plots are supported using the package [:gnuplot](https://hex.pm/packages/gnuplot).
 On MacOS execute the following command from the shell to display the GnuPlot window:
 
 ```shell
