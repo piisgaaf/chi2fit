@@ -437,7 +437,7 @@ defmodule Chi2fit.Utilities do
   
   ## Arguments:
   
-      `total` - Total number resmaplings to perform
+      `total` - Total number resamplings to perform
       `data` - The sample data
       `fun` - The function to evaluate
       `options` - A keyword list of options, see below.
@@ -484,6 +484,20 @@ defmodule Chi2fit.Utilities do
       end
     end)
   end
+  
+  @doc """
+  Reamples the subsequences of numbers contained in the list as determined by `analyze/2`
+  """
+  @spec resample(data :: [number], options :: Keyword.t) :: [number]
+  def resample(data,options) do
+    data
+    |> analyze(fn dat,opt ->
+          F.find_all(dat,opt) |> Enum.flat_map(fn {_,_,d}->resample(d) end)
+      end,
+      options)
+  end
+
+  defp resample(data), do: Enum.map(data,fn _ -> Enum.random(data) end)
   
   @doc """
   Reads data from a file specified by `filename` and returns a stream with the data parsed as floats.
@@ -999,6 +1013,22 @@ defmodule Chi2fit.Utilities do
     offset = rem trunc(t)-sat, 7
     part_of_day = t - trunc(t)
     sat + 5*div(trunc(t)-sat,7) + max(0.0,offset-2.0) + part_of_day
+  end
+
+  @doc """
+  Walks a map structure while applying the function `fun`.
+  """
+  @spec analyze(map :: %{}, fun :: (([number],Keyword.t) -> Keyword.t), options :: Keyword.t) :: Keyword.t
+  def analyze(map = %{}, fun, options) do
+      map |> Enum.reduce(%{}, fn {k,v},acc -> Map.put(acc,k,analyze(v,fun,options)) end)
+  end
+  def analyze(data, fun, options) when is_list(data) do
+      cond do
+          Keyword.keyword?(data) ->
+              Keyword.merge(data, fun.(data,Keyword.put(options,:bin,data[:bin])))
+          true ->
+              analyze([throughput: data, bin: options[:bin]], fun, options)
+      end
   end
 
 end
