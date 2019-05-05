@@ -88,7 +88,8 @@ The repository contains the notebooks:
 * `chi2fit.ipynb` - simple template containing the minimal set-up to get started,
 * `BacklogForecasting.ipynb` - elaborate example using data to forecast the completion date of a backlog of work items,
 * `BacklogForecasting-plots.ipynb` - same as `BacklogForecasting.ipynb` but with plots using `GnuPlot`; see below,
-* `BacklogForecasting-non-equilibrium.ipynb` - illustration of binning and changing delivery rate
+* `BacklogForecasting-non-equilibrium.ipynb` - illustration of binning and changing delivery rate,
+* `BacklogForecasting-multiplot.ipynb` - demonstration of how to do multi plots.
 
 Plots are supported using the package [:gnuplot](https://hex.pm/packages/gnuplot).
 On MacOS execute the following command from the shell to display the GnuPlot window:

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM pprzetacznik/ielixir
+#FROM pprzetacznik/ielixir
+FROM pietertje/ielixir
 
 # Set the working directory
 WORKDIR /app

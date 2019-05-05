@@ -21,6 +21,23 @@ defmodule Gnuplotlib do
   alias Chi2fit.Utilities, as: U
   alias Gnuplot, as: G
   
+  @imgpath "/app/notebooks/images"
+  @terminal "pngcairo"
+  @pngoptions ~w(set terminal #{@terminal} transparent enhanced)a
+  defp terminal(options) do
+    if options[:inline] do
+      [
+        List.flatten([
+          @pngoptions,
+          if(options[:size], do: ~w(size #{options[:size]})a, else: [ ])
+        ]),
+        ~w(set output '#{@imgpath}/#{options[:inline]}.png')a
+      ]
+    else
+      [ ]
+    end
+  end
+
   @doc """
   Draws a histogram of the data.
   
@@ -37,19 +54,23 @@ defmodule Gnuplotlib do
   def histogram(data, options \\ []) do
     binsize = options[:bin] || 1
     hist = data |> U.make_histogram(binsize,0) |> Enum.map(&Tuple.to_list/1)
-    commands = [
-      ['width=#{binsize}'],
-      ['hist(x,width)=width*floor(x)+width/2.0'],
-      [:set, :boxwidth, 'width*0.9'],
-      [:set, :style, :fill, :solid, 0.5],
-      if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
-      if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
-      if(options[:yrange], do: [:set, :yrange, options[:yrange]], else: []),
-      if(options[:xlabel], do: [:set, :xlabel, options[:xlabel]], else: [:set, :xlabel]),
-      if(options[:ylabel], do: [:set, :ylabel, options[:ylabel], :rotate, :by, 90], else: [:set, :ylabel]),
+    
+    File.mkdir_p @imgpath
 
-      [:plot, "-", :u, '(hist($1,width)):2', :smooth, :freq, :w, :boxes, :lc, 'rgb"green"', :notitle]
-    ]
+    commands = terminal(options)
+      ++ [
+            ['width=#{binsize}'],
+            ['hist(x,width)=width*floor(x)+width/2.0'],
+            [:set, :boxwidth, 'width*0.9'],
+            [:set, :style, :fill, :solid, 0.5],
+            if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
+            if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
+            if(options[:yrange], do: [:set, :yrange, options[:yrange]], else: []),
+            if(options[:xlabel], do: [:set, :xlabel, options[:xlabel]], else: [:set, :xlabel]),
+            if(options[:ylabel], do: [:set, :ylabel, options[:ylabel], :rotate, :by, 90], else: [:set, :ylabel]),
+
+            [:plot, "-", :u, '(hist($1,width)):2', :smooth, :freq, :w, :boxes, :lc, 'rgb"green"', :notitle]
+          ]
     if options[:commands], do: {commands,[hist]}, else: G.plot(commands,[hist])
   end
 
@@ -74,7 +95,9 @@ defmodule Gnuplotlib do
     hist = data |> Enum.map(&Tuple.to_list/1)
     maxx = data |> Enum.map(&elem(&1,0)) |> Enum.max |> Kernel.*(1.2)
 
-    commands = [
+    File.mkdir_p @imgpath
+    commands = terminal(options)
+      ++ [
         [:set, :style, :line, 1,
             :linecolor, :rgb, "#0060ad",
             :linetype, 1, :linewidth, 2,
@@ -134,7 +157,9 @@ defmodule Gnuplotlib do
     |> Enum.map(&Tuple.to_list/1)
     |> Enum.map(fn [x,y]->[(x-0.5)*bin,y] end)
 
-    commands = [
+    File.mkdir_p @imgpath
+    commands = terminal(options)
+      ++ [
         ['count=#{length(data)}'],
         ['width=#{bin}'],
         ['hist(x,width)=width*floor(x/width)+width/2.0'],
@@ -167,10 +192,14 @@ defmodule Gnuplotlib do
     cols = options[:columns] || 2
     rows = options[:rows] || trunc(Float.ceil(length(all)/cols,0))
     {commands,data} = all |> U.unzip
-    G.plot([ [
-            [:set, :terminal, :wxt, :size, '1000,500'],
-            [:set, :multiplot, :layout, '#{rows},#{cols}'] ++ (if options[:title], do: [:title, options[:title], :font, ",14"], else: []),
-        ] ] |> Enum.concat(commands) |> Enum.concat,
+
+    File.mkdir_p @imgpath
+    G.plot([
+        terminal(options)
+        ++ [
+             [:set, :multiplot, :layout, '#{rows},#{cols}'] ++ (if options[:title], do: [:title, options[:title], :font, ",14"], else: []),
+         ]
+      ] |> Enum.concat(commands) |> Enum.concat,
         data |> Enum.concat)
   end
 
