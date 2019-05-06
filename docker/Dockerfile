@@ -22,6 +22,7 @@ USER root
 
 # Environment variables
 ENV BOOSTLIB=/usr/lib/x86_64-linux-gnu/
+ENV ERL_LIBS=/app/chi2fit/_build/dev/lib
 
 # Install the BOOST++ libraries
 RUN set -xe \
