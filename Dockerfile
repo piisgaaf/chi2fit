@@ -16,4 +16,4 @@
 # This Eockerfile is intended for use in MyBinder,org
 #
 
-FROM pietertje/ielixir:272c704836c2
+FROM piisgaaf/chi2fit:272c704836c2
