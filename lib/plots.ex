@@ -20,21 +20,25 @@ defmodule Gnuplotlib do
 
   alias Chi2fit.Utilities, as: U
   alias Gnuplot, as: G
-  
+
   @imgpath "/app/notebooks/images"
   @terminal "pngcairo"
   @pngoptions ~w(set terminal #{@terminal} transparent enhanced)a
-  defp terminal(options) do
-    if options[:inline] do
-      [
-        List.flatten([
-          @pngoptions,
-          if(options[:size], do: ~w(size #{options[:size]})a, else: [ ])
-        ]),
-        ~w(set output '#{@imgpath}/#{options[:inline]}.png')a
-      ]
-    else
-      [ ]
+
+  @doc """
+  Captures the output sent by `&Port.open/2` and returns it as a binary
+  """
+  @timeout 1_000
+  @spec capture(out :: binary) :: binary
+  def capture(out \\ <<>>) do
+    receive do
+      {_, {:data, data}} ->
+        capture(out <> data)
+      {_, :closed} ->
+        out
+    after
+      @timeout ->
+        out
     end
   end
 
@@ -54,10 +58,8 @@ defmodule Gnuplotlib do
   def histogram(data, options \\ []) do
     binsize = options[:bin] || 1
     hist = data |> U.make_histogram(binsize,0) |> Enum.map(&Tuple.to_list/1)
-    
-    File.mkdir_p @imgpath
 
-    commands = terminal(options)
+    terminal(options)
       ++ [
             ['width=#{binsize}'],
             ['hist(x,width)=width*floor(x)+width/2.0'],
@@ -71,7 +73,7 @@ defmodule Gnuplotlib do
 
             [:plot, "-", :u, '(hist($1,width)):2', :smooth, :freq, :w, :boxes, :lc, 'rgb"green"', :notitle]
           ]
-    if options[:commands], do: {commands,[hist]}, else: G.plot(commands,[hist])
+      |> do_output([hist], options)
   end
 
   @doc """
@@ -95,8 +97,13 @@ defmodule Gnuplotlib do
     hist = data |> Enum.map(&Tuple.to_list/1)
     maxx = data |> Enum.map(&elem(&1,0)) |> Enum.max |> Kernel.*(1.2)
 
-    File.mkdir_p @imgpath
-    commands = terminal(options)
+    args = [
+        [[0,0,0,0]|hist]++[[maxx,1,0,0]],
+        hist,
+        hist
+    ] ++ if(options[:func], do: [dofun(npoints,maxx,options[:func])], else: [])
+
+    terminal(options)
       ++ [
         [:set, :style, :line, 1,
             :linecolor, :rgb, "#0060ad",
@@ -121,15 +128,8 @@ defmodule Gnuplotlib do
                 if(options[:func], do: ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]], else: [])
             ])
         ]
-    ]
-
-    args = [
-        [[0,0,0,0]|hist]++[[maxx,1,0,0]],
-        hist,
-        hist
-    ] ++ if(options[:func], do: [dofun(npoints,maxx,options[:func])], else: [])
-
-    if options[:commands], do: {commands,args}, else: G.plot(commands,args)
+      ]
+      |> do_output(args, options)
   end
 
   @doc """
@@ -157,8 +157,9 @@ defmodule Gnuplotlib do
     |> Enum.map(&Tuple.to_list/1)
     |> Enum.map(fn [x,y]->[(x-0.5)*bin,y] end)
 
-    File.mkdir_p @imgpath
-    commands = terminal(options)
+    args = [ hist,hist,dofun(npoints,maxx,options[:pdf]) ]
+    
+    terminal(options)
       ++ [
         ['count=#{length(data)}'],
         ['width=#{bin}'],
@@ -177,11 +178,8 @@ defmodule Gnuplotlib do
                 ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]]
             ])
         ]
-    ]
-    
-    args = [ hist,hist,dofun(npoints,maxx,options[:pdf]) ]
-    
-    if options[:commands], do: {commands,args}, else: G.plot(commands,args)
+      ]
+      |> do_output(args, options)
   end
   
   @doc """
@@ -193,14 +191,15 @@ defmodule Gnuplotlib do
     rows = options[:rows] || trunc(Float.ceil(length(all)/cols,0))
     {commands,data} = all |> U.unzip
 
-    File.mkdir_p @imgpath
-    G.plot([
-        terminal(options)
-        ++ [
-             [:set, :multiplot, :layout, '#{rows},#{cols}'] ++ (if options[:title], do: [:title, options[:title], :font, ",14"], else: []),
-         ]
-      ] |> Enum.concat(commands) |> Enum.concat,
-        data |> Enum.concat)
+    [
+      terminal(options)
+      ++ [
+           [:set, :multiplot, :layout, '#{rows},#{cols}'] ++ (if options[:title], do: [:title, options[:title], :font, ",14"], else: []),
+       ]
+    ]
+    |> Enum.concat(commands)
+    |> Enum.concat
+    |> do_output(Enum.concat(data), options)
   end
 
   #############################################################################
@@ -209,6 +208,43 @@ defmodule Gnuplotlib do
   ##
   #############################################################################
   
+  defp make_terminal(options) do
+    List.flatten([
+      @pngoptions,
+      if(options[:size], do: ~w(size #{options[:size]})a, else: [ ])
+    ])
+  end
+
+  defp terminal(options) do
+    case options[:mode] do
+      {:as_file, path} ->
+        File.mkdir_p @imgpath
+        [ make_terminal(options), ~w(set output '#{@imgpath}/#{path}.png')a ]
+      raw when raw==nil or raw==:raw or raw==:raw64 ->
+        [ make_terminal(options), ~w(set output)a ]
+      _else ->
+        [ ]
+    end
+  end
+
+  defp do_output(commands, datasets, options) do
+    case options[:mode] do
+      :as_commands ->
+        {commands, datasets}
+      {:as_file, _} ->
+        G.plot(commands, datasets)
+      :as_raw ->
+        G.plot(commands, datasets)
+        capture() |> IO.write
+      :as_raw64 ->
+        G.plot(commands, datasets)
+        capture() |> Base.encode64 |> IO.write
+      nil ->
+        G.plot(commands, datasets)
+        capture() |> Base.encode64 |> IO.write
+    end
+  end
+
   defp dofun(npoints,maxx,fun) do
       0..npoints
       |> Enum.map(fn i -> [i*maxx/npoints,fun.(i*maxx/npoints)] end)
