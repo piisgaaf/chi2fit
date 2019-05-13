@@ -34,13 +34,11 @@ RUN set -xe \
                 libboost-system1.62-dev \
                 libboost1.62-tools-dev \
                 libmpfrc++-dev \
-                libntl-dev' \
+                libntl-dev \
+                gnuplot \
+                graphviz' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
-
-# Install gnuplot
-RUN set -xe \
-  && apt-get install -y --no-install-recommends gnuplot
 
 WORKDIR /app/chi2fit
 ADD mix.* ./
@@ -54,9 +52,11 @@ RUN set -xe \
   && mix deps.compile \
   && mix compile
 
+# Add notebooks
 WORKDIR /app/notebooks
 ADD notebooks/*.ipynb ./
 
 RUN set -xe \
   && mkdir -p /app/notebooks \
+  && mkdir -p /app/notebooks/images \
   && chmod -R o+w /app/notebooks

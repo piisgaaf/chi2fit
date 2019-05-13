@@ -47,6 +47,7 @@ defmodule Chi2fit.Mixfile do
       {:exalgebra, "~> 0.0.5"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:exboost, "~> 0.2"},
+      {:graphvix,"~>1.0"},
 #      {:gnuplot, "~> 1.19"}
       {:gnuplot, git: "https://github.com/piisgaaf/gnuplot-elixir.git", branch: "feature/waitforcompletion"}
     ]
