@@ -841,6 +841,8 @@ defmodule Chi2fit.Utilities do
 
   @doc """
   Forecasts how many time periods are needed to complete `size` items
+  
+  Related functions: `forecast_duration/2` and `forecast_items/2`.
   """
   @spec forecast(fun :: (() -> non_neg_integer),size :: pos_integer, tries :: pos_integer, update :: (() -> number)) :: number
   def forecast(fun, size, tries \\ 0,update \\ fn -> 1 end)
@@ -850,14 +852,59 @@ defmodule Chi2fit.Utilities do
   def forecast(_fun,_size,tries,_update), do: tries
 
   @doc """
-  Basic Monte Carlo simulation to repeatedly run a simulation multiple times.
+  Returns a function for forecasting the duration to complete a number of items.
+  
+  This function is a wrapper for `forecast/4`.
+
+  ## Arguments
+  
+      `data` - either a data set to base the forecasting on, or a function that returns (random) numbers
+      `size` - the number of items to complete
+
   """
-  @spec mc(iterations :: pos_integer, fun :: ((pos_integer) -> float), all? :: boolean) :: {avg :: float, sd :: float, tries :: [float]} | {avg :: float, sd :: float}
-  def mc(iterations,fun,all? \\ false) do
-      tries = 1..iterations |> Enum.map(fn _ -> fun.() end)
-      avg = moment tries, 1
-      sd = :math.sqrt momentc(tries,2,avg)
-      if all?, do: {avg,sd,tries}, else: {avg,sd}
+  @spec forecast_duration(data :: [number] | (()->number), size :: pos_integer) :: (() -> number)
+  def forecast_duration(data, size) when is_list(data) do
+    fn -> forecast(fn -> Enum.random(data) end, size) end
+  end
+  def forecast_duration(fun, size) when is_function(fun,0) do
+    fn -> forecast(fun, size) end
+  end
+
+  @doc """
+  Returns a function for forecasting the number of completed items in a number periods.
+  
+  This function is a wrapper for `forecast/4`.
+
+  ## Arguments
+  
+      `data` - either a data set to base the forecasting on, or a function that returns (random) numbers
+      `periods` - the number of periods to forecast the number of completed items for
+
+  """
+  @spec forecast_items(data :: [number] | (()->number), periods :: pos_integer) :: (() -> number)
+  def forecast_items(data, periods) when is_list(data) do
+    fn -> forecast(fn -> 1 end, periods, 0, fn -> Enum.random(data) end) end
+  end
+  def forecast_items(fun, periods) when is_function(fun,0) do
+    fn -> forecast(fn -> 1 end, periods, 0, fun) end
+  end
+
+  @doc """
+  Basic Monte Carlo simulation to repeatedly run a simulation multiple times.
+  
+  ## Options
+  
+      `:collect_all?` - If true, collects data from each individual simulation run and returns this an the third element of the result tuple
+  
+  """
+  @spec mc(iterations :: pos_integer, fun :: ((pos_integer) -> float), options :: Keyword.t) :: {avg :: float, sd :: float, tries :: [float]} | {avg :: float, sd :: float}
+  def mc(iterations,fun,options \\ []) do
+    all? = options[:collect_all?] || false
+
+    tries = 1..iterations |> Enum.map(fn _ -> fun.() end)
+    avg = moment tries, 1
+    sd = :math.sqrt momentc(tries,2,avg)
+    if all?, do: {avg,sd,tries}, else: {avg,sd}
   end
 
   @doc """
@@ -944,11 +991,15 @@ defmodule Chi2fit.Utilities do
       IO.puts device,"    pars:\t\t#{inspect parameters}"
       IO.puts device,"    ranges:\t\t#{inspect errors}\n"
   end
-  def display(device,{avg,sd}) do
-      IO.puts device,"50% within    #{:math.ceil(avg)} units"
-      IO.puts device,"84% within    #{:math.ceil(avg+sd)} units"
-      IO.puts device,"97.5% within  #{:math.ceil(avg+2*sd)} units"
-      IO.puts device,"99.85% within #{:math.ceil(avg+3*sd)} units"
+  def display(device,{avg,sd,direction}) do
+    op = case direction do
+      :+ -> &Kernel.+/2
+      :- -> &Kernel.-/2
+    end
+    IO.puts device,"50%    => #{:math.ceil(avg)} units"
+    IO.puts device,"84%    => #{:math.ceil(op.(avg,sd))} units"
+    IO.puts device,"97.5%  => #{:math.ceil(op.(avg,2*sd))} units"
+    IO.puts device,"99.85% => #{:math.ceil(op.(avg,3*sd))} units"
   end
   
   @doc """
@@ -1030,5 +1081,36 @@ defmodule Chi2fit.Utilities do
               analyze([throughput: data, bin: options[:bin]], fun, options)
       end
   end
+
+  @doc """
+  Pretty-prints a nested array-like structure (list or tuple) as a table.
+  """
+  @spec as_table(rows :: [any], header :: list() | tuple()) :: list()
+  def as_table(rows, header) do
+    map = 1..tuple_size(header) |> Enum.map(&{&1,0}) |> Enum.into(%{})
+    table = [header|rows] |> _to_string()
+    map = Enum.reduce(table, map, fn row,acc ->
+      row
+      |> Enum.with_index(1)
+      |> Enum.reduce(acc, fn {str,i},acc2 -> Map.update!(acc2, i, fn v -> max(v,String.length(str)) end) end)
+    end)
+    table
+    |> Enum.with_index()
+    |> Enum.each(fn
+      {row, 0} ->
+        IO.puts row |> Enum.with_index(1) |> Enum.map(fn {str,i} -> String.pad_trailing(str, map[i]) end) |> Enum.join("|")
+        IO.puts row |> Enum.with_index(1) |> Enum.map(fn {_,i} -> String.duplicate("-",map[i]) end) |> Enum.join("|")
+      {row, _} ->
+        IO.puts row |> Enum.with_index(1) |> Enum.map(fn {str,i} -> String.pad_trailing(str, map[i]) end) |> Enum.join("|")
+    end)
+    
+    rows
+  end
+  
+  defp _to_string(list) when is_list(list), do: list |> Enum.map(&_to_string/1)
+  defp _to_string(tuple) when is_tuple(tuple), do: tuple |> Tuple.to_list |> _to_string()
+  defp _to_string(string) when is_binary(string), do: string
+  defp _to_string(float) when is_float(float), do: "#{float}"
+  defp _to_string(integer) when is_integer(integer), do: "#{integer}"
 
 end
