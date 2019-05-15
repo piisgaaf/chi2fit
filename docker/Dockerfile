@@ -40,6 +40,10 @@ RUN set -xe \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
 
+# Install additional conda packages
+RUN set -xe \
+  && conda install -c conda-forge rise
+  
 WORKDIR /app/chi2fit
 ADD mix.* ./
 ADD config config/

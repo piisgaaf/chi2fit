@@ -1020,6 +1020,25 @@ defmodule Chi2fit.Utilities do
   end
 
   @doc """
+  Pretty prints subsequences.
+  """
+  @spec display_subsequences(device :: IO.device(), trends :: list(), intervals :: [NaiveDateTime.t]) :: none()
+  def display_subsequences(device \\ :stdio, trends, intervals) do
+    trends
+    |> Stream.transform(1, fn arg={_,_,data}, index -> { [{arg, Enum.at(intervals,index)}], index+length(data)} end)
+    |> Stream.each(fn
+        {{chimin, [rate], subdata},date} ->
+          IO.puts device, "Subsequence ending @#{Timex.format!(date,~S({Mshort}, {D} {YYYY}))}"
+          IO.puts device, "----------------------------------"
+          IO.puts device, "    chi2@minimum:  #{Float.round(chimin,1)}"
+          IO.puts device, "    delivery rate: #{Float.round(rate,1)}"
+          IO.puts device, "    subsequence:   #{inspect(subdata, charlists: :as_lists)}"
+          IO.puts device, ""
+      end)
+    |> Stream.run()
+  end
+
+  @doc """
   Maps the time of a day into the working hour period
   
   Scales the resulting part of the day between 0..1.
@@ -1112,5 +1131,58 @@ defmodule Chi2fit.Utilities do
   defp _to_string(string) when is_binary(string), do: string
   defp _to_string(float) when is_float(float), do: "#{float}"
   defp _to_string(integer) when is_integer(integer), do: "#{integer}"
+
+  @doc """
+  Reads CSV data, extracts one column, and returns it as a list of `NaiveDateTime`.
+  """
+  @spec csv_to_list(csvcata :: Enumerable.t, key :: String.t, options :: Keyword.t) :: [NaiveDateTime.t]
+  def csv_to_list(csvdata, key, options \\ []) do
+    header? = options[:header?] || false
+    format = options[:format] || "{YYYY}/{0M}/{0D}"
+
+    csvdata
+    |> CSV.decode!(headers: header?)
+    |> Stream.filter(& Map.fetch!(&1, key) != "")
+    |> Stream.map(& Map.fetch!(&1, key))
+    |> Stream.map(& Timex.parse(&1, format) |> elem(1))
+    |> Enum.sort(& NaiveDateTime.compare(&1,&2) === :gt)
+  end
+
+  @doc """
+  Returns a `Stream` that generates a stream of dates.
+  """
+  @spec intervals(options :: Keyword.t) :: Stream.t
+  def intervals(options \\ []) do
+    recent = case (options[:end] || Date.utc_today()) do
+      date = %Date{day: day} when day > 16 -> %Date{date | day: 1, month: date.month+1}
+      date = %Date{day: day} when day > 1 -> %Date{date | day: 16}
+    end
+    type = options[:type] || :half_month
+    
+    case type do
+      :half_month ->
+        recent |> Stream.iterate(fn
+            previous = %Date{day: 16} -> Timex.shift previous, days: -15
+            previous = %Date{day: 1} -> Timex.shift previous, days: +15, months: -1
+          end)
+    end
+  end
+
+  @doc """
+  Counts the number of dates (`datelist`) that is between consecutive dates in `intervals` and returns the result as a list of numbers.
+  """
+  @spec throughput(intervals :: Enumerable.t, datelist :: [NaiveDateTime.t]) :: [number]
+  def throughput(intervals, datelist) do
+    intervals
+    |> Stream.chunk_every(2, 1, :discard)
+    |> Stream.transform(datelist, fn
+        _, [] ->
+          {:halt, []}
+        [d1,d2], acc ->
+          {left,right} = Enum.split_with(acc, fn d -> Timex.between?(d,d2,d1) end)
+          {[{d1,Enum.count(left)}],right}
+      end)
+    |> Enum.map(fn {_d,count} -> count end)
+  end
 
 end
