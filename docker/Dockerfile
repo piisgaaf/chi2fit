@@ -36,7 +36,8 @@ RUN set -xe \
                 libmpfrc++-dev \
                 libntl-dev \
                 gnuplot \
-                graphviz' \
+                graphviz \
+                texlive-xetex' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
 
