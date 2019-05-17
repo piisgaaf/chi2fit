@@ -20,15 +20,6 @@ defmodule Chi2fit.Distribution do
 
   import Chi2fit.Utilities
   
-  @typedoc "A probability distribution function"
-  @type distribution() :: ((...) :: term())
-  
-  @typedoc "Cumulative Distribution function"
-  @type cdf() :: ((number) :: number())
-
-  @typedoc "Keyword list containing the CDF function and the number of parameters"
-  @type model :: [fun: cdf(), df: pos_integer()]
-  
   defmodule UnsupportedDistributionError do
     defexception message: "Unsupported distribution function"
   end
@@ -53,105 +44,21 @@ defmodule Chi2fit.Distribution do
   ## Options
   Available only for the SEP distribution, see 'sepCDF/5'.
   """
-  @spec model(name::String.t, options::Keyword.t) :: model()
+  @spec model(name::String.t, options::Keyword.t) :: any
   def model(name, options \\ []) do
     case name do
-      "wald" ->
-        d = %Distribution.Wald{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "weibull" ->
-        d = %Distribution.Weibull{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "exponential" ->
-        d = %Distribution.Exponential{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "frechet" ->
-        d = %Distribution.Frechet{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "nakagami" ->
-        d = %Distribution.Nakagami{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "poisson" ->
-        d = %Distribution.Poisson{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      {"poisson", period} when is_number(period) and period>0 ->
-        d = %Distribution.Poisson{period: period}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "erlang" ->
-        d = %Distribution.Erlang{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      {"erlang", batches} ->
-        d = %Distribution.Erlang{batches: batches}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "normal" ->
-        d = %Distribution.Normal{}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "sep" ->
-        d = %Distribution.SEP{options: options}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
-      "sep0" ->
-        d = %Distribution.SEP{offset: 0.0, options: options}
-        [
-          fun: Distribution.cdf(d),
-          df: Distribution.size(d),
-          skewness: Distribution.skewness(d),
-          kurtosis: Distribution.kurtosis(d)
-        ]
+      "wald" -> %Distribution.Wald{}
+      "weibull" -> %Distribution.Weibull{}
+      "exponential" -> %Distribution.Exponential{}
+      "frechet" -> %Distribution.Frechet{}
+      "nakagami" -> %Distribution.Nakagami{}
+      "poisson" -> %Distribution.Poisson{}
+      {"poisson", period} when is_number(period) and period>0 -> %Distribution.Poisson{period: period}
+      "erlang" -> %Distribution.Erlang{}
+      {"erlang", batches} when is_number(batches) and batches>0 -> %Distribution.Erlang{batches: batches}
+      "normal" -> %Distribution.Normal{}
+      "sep" -> %Distribution.SEP{options: options}
+      "sep0" -> %Distribution.SEP{offset: 0.0, options: options}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
@@ -178,14 +85,14 @@ defmodule Chi2fit.Distribution do
   end
   def guess(_sample,n,distrib) when is_integer(n) and n>0 do
     model = model(distrib)
-    params = 1..model[:df]
+    params = 1..Distribution.size(model)
     1..n
     |> Enum.map(fn _ -> Enum.map(params, fn _ -> 50*:rand.uniform end) end)
     |> Enum.flat_map(fn
       pars ->
         try do
-          s = model[:skewness].(pars)
-          k = model[:kurtosis].(pars)
+          s = Distribution.skewness(model).(pars)
+          k = Distribution.kurtosis(model).(pars)
           [{s,k}]
         rescue
           _error -> []
