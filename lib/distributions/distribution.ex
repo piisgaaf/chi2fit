@@ -25,20 +25,20 @@ defprotocol Distribution do
 end
 
 defimpl Enumerable, for: [
-  Distribution.Poisson,
+  Distribution.Constant,
+  Distribution.Coin,
+  Distribution.Dice,
+  Distribution.Uniform,
+  Distribution.Bernoulli,
   Distribution.Exponential,
+  Distribution.Poisson,
   Distribution.Erlang,
   Distribution.Normal,
   Distribution.Wald,
   Distribution.Weibull,
   Distribution.Frechet,
   Distribution.Nakagami,
-  Distribution.SEP,
-  Distribution.Constant,
-  Distribution.Coin,
-  Distribution.Bernoulli,
-  Distribution.Uniform,
-  Distribution.Dice] do
+  Distribution.SEP] do
 
   alias Distribution, as: D
 
