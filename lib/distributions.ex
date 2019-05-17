@@ -33,70 +33,6 @@ defmodule Chi2fit.Distribution do
     defexception message: "Unsupported distribution function"
   end
 
-  ###
-  ### Standard distributions
-  ###
-
-  @doc """
-  Uniform distribution.
-  """
-  @spec uniform(Keyword.t) :: distribution
-  def uniform([]), do: uniform(0, 2.0)
-  def uniform([avg: average]), do: uniform(0,2*average)
-  def uniform(list) when is_list(list), do: fn () -> Enum.random(list) end
-
-  @doc """
-  Uniform distribution.
-  """
-  @spec uniform(min::integer(),max::integer()) :: distribution
-  def uniform(min,max) when max>=min, do: fn () -> random(min,max) end
-
-  @doc """
-  Constant distribution.
-  """
-  @spec constant(number | Keyword.t) :: distribution
-  def constant([avg: average]), do: fn () -> average end
-  def constant(average) when is_number(average), do: fn () -> average end
-
-  @doc """
-  The Bernoulli distribution.
-  """
-  @spec bernoulli(value :: number) :: distribution
-  def bernoulli(value) when is_number(value) do
-   fn () ->
-       u = :rand.uniform()
-       if u <= value, do: 1, else: 0
-   end
-  end
-
-  ###
-  ### Special distributions
-  ###
-
-  @doc """
-  Distribution for flipping coins.
-  """
-  @spec coin() :: distribution
-  def coin() do
-    fn -> if(:rand.uniform()<0.5, do: :heads, else: :tails) end
-  end
-
-  @doc """
-  Distribution simulating a dice (1..6)
-  """
-  @spec dice([] | number) :: distribution
-  def dice([]), do: dice(1.0)
-  def dice([avg: avg]), do: dice(avg)
-  def dice(avg), do: uniform([avg*1,avg*2,avg*3,avg*4,avg*5,avg*6])
-
-  @doc """
-  Distribution simulating the dice in the GetKanban V4 simulation game.
-  """
-  @spec dice_gk4([] | number) :: distribution
-  def dice_gk4([]), do: dice_gk4(1.0)
-  def dice_gk4([avg: avg]), do: dice_gk4(avg)
-  def dice_gk4(avg), do: uniform([avg*3,avg*4,avg*4,avg*5,avg*5,avg*6])
-
   @doc """
   Returns the model for a name.
   
@@ -255,14 +191,6 @@ defmodule Chi2fit.Distribution do
           _error -> []
         end
     end)
-  end
-
-  ##
-  ## Local Functions
-  ##
-  @spec random(min::number(),max::number()) :: number()
-  defp random(min,max) when max >= min do
-    min + (max-min)*:rand.uniform()
   end
 
 end

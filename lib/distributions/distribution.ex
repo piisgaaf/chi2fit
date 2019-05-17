@@ -31,7 +31,14 @@ defimpl Enumerable, for: [
   Distribution.Normal,
   Distribution.Wald,
   Distribution.Weibull,
-  Distribution.Frechet] do
+  Distribution.Frechet,
+  Distribution.Nakagami,
+  Distribution.SEP,
+  Distribution.Constant,
+  Distribution.Coin,
+  Distribution.Bernoulli,
+  Distribution.Uniform,
+  Distribution.Dice] do
 
   alias Distribution, as: D
 
