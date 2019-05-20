@@ -74,6 +74,7 @@ RUN set -xe \
 # Add notebooks
 WORKDIR /app/notebooks
 ADD notebooks/*.ipynb ./
+ADD notebooks/data/* ./data/
 
 RUN set -xe \
   && mkdir -p /app/notebooks \
