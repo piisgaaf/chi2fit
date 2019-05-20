@@ -564,23 +564,29 @@ defmodule Chi2fit.Fit do
 
   end
 
+  defp _find_change(enumerable, fun) when is_function(enumerable,2), do: enumerable |> U.subsequences |> Stream.map(fun)
+  defp _find_change(enumerable, fun), do: enumerable |> U.subsequences |> Enum.map(fun)
+
+  defp probe_seq(seq, binsize, initial, cdf, options) do
+    seq
+    |> U.to_bins({binsize,0})
+    |> chi2probe(initial, {cdf, &nopenalties/2}, options)
+    |> Tuple.to_list
+    |> Enum.take(2)
+    |> List.to_tuple
+  end
+  
   @doc """
   Finds the point in the data where the chi-squared has a jump when fitting the model
   """
-  @spec find_change(other :: [number()],options :: Keyword.t) :: [{chi :: float,[float]}]
-  def find_change(other, options), do: find_change(other, [], [], options)
+  @spec find_change(list :: [number()],options :: Keyword.t) :: [{chi :: float,[float]}]
+  def find_change(list, options) do
+    binsize = options[:bin] || 1
+    initial = options[:init]
+    model = options[:fitmodel]
+    cdf = model[:fun]
 
-  defp find_change([], _, acc, _), do: Enum.reverse(acc)
-  defp find_change(other, data, acc, options) do
-      binsize = options[:bin] || 1
-      initial = options[:init]
-      model = options[:fitmodel]
-
-      [first|last] = other
-      
-      hist = U.to_bins [first|data], {binsize,0}
-      [chi,params|_rest] = chi2probe(hist, [initial], {model[:fun], &nopenalties/2}, options) |> Tuple.to_list
-      find_change(last,[first|data],[{chi,params}|acc],options)
+    list |> _find_change(& probe_seq(&1,binsize,initial,cdf,options))
   end
 
   @doc """
@@ -591,28 +597,33 @@ defmodule Chi2fit.Fit do
   
   defp find_all(data, acc, options)
   defp find_all(nil, acc, _options), do: Enum.reverse(acc)
-  defp find_all(data, acc, options) do
+  defp find_all(data, _acc, options) do
       threshold = options[:threshold] || 10
-      [first|rest] = data
-      |> find_change(options)
-      |> Enum.zip(data)
-      |> Stream.chunk_while(
-          {0,nil,[]},
-          fn
-              {{chi,params},d},{0,nil,[]} -> {:cont,{chi,params,[d]}}
-              {_,d},           {:done,saved} -> {:cont,{:done,[d|saved]}}
-              {{chi,params},d},{lastchi,_pars,saved} when chi<10*lastchi or chi<threshold
-                  -> {:cont,{chi,params,[d|saved]}}
-              {{_chi,_params},d},{lastchi,pars,saved}
-                  -> {:cont,{lastchi,pars,Enum.reverse(saved)},{:done,[d]}}
-          end,
-          fn
-              {:done,saved} -> {:cont,Enum.reverse(saved),[]}
-              {chi,params,saved} -> {:cont,{chi,params,Enum.reverse(saved)},[]}
-          end
-      )
-      |> Enum.into([])
-      find_all(List.last(rest),[first|acc],options)
+      binsize = options[:bin] || 1
+      initial = options[:init]
+      model = options[:fitmodel]
+      cdf = model[:fun]
+
+      data
+      |> Stream.chunk_while({0,nil,[]},
+        fn
+          dat, {0,nil,[]} ->
+            {chi2, params} = probe_seq([dat],binsize,initial,cdf,options)
+            {:cont, {chi2,params,[dat]}}
+
+          dat, {lastchi2, lastparams, saved} ->
+            {chi2, params} = probe_seq([dat|saved],binsize,initial,cdf,options)
+            if chi2<10*lastchi2 or chi2<threshold do
+              {:cont, {chi2, params, [dat|saved]}}
+            else
+              {newchi2, newparams} = probe_seq([dat],binsize,initial,cdf,options)
+              {:cont, {lastchi2, lastparams, Enum.reverse(saved)}, {newchi2, newparams, [dat]}}
+            end
+        end,
+        fn
+          {chi,params,saved} -> {:cont,{chi,params,Enum.reverse(saved)},[]}
+        end)
+      |> (& if is_function(data, 2), do: &1, else: Enum.into(&1, [])).()
   end
 
 end

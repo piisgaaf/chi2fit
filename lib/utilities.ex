@@ -907,66 +907,102 @@ defmodule Chi2fit.Utilities do
     if all?, do: {avg,sd,tries}, else: {avg,sd}
   end
 
+  @hours 24.0
+  @default_workday {8.0,18.0}
+  @default_epoch ~D[1970-01-01]
+
+  @doc ~S"""
+  Adjusts the times to working hours and/or work days.
+  
+  ## Options
+  
+    `workhours` - a 2-tuple containing the starting and ending hours of the work day (defaults to #{@default_workday})
+    `epoch` - the epoch to which all data elements are relative (defaults to #{@default_epoch})
+    `saturday` - number of days since the epoch that corresponds to a Saturday (defaults to #{13 - Date.day_of_week(@default_epoch)})
+    `correct` - whether to correct the times for working hours and weekdays; possible values `:worktime`, `:weekday`, `:"weekday+worktime"` (defaults to `false`)
+
+  """
+  @spec adjust_times(Enumerable.t, options :: Keyword.t) :: Enumerable.t
+  def adjust_times(data, options) do
+    {startofday,endofday} = options[:workhours] || @default_workday
+    correct = options[:correct] || false
+    epoch = options[:epoch] || @default_epoch
+    sat = 13 - Date.day_of_week(epoch)
+    saturday = options[:saturday] || sat
+
+    data
+    |> Stream.map(fn x ->
+        case correct do
+          :worktime -> map2workhours(x, startofday, endofday)
+          :weekday -> map2weekdays(x, saturday)
+          :"weekday+worktime" -> x |> map2workhours(startofday, endofday) |> map2weekdays(saturday)
+          _ -> x
+        end
+      end)
+    |> Enum.sort(&(&1>&2)) # Sort on new delivery times
+  end
+
+  @default_cutoff 0.01
+
+  @doc """
+  Returns a list of time differences (assumes an ordered list as input)
+  
+  ## Options
+  
+    `cutoff` - time differences below the cutoff are changed to the cutoff value (defaults to `#{@default_cutoff})
+    `drop?` - whether to drop time differences below the cutoff (defaults to `false`)
+
+  """
+  @spec time_diff(data :: Enumrable.t, options :: Keyword.t) :: Enumerable.t
+  def time_diff(data, options) do
+    cutoff = options[:cutoff] || @default_cutoff
+    drop? = options[:drop] || false
+
+    data
+    |> Stream.chunk_every(2,1,:discard)
+    |> Stream.map(fn [x,y]->x-y end)
+    |> Stream.transform(nil,fn x,_acc ->
+          {
+            cond do
+              x < cutoff and drop? -> []
+              x < cutoff -> [cutoff]
+              true -> [x]
+            end,
+            nil
+          }
+        end)
+    |> (& if is_function(data, 2), do: &1, else: Enum.into(&1, [])).()
+  end
+
   @doc """
   Calculates the systematic errors for bins due to uncertainty in assigning data to bins.
+  
+  ## Options
+  
+    `bin` - the size of bins to use (defaults to 1)
+    `iterations` - the number of iterations to use to estimate the error due to noise (defatuls to 100)
+
   """
-  @hours 24.0
-  @spec binerror(data :: [number], dist :: (() -> number), options :: Keyword.t) :: [{bin :: number, avg :: number, error :: number}]
-  def binerror(data, dist, options \\ []) do
+  @spec binerror(data :: [number], noise_fun :: ((Enumerable.t) -> Enumerable.t), options :: Keyword.t) :: [{bin :: number, avg :: number, error :: number}]
+  def binerror(data, noise_fun, options \\ []) do
     binsize = options[:bin] || 1
     iterations = options[:iterations] || 100
-    cutoff = options[:cutoff] || 0.01
-    {startofday,endofday} = options[:workhours] || {8.0,17.0}
-    workhours = endofday - startofday
-    drop? = options[:drop] || false
-    correct? = options[:correct] || false
 
     1..iterations
     |> Stream.map(fn _ ->
         data
-        |> Stream.map(fn t ->
-            other = @hours - workhours
-            case t+dist.() do
-                sum when sum > endofday/@hours -> sum + other/@hours
-                sum when sum < startofday/@hours -> sum - other/@hours
-                sum -> sum
-            end
-          end)
-        |> Enum.sort(&(&1>&2))
-        |> Stream.map(fn x ->
-            if correct? do
-              frac = x-trunc(x)
-              min(
-                max(0.0,frac-startofday/@hours),
-                workhours/@hours
-              )*@hours/workhours
-            else
-              x
-            end
-          end)
-        |> Stream.chunk_every(2,1,:discard)
-        |> Stream.map(fn [x,y]->x-y end)
-        |> Stream.transform(nil,fn x,_acc ->
-              {
-                cond do
-                  x < cutoff and drop? -> []
-                  x < cutoff -> [cutoff]
-                  true -> [x]
-                end,
-                nil
-              }
-            end)
+        |> noise_fun.()
         |> to_bins({binsize,0})
         |> Stream.map(fn {x,y,low,high}->{x,[{y,low,high}]} end)
         |> Map.new()
       end)
     |> Enum.reduce(%{}, fn map,acc -> Map.merge(map,acc, fn _k, v1,v2 -> v1++v2 end) end)
     |> Stream.map(fn {k,list} ->
-        {xs,lows,highs} = unzip list
-        avg = moment xs,1
+        {ys,lows,highs} = unzip list
+        avg = moment ys,1
         avg_low = moment lows,1
         avg_high = moment highs,1
-        sd = :math.sqrt momentc xs,2,avg
+        sd = :math.sqrt momentc ys,2,avg
         {k,avg,avg_low,avg_high,sd}
       end)
     |> Stream.map(fn {x,y,ylow,yhigh,err} ->
@@ -1081,8 +1117,10 @@ defmodule Chi2fit.Utilities do
   @spec map2weekdays(t :: number, sat :: pos_integer) :: number
   def map2weekdays(t, sat) when is_integer(sat) do
     offset = rem trunc(t)-sat, 7
+    weeks = div trunc(t)-sat, 7
+    
     part_of_day = t - trunc(t)
-    sat + 5*div(trunc(t)-sat,7) + max(0.0,offset-2.0) + part_of_day
+    sat + 5*weeks + max(0.0,offset-2.0) + part_of_day
   end
 
   @doc """
@@ -1183,6 +1221,31 @@ defmodule Chi2fit.Utilities do
           {[{d1,Enum.count(left)}],right}
       end)
     |> Enum.map(fn {_d,count} -> count end)
+  end
+
+  @doc ~S"""
+
+  ## Examples
+
+      iex> subsequences []
+      []
+  
+      iex> subsequences [:a, :b]
+      [[:a], [:a, :b]]
+  
+      iex> Stream.cycle([1,2,3]) |> subsequences |> Enum.take(4)
+      [[1], [1, 2], [1, 2, 3], [1, 2, 3, 1]]
+
+  """
+  @spec subsequences(Enumerable.t) :: Enumerable.t
+  def subsequences(stream) when is_function(stream, 2) do
+    stream
+    |> Stream.transform([], fn x,acc -> {[Enum.reverse([x|acc])], [x|acc]} end)
+  end
+  def subsequences(list) do
+    {result, _} = list
+    |> Enum.reduce({[],[]}, fn  x, {res,acc} -> {[Enum.reverse([x|acc])|res], [x|acc]} end)
+    Enum.reverse(result)
   end
 
 end

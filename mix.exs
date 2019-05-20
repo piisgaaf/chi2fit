@@ -50,6 +50,7 @@ defmodule Chi2fit.Mixfile do
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
       {:timex, "~> 3.5"},
+      {:stream_data, "~> 0.4"},
 #      {:gnuplot, "~> 1.19"}
       {:gnuplot, git: "https://github.com/piisgaaf/gnuplot-elixir.git", branch: "feature/waitforcompletion"}
     ]

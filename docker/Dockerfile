@@ -34,17 +34,31 @@ RUN set -xe \
                 libboost-system1.62-dev \
                 libboost1.62-tools-dev \
                 libmpfrc++-dev \
-                libntl-dev \
-                gnuplot \
-                graphviz \
-                texlive-xetex' \
+                libntl-dev' \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends $buildDeps
+
+# Install the XeTeX distribution with additional fonts
+RUN set -xe \
+  && buildDeps='texlive-xetex \
+                texlive-plain-generic \
+                texlive-fonts-recommended' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
 
 # Install additional conda packages
 RUN set -xe \
+  && conda update -n base conda \
   && conda install -c conda-forge rise
-  
+
+# Install additional packages needed for the Chi2fit package
+RUN set -xe \
+  && buildDeps='gnuplot \
+                graphviz' \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends $buildDeps
+
+  # Copy the Chi2fit package
 WORKDIR /app/chi2fit
 ADD mix.* ./
 ADD config config/

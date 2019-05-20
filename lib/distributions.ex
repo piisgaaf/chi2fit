@@ -443,6 +443,12 @@ defmodule Chi2fit.Distribution do
         skewness: fn [k,_] -> 2/:math.sqrt(k) end,
         kurtosis: fn [k,_] -> 6/k end
       ]
+      {"erlang", batches} -> [
+        fun: fn (x,[lambda]) -> erlangCDF(batches,lambda).(x) end,
+        df: 1,
+        skewness: fn [_] -> 2/:math.sqrt(batches) end,
+        kurtosis: fn [_] -> 6/batches end
+      ]
       "normal" -> [
         fun: fn (x,[mu,sigma]) -> normalCDF(mu,sigma).(x) end,
         df: 2,
