@@ -88,6 +88,7 @@ defmodule Gnuplotlib do
     `:ylabel` - the label to use for the y-axis,
     `:func` - the data to use for the CDF curve as a list of `[x,y]`,
     `:title` - the title to use for the CDF curve.
+     :bounds - 2-tuple of functions describing the minimum and maximum error-curves for the CDF
 
   """
   @type datapoint() :: {x :: number, y :: number, ylow :: number, yhigh :: number}
@@ -101,7 +102,14 @@ defmodule Gnuplotlib do
         [[0,0,0,0]|hist]++[[maxx,1,0,0]],
         hist,
         hist
-    ] ++ if(options[:func], do: [dofun(npoints,maxx,options[:func])], else: [])
+    ]
+    ++ if(options[:func], do: [dofun(npoints,maxx,options[:func])], else: [])
+    ++ case options[:bounds] do
+         {minrate,maxrate} ->
+           [ dofun(npoints,maxx,minrate) |> Enum.zip(dofun(npoints,maxx,maxrate)) |> Enum.map(fn {[x,y1],[x,y2]}->[x,y1,y2] end) ]
+         _else ->
+           [ ]
+        end
 
     terminal(options)
       ++ [
@@ -115,6 +123,8 @@ defmodule Gnuplotlib do
         [:set, :style, :line, 3,
             :linecolor, :rgb, "green",
             :linetype, 1, :linewidth, 2],
+        ~w(set style fill transparent solid 0.2 noborder)a,
+        ~w(set key left top)a,
         if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
         if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
         if(options[:yrange], do: [:set, :yrange, options[:yrange]], else: [:set,:yrange,'[0:1.2]']),
@@ -126,7 +136,13 @@ defmodule Gnuplotlib do
                 ~w('' u 1:2 w points ls 1 notitle)a,
                 ~w('' u 1:2:3:4 w yerrorbars ls 2 title 'Empirical CDF')a,
                 if(options[:func], do: ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]], else: [])
-            ])
+            ] ++ case options[:bounds] do
+                  {_,_} -> [
+                    ["", :u, '1:2:3', :lc, :rgb, "grey", :w, :filledcurve, :closed, :title, "Error bounds"]
+                  ]
+                  _else -> []
+                end
+            )
         ]
       ]
       |> do_output(args, options)
