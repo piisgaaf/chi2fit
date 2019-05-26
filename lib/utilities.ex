@@ -949,7 +949,7 @@ defmodule Chi2fit.Utilities do
   
   ## Options
   
-    `cutoff` - time differences below the cutoff are changed to the cutoff value (defaults to `#{@default_cutoff})
+    `cutoff` - time differences below the cutoff are changed to the cutoff value (defaults to `#{@default_cutoff}`)
     `drop?` - whether to drop time differences below the cutoff (defaults to `false`)
 
   """

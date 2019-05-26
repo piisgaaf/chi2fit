@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "1.0.0",
+      version: "1.0.0-alpha",
       elixir: "~> 1.6",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -45,14 +45,13 @@ defmodule Chi2fit.Mixfile do
   defp deps do
     [
       {:exalgebra, "~> 0.0.5"},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false},
       {:exboost, "~> 0.2"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
       {:timex, "~> 3.5"},
       {:stream_data, "~> 0.4"},
-#      {:gnuplot, "~> 1.19"}
-      {:gnuplot, git: "https://github.com/piisgaaf/gnuplot-elixir.git", branch: "feature/waitforcompletion"}
+      {:gnuplot, "~> 1.19"}
     ]
   end
 
