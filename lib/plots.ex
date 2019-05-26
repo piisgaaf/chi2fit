@@ -46,12 +46,13 @@ defmodule Gnuplotlib do
   Draws a histogram of the data.
   
   ## Options
-    `:bin` - the size of the bins to use,
-    `:plottitle` - the title of the plot,
-    `:xrange` - the range for the x-values to use in the format '[x1:x2]'
-    `:xrange` - the range for the y-values to use in the format '[y1:y2]'
-    `:xlabel` - the label to use for the x-axis,
-    `:ylabel` - the label to use for the y-axis.
+
+      `:bin` - the size of the bins to use,
+      `:plottitle` - the title of the plot,
+      `:xrange` - the range for the x-values to use in the format '[x1:x2]'
+      `:xrange` - the range for the y-values to use in the format '[y1:y2]'
+      `:xlabel` - the label to use for the x-axis,
+      `:ylabel` - the label to use for the y-axis.
 
   """
   @spec histogram(data :: [number], options :: Keyword.t) :: none()
@@ -80,15 +81,16 @@ defmodule Gnuplotlib do
   Draws a graph of the empirical CDF as steps, the data points with error bars, and the (fitted) function.
   
   ## Options
-    `:bin` - the size of the bins to use,
-    `:plottitle` - the title of the plot,
-    `:xrange` - the range for the x-values to use in the format '[x1:x2]'
-    `:xrange` - the range for the y-values to use in the format '[y1:y2]'
-    `:xlabel` - the label to use for the x-axis,
-    `:ylabel` - the label to use for the y-axis,
-    `:func` - the data to use for the CDF curve as a list of `[x,y]`,
-    `:title` - the title to use for the CDF curve.
-     :bounds - 2-tuple of functions describing the minimum and maximum error-curves for the CDF
+  
+      `:bin` - the size of the bins to use,
+      `:plottitle` - the title of the plot,
+      `:xrange`- the range for the x-values to use in the format '[x1:x2]'
+      `:xrange` - the range for the y-values to use in the format '[y1:y2]'
+      `:xlabel` - the label to use for the x-axis,
+      `:ylabel` - the label to use for the y-axis,
+      `:func` - the data to use for the CDF curve as a list of `[x,y]`,
+      `:title` - the title to use for the CDF curve.
+      `:bounds` - 2-tuple of functions describing the minimum and maximum error-curves for the CDF
 
   """
   @type datapoint() :: {x :: number, y :: number, ylow :: number, yhigh :: number}
@@ -152,14 +154,15 @@ defmodule Gnuplotlib do
   Draws a graph of the PDF.
   
   ## Options
-    `:bin` - the size of the bins to use,
-    `:plottitle` - the title of the plot,
-    `:xrange` - the range for the x-values to use in the format '[x1:x2]'
-    `:xrange` - the range for the y-values to use in the format '[y1:y2]'
-    `:xlabel` - the label to use for the x-axis,
-    `:ylabel` - the label to use for the y-axis,
-    `:pdf` - the data to use for the PDF curve as a list of `[x,y]`,
-    `:title` - the title to use for the PDF curve.
+
+      `:bin` - the size of the bins to use,
+      `:plottitle` - the title of the plot,
+      `:xrange` - the range for the x-values to use in the format '[x1:x2]'
+      `:xrange` - the range for the y-values to use in the format '[y1:y2]'
+      `:xlabel` - the label to use for the x-axis,
+      `:ylabel` - the label to use for the y-axis,
+      `:pdf` - the data to use for the PDF curve as a list of `[x,y]`,
+      `:title` - the title to use for the PDF curve.
 
   """
   @spec pdf(data :: [number], options :: Keyword.t) :: none()

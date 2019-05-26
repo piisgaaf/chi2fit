@@ -227,17 +227,17 @@ defmodule Chi2fit.Distribution do
   The Skew Exponential Power cumulative distribution (Azzalini).
 
   ## Options
-    `:method` - the integration method to use, :gauss and :romberg types are supported, see below
-    `:tolerance` - re-iterate until the tolerance is reached (only for :romberg)
-    `:points` - the number of points to use in :gauss method
+      `:method` - the integration method to use, :gauss and :romberg types are supported, see below
+      `:tolerance` - re-iterate until the tolerance is reached (only for :romberg)
+      `:points` - the number of points to use in :gauss method
 
   ## Integration methods
-    `:gauss` - n-point Gauss rule,
-    `:gauss2` - n-point Guass rule with tanh transformation,
-    `:gauss3` - n-point Gauss rule with linear transformstion,
-    `:romberg` - Romberg integration,
-    `:romberg2` - Romberg integration with tanh transformation,
-    `:romberg3` - Romberg integration with linear transformstion.
+      `:gauss` - n-point Gauss rule,
+      `:gauss2` - n-point Guass rule with tanh transformation,
+      `:gauss3` - n-point Gauss rule with linear transformstion,
+      `:romberg` - Romberg integration,
+      `:romberg2` - Romberg integration with tanh transformation,
+      `:romberg3` - Romberg integration with linear transformstion.
 
   """
   @spec sepCDF(a :: float,b :: float,lambda :: float,alpha :: float, options :: Keyword.t) :: cdf

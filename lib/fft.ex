@@ -50,14 +50,13 @@ defmodule Chi2fit.FFT do
   Provides a parallel version (see options below). See [1] for details of the algorithm implemented.
   
   ## Options
-    * `:phase` - Correction factor to use in the weights of the FFT algorithm. Defaults to 1.
-    * `:nproc` - Parellel version. Number of processes to use. See [2]. Defaults to 1.
+      `:phase` - Correction factor to use in the weights of the FFT algorithm. Defaults to 1.
+      `:nproc` - Parellel version. Number of processes to use. See [2]. Defaults to 1.
 
   ## References
   
-    [1] Zie: https://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
-  
-    [2] Parallel version of FFT; see http://www.webabode.com/articles/Parallel%20FFT%20implementations.pdf
+      [1] Zie: https://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
+      [2] Parallel version of FFT; see http://www.webabode.com/articles/Parallel%20FFT%20implementations.pdf
   
   ## Examples
     

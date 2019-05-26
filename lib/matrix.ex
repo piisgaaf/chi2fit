@@ -147,17 +147,13 @@ defmodule Chi2fit.Matrix do
   
   ## Options
 
-  * `:tolerance` - Iterate until the `norm_1/1` of I-AV is less than this value
-  
-  * `:algorithm` - Four algorithms are supported: `:hotelling_bodewig` (second order), `:lie` (third order),
-  `:krishnamurthy_sen` (sixth order), and `:soleymani` (seventh order); defaults to `#{inspect @default_algorithm}`
-  
-  * `:max_iterations` - Maximum number of iterations to perform; defaults to #{@default_inverse_iterations}
-  
-  * `:range` - Range of values from -range to +range as a multiple of the unit matrix to try as an estimate
-  of the inverse matric; defaults to #{@default_range}
-  
-  * `:size` - Number of tries to estimate initial inverse; defautls to #{@default_size}
+      `:tolerance` - Iterate until the `norm_1/1` of I-AV is less than this value
+      `:algorithm` - Four algorithms are supported: `:hotelling_bodewig` (second order), `:lie` (third order),
+          `:krishnamurthy_sen` (sixth order), and `:soleymani` (seventh order); defaults to `#{inspect @default_algorithm}`
+      `:max_iterations` - Maximum number of iterations to perform; defaults to #{@default_inverse_iterations}
+      `:range` - Range of values from -range to +range as a multiple of the unit matrix to try as an estimate
+          of the inverse matric; defaults to #{@default_range}
+      `:size` - Number of tries to estimate initial inverse; defautls to #{@default_size}
   
   ## Examples
   

@@ -414,7 +414,8 @@ defmodule Chi2fit.Utilities do
   
   ## References
   
-    [1] 'Handbook of Markov Chain Monte Carlo'
+      [1] 'Handbook of Markov Chain Monte Carlo'
+  
   """
   @spec error([{gamma :: number,k :: pos_integer}], :initial_sequence_method) :: {var :: number, lag :: number}
   def error(nauto, :initial_sequence_method) do
@@ -911,15 +912,18 @@ defmodule Chi2fit.Utilities do
   @default_workday {8.0,18.0}
   @default_epoch ~D[1970-01-01]
 
-  @doc ~S"""
+  @doc ~s"""
   Adjusts the times to working hours and/or work days.
   
   ## Options
   
-    `workhours` - a 2-tuple containing the starting and ending hours of the work day (defaults to #{@default_workday})
-    `epoch` - the epoch to which all data elements are relative (defaults to #{@default_epoch})
-    `saturday` - number of days since the epoch that corresponds to a Saturday (defaults to #{13 - Date.day_of_week(@default_epoch)})
-    `correct` - whether to correct the times for working hours and weekdays; possible values `:worktime`, `:weekday`, `:"weekday+worktime"` (defaults to `false`)
+      `workhours` - a 2-tuple containing the starting and ending hours of the work day (defaults
+          to #{inspect @default_workday})
+      `epoch` - the epoch to which all data elements are relative (defaults to #{@default_epoch})
+      `saturday` - number of days since the epoch that corresponds to a Saturday (defaults
+          to #{13 - Date.day_of_week(@default_epoch)})
+      `correct` - whether to correct the times for working hours and weekdays; possible values
+          `:worktime`, `:weekday`, `:"weekday+worktime"` (defaults to `false`)
 
   """
   @spec adjust_times(Enumerable.t, options :: Keyword.t) :: Enumerable.t
@@ -949,8 +953,8 @@ defmodule Chi2fit.Utilities do
   
   ## Options
   
-    `cutoff` - time differences below the cutoff are changed to the cutoff value (defaults to `#{@default_cutoff}`)
-    `drop?` - whether to drop time differences below the cutoff (defaults to `false`)
+      `cutoff` - time differences below the cutoff are changed to the cutoff value (defaults to `#{@default_cutoff}`)
+      `drop?` - whether to drop time differences below the cutoff (defaults to `false`)
 
   """
   @spec time_diff(data :: Enumrable.t, options :: Keyword.t) :: Enumerable.t
@@ -979,8 +983,8 @@ defmodule Chi2fit.Utilities do
   
   ## Options
   
-    `bin` - the size of bins to use (defaults to 1)
-    `iterations` - the number of iterations to use to estimate the error due to noise (defatuls to 100)
+      `bin` - the size of bins to use (defaults to 1)
+      `iterations` - the number of iterations to use to estimate the error due to noise (defatuls to 100)
 
   """
   @spec binerror(data :: [number], noise_fun :: ((Enumerable.t) -> Enumerable.t), options :: Keyword.t) :: [{bin :: number, avg :: number, error :: number}]
