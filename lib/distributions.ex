@@ -51,16 +51,16 @@ defmodule Chi2fit.Distribution do
     case name do
       "wald" -> %Distribution.Wald{pars: params}
       "weibull" -> %Distribution.Weibull{pars: params}
-      "exponential" -> %Distribution.Exponential{}
-      "frechet" -> %Distribution.Frechet{}
-      "nakagami" -> %Distribution.Nakagami{}
-      "poisson" -> %Distribution.Poisson{}
-      {"poisson", period} when is_number(period) and period>0 -> %Distribution.Poisson{period: period}
+      "exponential" -> %Distribution.Exponential{pars: params}
+      "frechet" -> %Distribution.Frechet{pars: params}
+      "nakagami" -> %Distribution.Nakagami{pars: params}
+      "poisson" -> %Distribution.Poisson{pars: params}
+      {"poisson", period} when is_number(period) and period>0 -> %Distribution.Poisson{pars: params,period: period}
       "erlang" -> %Distribution.Erlang{pars: params}
-      {"erlang", batches} when is_number(batches) and batches>0 -> %Distribution.Erlang{batches: batches}
+      {"erlang", batches} when is_number(batches) and batches>0 -> %Distribution.Erlang{pars: params,batches: batches}
       "normal" -> %Distribution.Normal{pars: params}
-      "sep" -> %Distribution.SEP{options: options}
-      "sep0" -> %Distribution.SEP{offset: 0.0, options: options}
+      "sep" -> %Distribution.SEP{pars: params,options: options}
+      "sep0" -> %Distribution.SEP{pars: params,offset: 0.0, options: options}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
