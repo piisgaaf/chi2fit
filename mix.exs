@@ -81,10 +81,11 @@ defmodule Chi2fit.Mixfile do
     [
       maintainers: [ "Pieter Rijken" ],
       licenses: [ "Apache 2.0" ],
-      files: [ "lib", "mix.exs", "README*", "LICENSE*", "config", "chi2fit" ],
+      files: [ "lib", "mix.exs", "README*", "LICENSE*", "NOTICE", "config", "chi2fit" ],
       links: %{
         "GitHub" => "https://github.com/piisgaaf/chi2fit",
-        "Docker" => "https://hub.docker.com/r/pietertje/chi2fit"
+        "Docker" => "https://hub.docker.com/r/pietertje/chi2fit",
+        "Binder" => "https://mybinder.org/v2/gh/piisgaaf/chi2fit/master?filepath=README.ipynb"
       }
     ]
   end
