@@ -36,6 +36,7 @@ defimpl Distribution, for: Distribution.Uniform do
   defp uniform([]), do: uniform(0, 2.0)
   defp uniform([avg: average]), do: uniform(0,2*average)
   defp uniform(list) when is_list(list), do: fn () -> Enum.random(list) end
+  defp uniform(range = %Range{}), do: fn () -> Enum.random(range) end
 
   @spec uniform(min::integer(),max::integer()) :: ((...) -> number)
   defp uniform(min,max) when max>=min, do: fn () -> random(min,max) end
@@ -55,10 +56,17 @@ defimpl Distribution, for: Distribution.Uniform do
   @doc """
   ## Examples:
 
-      iex> %Distribution.Uniform{range: {0,0}} |> random().()
+      iex> :rand.seed :exsplus, {101, 102, 103}
+      iex> random %Distribution.Uniform{list: {0,20}}
+      14.897380811651171
+      iex> random %Distribution.Uniform{list: 0..20}
+      11
+      iex> random %Distribution.Uniform{list: [1,2,3,4,5]}
+      1
 
   """
-  def random(%Uniform{range: {min,max}}), do: uniform(min,max).()
+  def random(%Uniform{list: {min,max}}), do: uniform(min,max).()
+  def random(%Uniform{list: r=%Range{}}), do: uniform(r).()
   def random(%Uniform{list: list}), do: uniform(list).()
   def random(%Uniform{}), do: uniform([]).()
   

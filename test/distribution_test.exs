@@ -16,8 +16,8 @@ defmodule Chi2fitDistributionTest do
 
   use ExUnit.Case, async: true
 
-  doctest Distribution.Uniform
-  doctest Distribution.Constant
+  doctest Distribution.Distribution.Constant, import: true
+  doctest Distribution.Distribution.Uniform, import: true
 
   @tag long: true
   test "exponential distribution" do
