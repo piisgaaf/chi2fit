@@ -185,14 +185,14 @@ defmodule Chi2fit.Cli do
   
   defp penalties(_x,_pars), do: 0.0
 
-  defp probe(data, model, options) do
+  defp probe(data, {model,ranges}, options) do
     penalties = options[:penalties]
     surface = options[:surface]
     surface? = options[:surface?]
     
     {:ok, file} = if surface?, do: File.open(surface, [:write]), else: {:ok,nil}
     options = options |> Keyword.put_new(:surfacefile,file)
-    result = chi2probe(data, model[:probe], {model[:fun], penalties}, options)
+    result = chi2probe(data, ranges, {Distribution.cdf(model), penalties}, options)
     if file, do: File.close(file)
     result
   end
@@ -228,8 +228,9 @@ defmodule Chi2fit.Cli do
     data = convert_cdf({cdf,bins|>Enum.map(&elem(&1,0))})
 
     try do
-      model = model(options[:name],options) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
-      {chi2, parameters,errors} = probe data, model, options
+      model = model(options[:name],options)
+      ranges = elem(Code.eval_string(options[:ranges]),0)
+      {chi2, parameters,errors} = probe data, {model,ranges}, options
       {data,model, {chi2, parameters,errors}}
     rescue
       _e in Chi2fit.Distribution.UnsupportedDistributionError ->
@@ -241,10 +242,10 @@ defmodule Chi2fit.Cli do
   defp do_output(data, parameters, model, alphainv, options) do
     data |> Enum.sort |> Enum.each(fn
       (x)->
-        jac = jacobian parameters, fn (pars)->model[:fun].(x,pars) end, options
+        jac = jacobian parameters, fn (pars)->Distribution.cdf(model).(x,pars) end, options
         error2 = alphainv |> Enum.map(&(ExAlgebra.Vector.dot(&1,jac))) |> ExAlgebra.Vector.dot(jac)
         try do
-          y = model[:fun].(x,parameters)
+          y = Distribution.cdf(model).(x,parameters)
           error = if abs(error2/y) < 1.0e-6, do: 1.0e-6, else: :math.sqrt(error2)
           IO.puts("#{x},#{y},#{y-error},#{y+error}")
         rescue
@@ -381,13 +382,13 @@ defmodule Chi2fit.Cli do
       {data,model, {_chi2, parameters,_errors}} = prepare_data sample, options
       try do
         IO.write "...fitting..."
-        fit = {_,_,pars,_ranges} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
-        jac = jacobian(pars,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options),options)
+        fit = {_,_,pars,_ranges} = chi2fit(data, {parameters, Distribution.cdf(model), &penalties/2}, options[:iterations], options)
+        jac = jacobian(pars,&chi2(data,fn (x)->Distribution.cdf(model).(x,&1) end,fn (x)->penalties(x,&1) end,options),options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
       catch
         {:inverse_error, ArithmeticError, chi2, _parameters} ->
-          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-model[:df]})"
+          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-Distribution.size(model)})"
           {chi2,[],parameters}
       else
         {:error, msg} ->
@@ -395,7 +396,7 @@ defmodule Chi2fit.Cli do
           nil
   
         {chi2, alphainv, parameters,_ranges} ->
-          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-model[:df]})"
+          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-Distribution.size(model)})"
           {chi2, alphainv, parameters}
       end
     end
@@ -430,8 +431,8 @@ defmodule Chi2fit.Cli do
             IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
             System.halt 1
 
-          length(ranges) != model[:df] ->
-            IO.puts :stderr, "ERROR: 'ranges' must be of length #{model[:df]} for '#{options[:cdf]}'"
+          length(ranges) != Distribution.size(model) ->
+            IO.puts :stderr, "ERROR: 'ranges' must be of length #{Distribution.size(model)} for '#{options[:cdf]}'"
             System.halt 1
 
           true -> options
@@ -480,7 +481,8 @@ defmodule Chi2fit.Cli do
         boot = boot |> Enum.filter(&is_tuple/1)
 
         # Compute average, average sd, sd error, and maximum lag that occured
-        model = model(options[:name],options) |> Keyword.put(:probe, elem(Code.eval_string(options[:ranges]),0))
+        model = model(options[:name],options)
+        _ = elem(Code.eval_string(options[:ranges]),0)
         avgchi2 = (boot |> Stream.map(fn ({chi2,_,_}) -> chi2 end) |> Enum.sum)/length(boot)
         sdchi2 = :math.sqrt((boot |> Stream.map(fn {chi2,_,_}->(chi2-avgchi2)*(chi2-avgchi2) end) |> Enum.sum))/length(boot)
 
@@ -502,7 +504,7 @@ defmodule Chi2fit.Cli do
         IO.puts "    parameters:\t\t\t#{inspect avgpars}"
         IO.puts "    SD (parameters; sample):\t#{inspect sdpars}"
         IO.puts "    SD (parameters; fit):\t#{inspect avgsd}"
-        IO.puts "    Degrees of freedom:\t\t#{length(wdata|>Enum.to_list)-model[:df]}"
+        IO.puts "    Degrees of freedom:\t\t#{length(wdata|>Enum.to_list)-Distribution.size(model)}"
         IO.puts "    Total:\t\t\t#{length(boot)}"
 
         if options[:output?], do: do_output(wdata, avgpars, model, sdpars |> Enum.map(&(&1*&1)) |> from_diagonal, options)
@@ -530,14 +532,14 @@ defmodule Chi2fit.Cli do
           else
             options
           end
-          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, model[:fun], &penalties/2}, options[:iterations], options)
+          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, Distribution.cdf(model), &penalties/2}, options[:iterations], options)
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
-          IO.puts "    Degrees of freedom:\t#{length(data)-model[:df]}"
+          IO.puts "    Degrees of freedom:\t#{length(data)-Distribution.size(model)}"
           IO.puts "    covariance:\t\t["
           alphainv |> Enum.each(fn row -> IO.puts "    \t\t\t  #{inspect row}" end)
           IO.puts "    \t\t\t]"
-          IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->model[:fun].(x,&1) end,fn (x)->penalties(x,&1) end,options),options)}"
+          IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->Distribution.cdf(model).(x,&1) end,fn (x)->penalties(x,&1) end,options),options)}"
           IO.puts "    parameters:\t\t#{inspect parameters}"
           IO.puts "    errors:\t\t#{inspect alphainv |> diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)}"
           IO.puts "    ranges:"

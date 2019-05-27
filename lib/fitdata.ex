@@ -236,6 +236,7 @@ defmodule Chi2fit.Fit do
   the parameters.
   
   ## Options
+  
       `num` or `probes` - the number of points to calculate,
       `mark` - progress indicator: a keyword list with keys `m`, `c`, `x`, and `*`; the value must be a call back
       function taking zero arguments. These are called when 1000, 100, 10, probes have been done. The value of
@@ -584,7 +585,7 @@ defmodule Chi2fit.Fit do
     binsize = options[:bin] || 1
     initial = options[:init]
     model = options[:fitmodel]
-    cdf = model[:fun]
+    cdf = Distribution.cdf(model)
 
     list |> _find_change(& probe_seq(&1,binsize,initial,cdf,options))
   end
@@ -602,7 +603,7 @@ defmodule Chi2fit.Fit do
       binsize = options[:bin] || 1
       initial = options[:init]
       model = options[:fitmodel]
-      cdf = model[:fun]
+      cdf = Distribution.cdf(model)
 
       data
       |> Stream.chunk_while({0,nil,[]},

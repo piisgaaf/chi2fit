@@ -15,45 +15,34 @@ defmodule Chi2fitDistributionTest do
   # limitations under the License.
 
   use ExUnit.Case, async: true
-  import Chi2fit.Distribution
 
-  doctest Chi2fit.Distribution
-
-  test "uniform distribution" do
-    assert uniform(0,0).() == 0
-    assert uniform(1,1).() == 1
-    
-    numbers = for _n<-List.duplicate(1, 25), do: uniform(1,5).()
-    assert Enum.all? numbers, fn (n) -> n>=1 and n<=5 end
-  end
-  
-  test "constant distribution" do
-    assert constant([avg: 5]).() == 5
-    
-    numbers = for _n<-List.duplicate(1, 25), do: constant([avg: 1]).()
-    assert Enum.all? numbers, fn (n) -> n==1 end
-  end
+  doctest Distribution.Distribution.Constant, import: true
+  doctest Distribution.Distribution.Uniform, import: true
 
   @tag long: true
   test "exponential distribution" do
+    dist = %Distribution.Exponential{pars: [5.0]}
+
     total = 10_000_000
 
-    data = 1..total |> Stream.map(fn (_)->exponential([avg: 5.0]).() end)
+    data = 1..total |> Stream.map(fn _ -> Distribution.random(dist) end)
     avg = Enum.sum(data)/total
     sd = :math.sqrt(Enum.reduce(data, 0, fn (x,sum)->sum+(x-avg)*(x-avg) end)/total)
-    assert_in_delta 5.0, avg, 0.005
-    assert_in_delta 5.0, sd, 0.005
+    assert_in_delta 5.0, 1/avg, 0.005
+    assert_in_delta 5.0, 1/sd, 0.005
   end
 
   @tag long: true
   test "exponential distribution - convolution" do
+    dist = %Distribution.Exponential{pars: [5.0]}
+
     total = 10_000_000
     chunk = 10
 
-    data = 1..total |> Stream.map(fn (_)->exponential([avg: 5.0]).() end) |> Stream.chunk_every(chunk) |> Stream.map(&Enum.sum/1)
+    data = 1..total |> Stream.map(fn _ ->Distribution.random(dist) end) |> Stream.chunk_every(chunk) |> Stream.map(&Enum.sum/1)
     avg = Enum.sum(data)/(total/chunk)
     sd = :math.sqrt(Enum.reduce(data, 0, fn (x,sum)->sum+(x-avg)*(x-avg) end)/(total/chunk))
-    assert_in_delta 50.0, avg, 0.2
-    assert_in_delta 50.0, sd*:math.sqrt(chunk), 0.1
+    assert_in_delta 5.0, chunk/avg, 0.2
+    assert_in_delta 5.0, :math.sqrt(chunk)/sd, 0.1
   end
 end
