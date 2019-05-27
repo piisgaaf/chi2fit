@@ -75,4 +75,6 @@ defimpl Distribution, for: Distribution.Normal do
   def pdf(%Normal{pars: nil}), do: fn x, [mu,sigma] -> 1/:math.sqrt(2*:math.pi)/sigma*:math.exp(-(x-mu)*(x-mu)/2/sigma/sigma) end
 
   def random(%Normal{pars: [mu,sigma]}), do: normal(mu,sigma).()
+  def random(%Normal{pars: nil}), do: fn [mu,sigma] -> normal(mu,sigma).() end
+
 end

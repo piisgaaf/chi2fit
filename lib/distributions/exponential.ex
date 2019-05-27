@@ -26,7 +26,7 @@ defmodule Distribution.Exponential do
 
 end
 
-defimpl Distribution, for: Distribution.Exponenbtial do
+defimpl Distribution, for: Distribution.Exponential do
   import Distribution.Exponential
   alias Distribution.Exponential
 
@@ -45,4 +45,6 @@ defimpl Distribution, for: Distribution.Exponenbtial do
   def cdf(%Exponential{pars: nil}), do: fn x, [lambda] -> exponentialCDF(lambda).(x) end
   def pdf(%Exponential{pars: nil}), do: fn x, [lambda] -> lambda * :math.exp( -lambda*x ) end
   def random(%Exponential{pars: [lambda]}), do: exponential(lambda).()
+  def random(%Exponential{pars: nil}), do: fn [lambda] -> exponential(lambda).() end
+
 end

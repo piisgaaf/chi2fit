@@ -40,6 +40,13 @@ defimpl Distribution, for: Distribution.Constant do
   
   def cdf(%Constant{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Constant distribution"
   def pdf(%Constant{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
+
+  @doc """
+  ## Examples:
+  
+      iex> %Distribution.Constant{pars: [5.0]} |> Distribute.random()
+
+  """
   def random(%Constant{pars: [avg]}), do: constant(avg).()
   
 end

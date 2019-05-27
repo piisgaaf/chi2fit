@@ -88,5 +88,6 @@ defimpl Distribution, for: Distribution.Weibull do
   def cdf(%Weibull{pars: nil}), do: fn x,[k,lambda] -> weibullCDF(k,lambda).(x) end
   def pdf(%Weibull{pars: nil}), do: fn x, [k,lambda] -> k/lambda*:math.pow(x/lambda, k-1)*:math.exp( -:math.pow(x/lambda,k) ) end
   def random(%Weibull{pars: [k,lambda]}), do: weibull(k,lambda).()
+  def random(%Weibull{pars: nil}), do: fn [k,lambda] -> weibull(k,lambda).() end
 
 end

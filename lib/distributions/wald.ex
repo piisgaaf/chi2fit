@@ -68,5 +68,6 @@ defimpl Distribution, for: Distribution.Wald do
   def cdf(%Wald{pars: nil}), do: fn x,[k,lambda] -> waldCDF(k,lambda).(x) end
   def pdf(%Wald{pars: nil}), do: fn x, [mu,lambda] -> :math.sqrt(lambda/2/:math.pi/x/x/x) * :math.exp( -lambda*(x-mu)*(x-mu)/2/x/mu/mu ) end
   def random(%Wald{pars: [k,lambda]}), do: wald(k,lambda).()
+  def random(%Wald{pars: nil}), do: fn [k,lambda] -> wald(k,lambda).() end
 
 end

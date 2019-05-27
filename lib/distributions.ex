@@ -46,17 +46,19 @@ defmodule Chi2fit.Distribution do
   """
   @spec model(name::String.t, options::Keyword.t) :: any
   def model(name, options \\ []) do
+    params = options[:pars] || nil
+    
     case name do
-      "wald" -> %Distribution.Wald{}
-      "weibull" -> %Distribution.Weibull{}
+      "wald" -> %Distribution.Wald{pars: params}
+      "weibull" -> %Distribution.Weibull{pars: params}
       "exponential" -> %Distribution.Exponential{}
       "frechet" -> %Distribution.Frechet{}
       "nakagami" -> %Distribution.Nakagami{}
       "poisson" -> %Distribution.Poisson{}
       {"poisson", period} when is_number(period) and period>0 -> %Distribution.Poisson{period: period}
-      "erlang" -> %Distribution.Erlang{}
+      "erlang" -> %Distribution.Erlang{pars: params}
       {"erlang", batches} when is_number(batches) and batches>0 -> %Distribution.Erlang{batches: batches}
-      "normal" -> %Distribution.Normal{}
+      "normal" -> %Distribution.Normal{pars: params}
       "sep" -> %Distribution.SEP{options: options}
       "sep0" -> %Distribution.SEP{offset: 0.0, options: options}
       unknown ->

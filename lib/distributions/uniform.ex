@@ -52,6 +52,12 @@ defimpl Distribution, for: Distribution.Uniform do
   def cdf(%Uniform{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Uniform distribution"
   def pdf(%Uniform{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Uniform distribution"
 
+  @doc """
+  ## Examples:
+
+      iex> %Distribution.Uniform{range: {0,0}} |> random().()
+
+  """
   def random(%Uniform{range: {min,max}}), do: uniform(min,max).()
   def random(%Uniform{list: list}), do: uniform(list).()
   def random(%Uniform{}), do: uniform([]).()

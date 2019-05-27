@@ -59,4 +59,6 @@ defimpl Distribution, for: Distribution.Erlang do
 
   def random(%Erlang{pars: [k, lambda], batches: nil}), do: erlang(k,lambda).()
   def random(%Erlang{pars: [lambda], batches: k}), do: erlang(k,lambda).()
+  def random(%Erlang{pars: nil, batches: nil}), do: fn [k,lambda] -> erlang(k,lambda).() end
+
 end
