@@ -1051,8 +1051,8 @@ defmodule Chi2fit.Utilities do
 
       IO.puts device,"Final:"
       IO.puts device,"    chi2:\t\t#{chi2}"
-      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-model[:df]}"
-      IO.puts device,"    gradient:\t\t#{inspect jacobian(parameters,&F.chi2(hdata,fn x->model[:fun].(x,&1) end,fn _->0.0 end,options),options)}"
+      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-Distribution.size(model)}"
+      IO.puts device,"    gradient:\t\t#{inspect jacobian(parameters,&F.chi2(hdata,fn x->Distribution.cdf(model).(x,&1) end,fn _->0.0 end,options),options)}"
       IO.puts device,"    parameters:\t\t#{inspect parameters}"
       IO.puts device,"    errors:\t\t#{inspect param_errors}"
       IO.puts device,"    ranges:"

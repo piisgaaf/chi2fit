@@ -18,6 +18,10 @@ defmodule Chi2fitDistributionTest do
 
   doctest Distribution.Distribution.Constant, import: true
   doctest Distribution.Distribution.Uniform, import: true
+  doctest Distribution.Distribution.Exponential, import: true
+  doctest Distribution.Distribution.Poisson, import: true
+  doctest Distribution.Distribution.Erlang, import: true
+  doctest Distribution.Distribution.Normal, import: true
 
   @tag long: true
   test "exponential distribution" do

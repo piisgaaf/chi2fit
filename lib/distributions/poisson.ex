@@ -26,7 +26,7 @@ defmodule Distribution.Poisson do
   
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
-    period: number() | 1
+    period: number()
   }
 
 end
@@ -60,6 +60,8 @@ defimpl Distribution, for: Distribution.Poisson do
   def size(%Poisson{}), do: 1
   def cdf(%Poisson{pars: nil, period: factor}), do: fn x, [lambda] -> poissonCDF(lambda*factor).(x) end
   def pdf(%Poisson{pars: nil, period: factor}), do: fn x, [lambda] -> :math.exp( x*:math.log(lambda*factor) - lambda*factor - M.lgamma(x+1) ) end
+
   def random(%Poisson{pars: [lambda], period: factor}), do: poisson(lambda*factor).()
+  def random(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> poisson(lambda*factor).() end
 
 end

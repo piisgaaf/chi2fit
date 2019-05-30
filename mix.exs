@@ -25,12 +25,17 @@ defmodule Chi2fit.Mixfile do
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
-      preferred_cli_env: [test: :test, test_all: :test, test_perf: :test],
+      preferred_cli_env: [test: :test, test_all: :test, test_perf: :test, test_notebook: :test],
+      compilers: Mix.compilers ++ [:md], # Add the make compiler
+
       ## Hex stuff:
       description: description(),
       package: package(),
       name: "Chi-SquaredFit",
-      source_url: "https://github.com/piisgaaf/chi2fit"
+      source_url: "https://github.com/piisgaaf/chi2fit",
+      
+      ## Docs
+      docs: docs()
     ]
   end
 
@@ -51,14 +56,18 @@ defmodule Chi2fit.Mixfile do
       {:csv, "~> 2.3"},
       {:timex, "~> 3.5"},
       {:stream_data, "~> 0.4"},
-      {:gnuplot, "~> 1.19"}
+      {:gnuplot, "~> 1.19"},
+      {:esqlite, "~> 0.4", only: :dev, runtime: false},
+      {:poison, "~> 4.0", only: :test}
     ]
   end
 
   defp aliases do
     [
+      test_notebook: "test --only notebooks",
       test_perf: "test --only performance",
-      test_all: "test --include performance"
+      test_all: "test --include performance --include notebooks",
+      docs: ["docs", &copy_images/1]
     ]
   end
 
@@ -90,4 +99,33 @@ defmodule Chi2fit.Mixfile do
     ]
   end
 
+  defp docs() do
+    [
+      extras: [
+      "README.md",
+      "Forecasting-empirical-data.md"
+      ] |> Enum.map(& "#{Mix.Project.build_path()}/lib/chi2fit/docs/"<>&1)
+    ]
+  end
+
+  defp copy_images(_args) do
+    "#{Mix.Project.build_path()}/lib/chi2fit/docs/*_files"
+    |> Path.wildcard()
+    |> Enum.each(& File.cp_r!(&1, "doc/#{Path.basename &1}"))
+  end
+
+end
+
+defmodule Mix.Tasks.Compile.Md do
+  use Mix.Task.Compiler
+
+  @shortdoc "Compiles with jupyter nbconvert to create markdown from a notebook"
+
+  def run(_) do
+    outdir = "#{Mix.Project.build_path()}/lib/chi2fit/docs"
+    docs = Chi2fit.Mixfile.project()[:docs][:extras]
+    
+    {result, _error_code} = System.cmd("make", docs, stderr_to_stdout: true, env: [{"OUTDIR",outdir}])
+    Mix.shell.info result
+  end
 end
