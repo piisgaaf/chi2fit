@@ -50,9 +50,9 @@ defmodule NotebookUnit.Case do
     end
   end
 
-  defmacro nbrun(notebook) do
+  defmacro nbrun(json, notebook) do
     quote do
-      code = unquote(notebook) |> File.read!() |> Poison.decode!() |> convert(unquote(notebook))
+      code = unquote(json) |> convert(unquote(notebook))
       capture_io :stderr, fn ->
         capture_io fn ->
           try do
@@ -67,15 +67,48 @@ defmodule NotebookUnit.Case do
     end
   end
 
+  @mdheader ~r|#+ .*|
+  def md_headers(json) do
+    for {"cells",cells} <- json do
+      for cell <- cells, cell["cell_type"]=="markdown" do
+        cell["source"] |> Enum.filter(& Regex.match?(@mdheader,&1))
+      end |> List.flatten()
+    end |> List.flatten()
+    |> Enum.map(& String.replace_leading(&1,"#",""))
+    |> Enum.map(&String.trim/1)
+  end
+
+  @toc ~r|\#+ Table [oO]f [cC]ontents ?.*|
+  @mdlink ~r|.*\[(?<hdr>.+)\]\(#(?<link>.+)\).*|
+  @mdlistitem ~r| *\* +.*|
+  def md_toc(json) do
+    for {"cells",cells} <- json do
+      for cell <- cells, cell["cell_type"]=="markdown", Regex.match?(@toc,hd(cell["source"])) do
+        tl(cell["source"])
+      end |> List.flatten()
+    end |> List.flatten()
+    |> Enum.filter(& Regex.match?(@mdlistitem,&1))
+    |> Enum.map(& Regex.named_captures(@mdlink,&1))
+  end
+
   defmacro nbtest(notebook) do
     quote do
       @tag notebooks: true
       test "Notebook - #{unquote notebook}" do
-        warns = nbrun(@dir <> "/" <> unquote notebook)
+        json = (@dir <> "/" <> unquote notebook) |> File.read!() |> Poison.decode!()
+
+        warns = nbrun json, unquote(notebook)
         assert_received {:execute, _out}
         assert warns == ""
+        
+        headers = md_headers(json)
+        toc = md_toc(json)
+
+        Enum.each(toc, fn %{"hdr" => hdr, "link" => link} ->
+          assert hdr in headers, "Table of contents entry '#{hdr}' is missing"
+          assert link in Enum.map(headers,& String.replace(&1," ","-")), "Table of contents '#{link}' is missing a corresponding header"
+        end)
       end
-      
     end
   end
 
