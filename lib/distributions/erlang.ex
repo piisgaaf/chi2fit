@@ -54,6 +54,7 @@ defimpl Distribution, for: Distribution.Erlang do
 
   def cdf(%Erlang{pars: nil, batches: nil}), do: fn x, [k, lambda] -> erlangCDF(k,lambda).(x) end
   def cdf(%Erlang{pars: nil, batches: k}) when k>0, do: fn x, [lambda] -> erlangCDF(k,lambda).(x) end
+  def cdf(%Erlang{pars: [k,lambda], batches: nil}), do: erlangCDF(k,lambda)
 
   def pdf(%Erlang{pars: nil, batches: nil}), do: fn x, [k, lambda] -> :math.exp( -lambda*x + k*:math.log(lambda) + (k-1)*:math.log(x) - M.lgamma(k) ) end
   def pdf(%Erlang{pars: nil, batches: k}) when k>0, do: fn x, [lambda] -> :math.exp( -lambda*x + k*:math.log(lambda) + (k-1)*:math.log(x) - M.lgamma(k) ) end

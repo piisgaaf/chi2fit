@@ -50,14 +50,14 @@ defmodule Chi2fit.Mixfile do
   defp deps do
     [
       {:exalgebra, "~> 0.0.5"},
-      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false},
       {:exboost, "~> 0.2"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
       {:timex, "~> 3.5"},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19"},
-      {:esqlite, "~> 0.4", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.18.0", only: :docs, runtime: false},
+#      {:esqlite, "~> 0.4", only: :docs, runtime: false},
       {:poison, "~> 4.0", only: :test}
     ]
   end
