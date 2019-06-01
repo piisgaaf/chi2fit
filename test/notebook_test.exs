@@ -14,11 +14,12 @@ defmodule NotebookTest do
   # See the License for the specific language governing permissions and
   # limitations under the License.
 
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   use NotebookUnit.Case, dir: "notebooks"
 
   @moduletag timeout: 120000
 
+  nbtest "README.ipynb"
   nbtest "AgileNXT-Jupiter.ipynb"
   nbtest "Forecasting-empirical-data.ipynb"
   nbtest "Forecasting-fit-to-known-distribution.ipynb"

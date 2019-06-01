@@ -1196,8 +1196,8 @@ defmodule Chi2fit.Utilities do
   @spec intervals(options :: Keyword.t) :: Stream.t
   def intervals(options \\ []) do
     recent = case (options[:end] || Date.utc_today()) do
-      date = %Date{day: day} when day > 16 -> %Date{date | day: 1, month: date.month+1}
-      date = %Date{day: day} when day > 1 -> %Date{date | day: 16}
+      date = %Date{day: day} when day > 15 -> %Date{date | day: 1, month: date.month+1}
+      date = %Date{day: day} when day > 0 -> %Date{date | day: 16}
     end
     type = options[:type] || :half_month
     

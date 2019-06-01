@@ -19,48 +19,53 @@ defmodule NotebookUnit.Case do
       import unquote(__MODULE__)
       import ExUnit.CaptureIO
 
-      Module.register_attribute __MODULE__, :out, accumulate: true
-      Module.put_attribute __MODULE__, :dir, unquote(options)[:dir] || "."
+      @compile warnings_as_errors: true
+      @compile ignore_module_conflict: true
 
-      @template ~S"""
-      defmodule <%= String.replace("Runner_#{name}",~r<[-./]>,"_") %> do
-      use NotebookUnit.Case
-
-      <%= for {"cells",cells} <- json do %>
-        <%= for cell <- cells, cell["cell_type"]=="code" do %>
-      # In[<%= cell["execution_count"] %>]
-      runblock <%= cell["execution_count"] %> do
-      <%= cell["source"] |> Enum.join("") |> String.replace("/app/notebooks/data", "notebooks/data") %>
-      end
-        <% end %>
-      <% end %>
-      
-      @out
-      end
-      """
-
-      require EEx
-      EEx.function_from_string :defp, :convert, @template, [:json,:name]
+      Module.put_attribute __MODULE__, :nbdir, unquote(options)[:dir] || "."
     end
   end
   
-  defmacro runblock(key, do: block) do
+  defmacro nbrun(json, _notebook) do
     quote do
-      @out {unquote(key), unquote(block)}
-    end
-  end
-
-  defmacro nbrun(json, notebook) do
-    quote do
-      code = unquote(json) |> convert(unquote(notebook))
       capture_io :stderr, fn ->
         capture_io fn ->
           try do
-            Code.compiler_options(warnings_as_errors: true)
-            {{:module,_mod,_data,out}, _} = Code.eval_string code
-            send self(), {:execute, out}
+            {env, _} = Code.eval_quoted(quote do
+              import IEx.Helpers
+              __ENV__
+            end)
+
+            {:ok, _pid} = Boyle.start_link([])
+            result = for {"cells",cells} <- unquote(json) do
+              for cell <- cells, cell["cell_type"]=="code" do
+                code = cell["source"]
+                |> Enum.join("")
+                |> String.replace("/app/notebooks/data", "notebooks/data")
+                |> String.replace("/app/notebooks/images", "notebooks/images")
+                {cell["execution_count"], code}
+              end
+            end
+            |> List.flatten()
+            |> Enum.reduce([out: [], binding: [ans: nil, out: %{}], env: env], fn {key,code}, acc ->
+              block = { Code.string_to_quoted(code), quote(do: __ENV__) }
+              {{result,env}, binding} = Code.eval_quoted(block, acc[:binding], acc[:env])
+              new_binding = case result do
+                :"do not show this result in output" -> binding
+                :"this is an inline image" -> binding
+                {:"this is an inline image",_} -> binding
+                _ ->
+                  binding
+                  |> Keyword.update!(:ans,fn _ -> result end)
+                  |> Keyword.update!(:out,& Map.put_new(&1,key,result))
+              end
+              [binding: new_binding, out: [{key,result}|acc[:out]], env: env]
+            end)
+            send self(), {:execute, result[:out]}
           rescue
             error -> send self(), {:error, error}
+          after
+            :ok = GenServer.stop Boyle
           end
         end
       end
@@ -95,7 +100,7 @@ defmodule NotebookUnit.Case do
     quote do
       @tag notebooks: true
       test "Notebook - #{unquote notebook}" do
-        json = (@dir <> "/" <> unquote notebook) |> File.read!() |> Poison.decode!()
+        json = (@nbdir <> "/" <> unquote notebook) |> File.read!() |> Poison.decode!()
 
         warns = nbrun json, unquote(notebook)
         assert_received {:execute, _out}
