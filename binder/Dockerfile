@@ -16,4 +16,4 @@
 # This Eockerfile is intended for use in MyBinder,org
 #
 
-FROM pietertje/chi2fit@sha256:b608e5494ccc069f927b86689f44460b657ba3f5db8171186865dd4be6bc78dc
+FROM pietertje/chi2fit@sha256:a754df2c6b17823ab1e8724e9552092902cd294ce7366413ca48628ea5642941
