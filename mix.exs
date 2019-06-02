@@ -27,6 +27,7 @@ defmodule Chi2fit.Mixfile do
       aliases: aliases(),
       preferred_cli_env: preferred_cli_env(),
       compilers: Mix.compilers ++ [:md], # Add the make compiler
+      test_coverage: [tool: ExCoveralls],
 
       ## Hex stuff:
       description: description(),
@@ -56,6 +57,7 @@ defmodule Chi2fit.Mixfile do
       {:timex, "~> 3.5"},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19"},
+      {:excoveralls, "~> 0.11.0", only: :test},
       {:ex_doc, "~> 0.18.0", only: :docs, runtime: false},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :test, runtime: false}
@@ -105,8 +107,9 @@ defmodule Chi2fit.Mixfile do
       test_all: :test,
       test_perf: :test,
       test_notebook: :test,
+      coveralls: :test,
       docs: :docs
-    ]
+    ] ++ [{:"coveralls.html", :test}]
   end
 
   defp docs() do
