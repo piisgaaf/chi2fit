@@ -31,8 +31,8 @@ defimpl Distribution, for: Distribution.Constant do
   alias Distribution.Constant
 
   @spec constant(number | Keyword.t) :: ((...) -> number)
-  defp constant([avg: average]), do: fn () -> average end
-  defp constant(average) when is_number(average), do: fn () -> average end
+  defp constant([avg: average]), do: fn -> average end
+  defp constant(average) when is_number(average), do: fn -> average end
   
   def skewness(%Constant{}), do: fn _ -> 0 end
   def kurtosis(%Constant{}), do: fn _ -> 0 end

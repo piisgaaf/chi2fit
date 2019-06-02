@@ -26,7 +26,7 @@ defmodule Chi2fit.Mixfile do
       escript: escript(),
       aliases: aliases(),
       preferred_cli_env: preferred_cli_env(),
-      compilers: Mix.compilers ++ [:md], # Add the make compiler
+      compilers: Mix.compilers ++ if(Mix.env == :docs, do: [:md], else: []), # Add the make compiler
       test_coverage: [tool: ExCoveralls],
 
       ## Hex stuff:
@@ -108,8 +108,10 @@ defmodule Chi2fit.Mixfile do
       test_perf: :test,
       test_notebook: :test,
       coveralls: :test,
-      docs: :docs
-    ] ++ [{:"coveralls.html", :test}]
+      docs: :docs,
+      "coveralls.html": :test,
+      "hex.publish": :docs,
+    ]
   end
 
   defp docs() do

@@ -49,6 +49,8 @@ defmodule Chi2fit.Distribution do
     params = options[:pars] || nil
     
     case name do
+      "constant" -> %Distribution.Constant{pars: params}
+      "uniform" -> %Distribution.Uniform{pars: params}
       "wald" -> %Distribution.Wald{pars: params}
       "weibull" -> %Distribution.Weibull{pars: params}
       "exponential" -> %Distribution.Exponential{pars: params}

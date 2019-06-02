@@ -65,9 +65,9 @@ defimpl Distribution, for: Distribution.Uniform do
       1
 
   """
-  def random(%Uniform{list: {min,max}}), do: uniform(min,max).()
-  def random(%Uniform{list: r=%Range{}}), do: uniform(r).()
-  def random(%Uniform{list: list}), do: uniform(list).()
+  def random(%Uniform{pars: {min,max}}), do: uniform(min,max).()
+  def random(%Uniform{pars: r=%Range{}}), do: uniform(r).()
+  def random(%Uniform{pars: list}), do: uniform(list).()
   def random(%Uniform{}), do: uniform([]).()
   
 end
