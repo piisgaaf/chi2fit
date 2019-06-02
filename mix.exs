@@ -19,13 +19,13 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "1.0.0-alpha.1",
+      version: "1.0.0-beta.1",
       elixir: "~> 1.6",
       start_permanent: Mix.env == :prod,
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
-      preferred_cli_env: [test: :test, test_all: :test, test_perf: :test, test_notebook: :test],
+      preferred_cli_env: preferred_cli_env(),
       compilers: Mix.compilers ++ [:md], # Add the make compiler
 
       ## Hex stuff:
@@ -99,11 +99,26 @@ defmodule Chi2fit.Mixfile do
     ]
   end
 
+  defp preferred_cli_env() do
+    [
+      test: :test,
+      test_all: :test,
+      test_perf: :test,
+      test_notebook: :test,
+      docs: :docs
+    ]
+  end
+
   defp docs() do
     [
       extras: [
-      "README.md",
-      "Forecasting-empirical-data.md"
+        "README.md",
+        "Forecasting-empirical-data.md",
+        "Forecasting-fit-to-known-distribution.md",
+        "Forecasting-bootstrapping.md",
+        "Forecasting-non-equilibrium.md",
+        "Forecasting-multiplot.md",
+        "Forecasting-cycle-times.md",
       ] |> Enum.map(& "#{Mix.Project.build_path()}/lib/chi2fit/docs/"<>&1)
     ]
   end
