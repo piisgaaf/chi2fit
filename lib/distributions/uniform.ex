@@ -18,12 +18,10 @@ defmodule Distribution.Uniform do
   Provides the Uniform distribution.
   """
 
-  defstruct [:list,:pars,:range]
+  defstruct [:pars]
   
   @type t() :: %__MODULE__{
-    list: [number()],
-    pars: [number()],
-    range: {number,number}
+    pars: [number()] | {number,number}
   }
 
 end
