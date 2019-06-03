@@ -135,6 +135,27 @@ defmodule Chi2fit.Fit do
           - asymptotically reaches 1-y at u->infinity
           - pass through the point -sigma- at u=-1,
           - asymptotically reaches -y at u->-infinity
+
+  ## Examples
+  
+      iex> fun = &(&1)
+      ...> chi2 [{0,3,1}], fun
+      9.0
+
+      iex> fun = &(&1)
+      ...> chi2 [{0,3,1},{1,7,1},{2,3,1}], fun
+      46.0
+
+      iex> fun = &(&1)
+      ...> chi2 [{0,3,3},{1,7,1},{2,3,1}], fun
+      38.0
+
+      iex> fun = &(&1-2)
+      ...> chi2 [{0,3,1}], fun
+      25.0
+
+  end
+
   """
   @spec chi2(observables, ((float)->float), ((float)->float), Keyword.t) :: float
   def chi2(observables, fun, penalties \\ fn (_)->0.0 end, options \\ [])
