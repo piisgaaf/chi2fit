@@ -51,6 +51,8 @@ defmodule Chi2fit.Distribution do
     case name do
       "constant" -> %Distribution.Constant{pars: params}
       "uniform" -> %Distribution.Uniform{pars: params}
+      "dice" -> %Distribution.Dice{mode: :regular}
+      "dice_gk4" -> %Distribution.Dice{mode: :gk4}
       "wald" -> %Distribution.Wald{pars: params}
       "weibull" -> %Distribution.Weibull{pars: params}
       "exponential" -> %Distribution.Exponential{pars: params}
