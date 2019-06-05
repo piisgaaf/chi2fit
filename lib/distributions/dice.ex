@@ -31,12 +31,12 @@ defimpl Distribution, for: Distribution.Dice do
   alias Distribution.Dice
 
   @spec dice([] | number) :: ((...) -> number)
-  defp dice([]), do: dice(1.0)
+  defp dice([]), do: dice(1)
   defp dice([avg: avg]), do: dice(avg)
   defp dice(avg), do: %Distribution.Uniform{pars: [avg*1,avg*2,avg*3,avg*4,avg*5,avg*6]}
 
   @spec dice_gk4([] | number) :: ((...) -> number)
-  defp dice_gk4([]), do: dice_gk4(1.0)
+  defp dice_gk4([]), do: dice_gk4(1)
   defp dice_gk4([avg: avg]), do: dice_gk4(avg)
   defp dice_gk4(avg), do: %Distribution.Uniform{pars: [avg*3,avg*4,avg*4,avg*5,avg*5,avg*6]}
 
@@ -47,7 +47,7 @@ defimpl Distribution, for: Distribution.Dice do
   def cdf(%Dice{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Dice distribution"
   def pdf(%Dice{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Dice distribution"
 
-  def random(%Dice{mode: :regular}), do: dice([]).()
-  def random(%Dice{mode: :gk4}), do: dice_gk4([]).()
+  def random(%Dice{mode: :regular}), do: Distribution.random(dice([]))
+  def random(%Dice{mode: :gk4}), do: Distribution.random(dice_gk4([]))
   
 end
