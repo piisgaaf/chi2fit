@@ -1181,9 +1181,10 @@ defmodule Chi2fit.Utilities do
   def csv_to_list(csvdata, key, options \\ []) do
     header? = options[:header?] || false
     format = options[:format] || "{YYYY}/{0M}/{0D}"
+    separator = options[:separator] || ?,
 
     csvdata
-    |> CSV.decode!(headers: header?)
+    |> CSV.decode!(headers: header?, separator: separator)
     |> Stream.filter(& Map.fetch!(&1, key) != "")
     |> Stream.map(& Map.fetch!(&1, key))
     |> Stream.map(& Timex.parse(&1, format) |> elem(1))
