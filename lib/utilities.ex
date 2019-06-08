@@ -1174,8 +1174,27 @@ defmodule Chi2fit.Utilities do
   defp _to_string(float) when is_float(float), do: "#{float}"
   defp _to_string(integer) when is_integer(integer), do: "#{integer}"
 
-  @doc """
+  @doc ~S"""
   Reads CSV data, extracts one column, and returns it as a list of `NaiveDateTime`.
+  
+  ## Examples
+  
+      iex> csv = ["Done","2019/05/01","2019/06/01"] |> Stream.map(& &1)
+      ...> csv_to_list csv, "Done", header?: true
+      [~N[2019-06-01 00:00:00], ~N[2019-05-01 00:00:00]]
+  
+      iex> csv = ["Done","2019/May/01","2019/Jun/01"] |> Stream.map(& &1)
+      ...> csv_to_list csv, "Done", header?: true, format: "{YYYY}/{Mshort}/{0D}"
+      [~N[2019-06-01 00:00:00], ~N[2019-05-01 00:00:00]]
+  
+      iex> csv = ["Done","2019/May/01","2019/06/01"] |> Stream.map(& &1)
+      ...> csv_to_list csv, "Done", header?: true, format: "{YYYY}/{Mshort}/{0D}"
+      [~N[2019-05-01 00:00:00]]
+  
+      iex> csv = ["Done","2019/May/01","2019/06/01"] |> Stream.map(& &1)
+      ...> csv_to_list csv, "Done", header?: true, format: ["{YYYY}/{Mshort}/{0D}","{YYYY}/{0M}/{0D}"]
+      [~N[2019-06-01 00:00:00], ~N[2019-05-01 00:00:00]]
+
   """
   @spec csv_to_list(csvcata :: Enumerable.t, key :: String.t, options :: Keyword.t) :: [NaiveDateTime.t]
   def csv_to_list(csvdata, key, options \\ []) do
@@ -1183,11 +1202,20 @@ defmodule Chi2fit.Utilities do
     format = options[:format] || "{YYYY}/{0M}/{0D}"
     separator = options[:separator] || ?,
 
+    formats = if is_list(format), do: format, else: [format]
+
     csvdata
     |> CSV.decode!(headers: header?, separator: separator)
     |> Stream.filter(& Map.fetch!(&1, key) != "")
     |> Stream.map(& Map.fetch!(&1, key))
-    |> Stream.map(& Timex.parse(&1, format) |> elem(1))
+    |> Stream.map(fn t -> Enum.reduce_while(formats,nil,fn f,_acc ->
+        case Timex.parse(t, f) do
+          {:ok,n} -> {:halt,n}
+          {:error,_msg} -> {:cont,nil}
+        end
+      end)
+    end)
+    |> Stream.filter(& &1 != nil)
     |> Enum.sort(& NaiveDateTime.compare(&1,&2) === :gt)
   end
 

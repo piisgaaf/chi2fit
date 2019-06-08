@@ -55,11 +55,11 @@ defimpl Distribution, for: Distribution.Uniform do
   ## Examples:
 
       iex> :rand.seed :exsplus, {101, 102, 103}
-      iex> random %Distribution.Uniform{list: {0,20}}
+      iex> random %Distribution.Uniform{pars: {0,20}}
       14.897380811651171
-      iex> random %Distribution.Uniform{list: 0..20}
+      iex> random %Distribution.Uniform{pars: 0..20}
       11
-      iex> random %Distribution.Uniform{list: [1,2,3,4,5]}
+      iex> random %Distribution.Uniform{pars: [1,2,3,4,5]}
       1
 
   """

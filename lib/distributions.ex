@@ -70,6 +70,75 @@ defmodule Chi2fit.Distribution do
     end
   end
 
+  defp to_number(string) when is_binary(string) do
+    case Integer.parse(string) do
+      {val,""} -> val
+      _ -> String.to_float(string)
+    end
+  end
+  defp to_numbers(list), do: String.split(list," ") |> Enum.map(& to_number &1)
+
+  @doc ~S"""
+  
+  ## Examples
+
+      iex> ~M(3 4 5)
+      %Distribution.Uniform{pars: [3, 4, 5]}
+
+      iex> ~M(3 4 5)u
+      %Distribution.Uniform{pars: [3, 4, 5]}
+
+      iex> ~M()d
+      %Distribution.Dice{mode: :regular}
+
+      iex> ~M()dgk
+      %Distribution.Dice{mode: :gk4}
+
+      iex> ~M(1.2)p
+      %Distribution.Poisson{pars: [1.2], period: 1.0}
+
+      iex> ~M(1.2 5.4)w
+      %Distribution.Weibull{pars: [1.2, 5.4]}
+
+      iex> ~M(1.2 5.4)wald
+      %Distribution.Wald{pars: [1.2, 5.4]}
+
+  """
+  def sigil_M(str, ''), do: %Distribution.Uniform{pars: to_numbers(str)}
+  def sigil_M(str, [?u|_]), do: %Distribution.Uniform{pars: to_numbers(str)}
+  def sigil_M("", 'coin'), do: %Distribution.Coin{}
+  def sigil_M(str, [?c|_]), do: %Distribution.Constant{pars: [to_number(str)]}
+  def sigil_M("", 'dgk'), do: %Distribution.Dice{mode: :gk4}
+  def sigil_M("", [?d|_]), do: %Distribution.Dice{mode: :regular}
+
+  def sigil_M(str, [?b|_]), do: %Distribution.Bernoulli{pars: [to_number(str)]}
+
+  def sigil_M(str, 'erlangb') do
+    [rate, batches] = to_numbers(str)
+    %Distribution.Erlang{pars: [rate], batches: batches}
+  end
+  def sigil_M(str, 'erlang'), do: %Distribution.Erlang{pars: to_numbers(str)}
+  def sigil_M(str, [?e|_]), do: %Distribution.Exponential{pars: [to_number(str)]}
+  def sigil_M(str, 'pp') do
+    [rate, period] = to_numbers(str)
+    %Distribution.Poisson{pars: [rate], period: period}
+  end
+  def sigil_M(str, [?p|_]), do: %Distribution.Poisson{pars: [to_number(str)]}
+
+  def sigil_M(str, 'nakagami'), do: %Distribution.Nakagami{pars: to_numbers(str)}
+  def sigil_M(str, [?n|_]), do: %Distribution.Normal{pars: to_numbers(str)}
+
+  def sigil_M(str, 'wald'), do: %Distribution.Wald{pars: to_numbers(str)}
+  def sigil_M(str, [?w|_]), do: %Distribution.Weibull{pars: to_numbers(str)}
+
+  def sigil_M(str, [?f|_]), do: %Distribution.Frechet{pars: to_numbers(str)}
+  def sigil_M(str, 'sz'), do: %Distribution.SEP{pars: to_numbers(str), offset: 0.0}
+  def sigil_M(str, [?s|_]), do: %Distribution.SEP{pars: to_numbers(str)}
+
+  def sigil_M(_term, modifiers) do
+    raise UnsupportedDistributionError, message: "Unsupported modifiers #{inspect modifiers}"
+  end
+
   @doc """
   Guesses what distribution is likely to fit the sample data
   """

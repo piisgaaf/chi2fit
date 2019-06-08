@@ -22,6 +22,7 @@ defmodule Distribution.Bernoulli do
   defstruct [:pars]
   
   @type t() :: %__MODULE__{
+    pars: float
   }
 
 end

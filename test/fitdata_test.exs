@@ -16,7 +16,6 @@ defmodule FitTest do
 
   use ExUnit.Case, async: true
   import Chi2fit.Fit
-  alias Matrix, as: M
 
   doctest Chi2fit.Fit
 

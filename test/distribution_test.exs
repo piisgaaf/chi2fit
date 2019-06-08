@@ -15,7 +15,10 @@ defmodule Chi2fitDistributionTest do
   # limitations under the License.
 
   use ExUnit.Case, async: true
-
+  import Chi2fit.Distribution
+  
+  doctest Chi2fit.Distribution
+  
   doctest Distribution.Distribution.Constant, import: true
   doctest Distribution.Distribution.Uniform, import: true
   doctest Distribution.Distribution.Exponential, import: true
