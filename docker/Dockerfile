@@ -21,8 +21,9 @@ WORKDIR /app
 USER root
 
 # Environment variables
+ENV MIX_ENV=prod
 ENV BOOSTLIB=/usr/lib/x86_64-linux-gnu/
-ENV ERL_LIBS=/app/chi2fit/_build/dev/lib
+ENV ERL_LIBS=/app/chi2fit/_build/${MIX_ENV}/lib
 
 # Install the BOOST++ libraries
 RUN set -xe \

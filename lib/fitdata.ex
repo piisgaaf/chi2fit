@@ -624,6 +624,7 @@ defmodule Chi2fit.Fit do
       binsize = options[:bin] || 1
       initial = options[:init]
       model = options[:fitmodel]
+      tolerance = options[:tolerance] || 10
       cdf = Distribution.cdf(model)
 
       data
@@ -635,7 +636,7 @@ defmodule Chi2fit.Fit do
 
           dat, {lastchi2, lastparams, saved} ->
             {chi2, params} = probe_seq([dat|saved],binsize,initial,cdf,options)
-            if chi2<10*lastchi2 or chi2<threshold do
+            if chi2<tolerance*lastchi2 or chi2<threshold do
               {:cont, {chi2, params, [dat|saved]}}
             else
               {newchi2, newparams} = probe_seq([dat],binsize,initial,cdf,options)

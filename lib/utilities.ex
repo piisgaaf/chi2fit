@@ -1195,12 +1195,22 @@ defmodule Chi2fit.Utilities do
       ...> csv_to_list csv, "Done", header?: true, format: ["{YYYY}/{Mshort}/{0D}","{YYYY}/{0M}/{0D}"]
       [~N[2019-06-01 00:00:00], ~N[2019-05-01 00:00:00]]
 
+      iex> csv = ["Done","2019/May/01","2019/Jun/01"] |> Stream.map(& &1)
+      ...> csv_to_list csv, "Done", header?: true, format: ["%Y/%b/%d"], parser: :strftime
+      [~N[2019-06-01 00:00:00], ~N[2019-05-01 00:00:00]]
+
   """
   @spec csv_to_list(csvcata :: Enumerable.t, key :: String.t, options :: Keyword.t) :: [NaiveDateTime.t]
   def csv_to_list(csvdata, key, options \\ []) do
     header? = options[:header?] || false
     format = options[:format] || "{YYYY}/{0M}/{0D}"
     separator = options[:separator] || ?,
+    parser = case options[:parser] do
+      :strftime -> Timex.Format.DateTime.Formatters.Strftime
+      :default -> Timex.Format.DateTime.Formatters.Default
+      nil -> Timex.Format.DateTime.Formatters.Default
+      _ -> Timex.Format.DateTime.Formatters.Default
+    end
 
     formats = if is_list(format), do: format, else: [format]
 
@@ -1209,7 +1219,7 @@ defmodule Chi2fit.Utilities do
     |> Stream.filter(& Map.fetch!(&1, key) != "")
     |> Stream.map(& Map.fetch!(&1, key))
     |> Stream.map(fn t -> Enum.reduce_while(formats,nil,fn f,_acc ->
-        case Timex.parse(t, f) do
+        case Timex.parse(t, f, parser) do
           {:ok,n} -> {:halt,n}
           {:error,_msg} -> {:cont,nil}
         end
@@ -1221,21 +1231,57 @@ defmodule Chi2fit.Utilities do
 
   @doc """
   Returns a `Stream` that generates a stream of dates.
+  
+  ## Examples
+  
+      iex> intervals(end: ~D[2019-06-01]) |> Enum.take(4)
+      [~D[2019-06-01], ~D[2019-05-16], ~D[2019-05-01], ~D[2019-04-16]]
+  
+      iex> intervals(end: ~D[2019-06-01], type: :weekly) |> Enum.take(4)
+      [~D[2019-06-01], ~D[2019-05-18], ~D[2019-05-04], ~D[2019-04-20]]
+  
+      iex> intervals(end: ~D[2019-06-01], type: :weekly, weeks: 1) |> Enum.take(4)
+      [~D[2019-06-01], ~D[2019-05-25], ~D[2019-05-18], ~D[2019-05-11]]
+
+      iex> intervals(end: ~D[2019-06-01], type: :weekly, weeks: [3,2]) |> Enum.take(4)
+      [~D[2019-06-01], ~D[2019-05-11], ~D[2019-04-27], ~D[2019-04-13]]
+
   """
   @spec intervals(options :: Keyword.t) :: Stream.t
   def intervals(options \\ []) do
-    recent = case (options[:end] || Date.utc_today()) do
-      date = %Date{day: day} when day > 15 -> %Date{date | day: 1, month: date.month+1}
-      date = %Date{day: day} when day > 0 -> %Date{date | day: 16}
-    end
     type = options[:type] || :half_month
-    
+    periods = case options[:weeks] do
+      nil -> [2]
+      x when is_number(x) -> [x]
+      list when is_list(list) -> list
+    end
+    last = options[:end] || Date.utc_today()
+
     case type do
       :half_month ->
+        recent = case last do
+          date = %Date{day: day} when day > 16 -> %Date{date | day: 1, month: date.month+1}
+          date = %Date{day: day} when day > 1 -> %Date{date | day: 16}
+          date = %Date{day: 1} -> date
+        end
+
         recent |> Stream.iterate(fn
-            previous = %Date{day: 16} -> Timex.shift previous, days: -15
-            previous = %Date{day: 1} -> Timex.shift previous, days: +15, months: -1
-          end)
+          previous = %Date{day: 16} -> Timex.shift previous, days: -15
+          previous = %Date{day: 1} -> Timex.shift previous, days: +15, months: -1
+        end)
+      
+      :weekly ->
+        Stream.resource(
+          fn -> {last,periods} end,
+          fn
+            {current,[p]} ->
+              next = Timex.shift(current, weeks: -p)
+              {[current], {next,[p]}}
+            {current,[p|rest]} ->
+              next = Timex.shift(current, weeks: -p)
+              {[current], {next,rest}}
+          end,
+          fn _ -> [] end)
     end
   end
 

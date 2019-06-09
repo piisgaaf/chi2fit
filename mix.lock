@@ -9,7 +9,7 @@
   "esqlite": {:hex, :esqlite, "0.2.5", "cab6d87aeb5f33d848b9bb8a21129e9512ea608f930d4c63576942d8f7d72218", [:rebar3], [], "hexpm"},
   "ex_doc": {:hex, :ex_doc, "0.18.4", "4406b8891cecf1352f49975c6d554e62e4341ceb41b9338949077b0d4a97b949", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, repo: "hexpm", optional: false]}], "hexpm"},
   "exalgebra": {:hex, :exalgebra, "0.0.5", "73c5a6991f8e51f3eea42a966bbdcaa71b332aa742689e1becbe08991fe6f6e6", [:mix], [], "hexpm"},
-  "exboost": {:hex, :exboost, "0.2.5", "6dc29c6805ee8b2455e9489260f666f6b1d407a82c8540c1a50048af149d4a36", [:make, :mix], [], "hexpm"},
+  "exboost": {:hex, :exboost, "0.2.6", "59a5d4d968b6b60f4511f464ca12d0ccfaf1e252531e4da31d34b3a35381127c", [:make, :mix], [], "hexpm"},
   "excoveralls": {:hex, :excoveralls, "0.11.1", "dd677fbdd49114fdbdbf445540ec735808250d56b011077798316505064edb2c", [:mix], [{:hackney, "~> 1.0", [hex: :hackney, repo: "hexpm", optional: false]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm"},
   "gettext": {:hex, :gettext, "0.16.1", "e2130b25eebcbe02bb343b119a07ae2c7e28bd4b146c4a154da2ffb2b3507af2", [:mix], [], "hexpm"},
   "gnuplot": {:hex, :gnuplot, "1.19.96", "8bdb733cd2d037593886c0962693f48d35baf62af193bdbb3395a0fbac17c2c5", [:mix], [], "hexpm"},

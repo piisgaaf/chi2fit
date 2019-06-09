@@ -19,9 +19,10 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "1.0.0-beta.9",
+      version: "1.0.0-beta.11",
       elixir: "~> 1.6",
       start_permanent: Mix.env == :prod,
+      build_embedded: Mix.env == :prod,
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
@@ -51,7 +52,7 @@ defmodule Chi2fit.Mixfile do
   defp deps do
     [
       {:exalgebra, "~> 0.0.5"},
-      {:exboost, "~> 0.2"},
+      {:exboost, "~> 0.2.6"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
       {:timex, "~> 3.5"},
