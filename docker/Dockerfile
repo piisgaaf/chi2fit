@@ -69,6 +69,9 @@ ADD lib lib/
 RUN set -xe \
   && mix local.hex --force \
   && mix deps.get \
+  && mix deps.compile
+
+RUN set -xe \
   && mix deps.compile \
   && mix compile
 
