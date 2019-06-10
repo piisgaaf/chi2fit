@@ -78,3 +78,19 @@ defimpl Distribution, for: Distribution.Normal do
   def random(%Normal{pars: nil}), do: fn [mu,sigma] -> normal(mu,sigma).() end
 
 end
+
+defimpl Inspect, for: Distribution.Normal do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Normal<>"
+      [mu,sigma] ->
+        concat ["#Normal<", to_doc("mu=#{mu}, sigma=#{sigma}", opts), ">"]
+      list ->
+        concat ["#Normal<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

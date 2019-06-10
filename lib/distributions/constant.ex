@@ -50,3 +50,19 @@ defimpl Distribution, for: Distribution.Constant do
   def random(%Constant{pars: [avg]}), do: constant(avg).()
   
 end
+
+defimpl Inspect, for: Distribution.Constant do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Constant<>"
+      [value] ->
+        concat ["#Constant<", to_doc("value=#{value}", opts), ">"]
+      pars ->
+        concat ["#Constant<", to_doc("pars=#{inspect pars}", opts), ">"]
+    end
+  end
+
+end

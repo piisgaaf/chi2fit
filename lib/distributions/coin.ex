@@ -49,3 +49,8 @@ defimpl Distribution, for: Distribution.Coin do
   def pdf(%Coin{}), do: fn _, _ -> 0.5 end
   def random(%Coin{}), do: coin().()
 end
+
+defimpl Inspect, for: Distribution.Coin do
+  def inspect(_dict, _opts), do: "#Coin<>"
+
+end

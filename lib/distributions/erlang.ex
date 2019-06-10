@@ -64,3 +64,19 @@ defimpl Distribution, for: Distribution.Erlang do
   def random(%Erlang{pars: nil, batches: nil}), do: fn [k,lambda] -> erlang(k,lambda).() end
 
 end
+
+defimpl Inspect, for: Distribution.Erlang do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Erlang<>"
+      [k,rate] ->
+        concat ["#Erlang<", to_doc("k=#{k}, rate=#{rate}", opts), ">"]
+      list ->
+        concat ["#Erlang<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

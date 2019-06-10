@@ -51,3 +51,19 @@ defimpl Distribution, for: Distribution.Exponential do
   def random(%Exponential{pars: nil}), do: fn [lambda] -> exponential(lambda).() end
 
 end
+
+defimpl Inspect, for: Distribution.Exponential do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Exponential<>"
+      [rate] ->
+        concat ["#Exponential<", to_doc("rate=#{rate}", opts), ">"]
+      list ->
+        concat ["#Exponential<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

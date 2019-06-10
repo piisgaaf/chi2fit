@@ -91,3 +91,19 @@ defimpl Distribution, for: Distribution.Weibull do
   def random(%Weibull{pars: nil}), do: fn [k,lambda] -> weibull(k,lambda).() end
 
 end
+
+defimpl Inspect, for: Distribution.Weibull do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Weibull<>"
+      [alpha,beta] ->
+        concat ["#Weibull<", to_doc("alpha=#{alpha}, beta=#{beta}", opts), ">"]
+      list ->
+        concat ["#Weibull<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

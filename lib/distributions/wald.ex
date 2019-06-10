@@ -71,3 +71,19 @@ defimpl Distribution, for: Distribution.Wald do
   def random(%Wald{pars: nil}), do: fn [k,lambda] -> wald(k,lambda).() end
 
 end
+
+defimpl Inspect, for: Distribution.Wald do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Wald<>"
+      [k,lambda] ->
+        concat ["#Wald<", to_doc("k=#{k}, lambda=#{lambda}", opts), ">"]
+      list ->
+        concat ["#Wald<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

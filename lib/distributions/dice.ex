@@ -51,3 +51,17 @@ defimpl Distribution, for: Distribution.Dice do
   def random(%Dice{mode: :gk4}), do: Distribution.random(dice_gk4([]))
   
 end
+
+defimpl Inspect, for: Distribution.Dice do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.mode do
+      nil ->
+        "#Dice<>"
+      mode ->
+        concat ["#Dice<", to_doc("mode=#{mode}", opts), ">"]
+    end
+  end
+
+end

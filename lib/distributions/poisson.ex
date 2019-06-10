@@ -65,3 +65,19 @@ defimpl Distribution, for: Distribution.Poisson do
   def random(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> poisson(lambda*factor).() end
 
 end
+
+defimpl Inspect, for: Distribution.Poisson do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Poisson<>"
+      [rate] ->
+        concat ["#Poisson<", to_doc("rate=#{rate}", opts), ">"]
+      list ->
+        concat ["#Poisson<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

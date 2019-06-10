@@ -69,3 +69,21 @@ defimpl Distribution, for: Distribution.Uniform do
   def random(%Uniform{}), do: uniform([]).()
   
 end
+
+defimpl Inspect, for: Distribution.Uniform do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Uniform<>"
+      {min,max} ->
+        concat ["#Uniform<", to_doc("#{min}..#{max}", opts), ">"]
+      min..max ->
+        concat ["#Uniform<", to_doc("#{min}..#{max}", opts), ">"]
+      list ->
+        concat ["#Uniform<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

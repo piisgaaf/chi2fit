@@ -75,3 +75,19 @@ defimpl Distribution, for: Distribution.Frechet do
   def pdf(%Frechet{pars: nil}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Frechet distribution"
   def random(%Frechet{pars: [scale,shape]}), do: frechet(scale, shape).()
 end
+
+defimpl Inspect, for: Distribution.Frechet do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Frechet<>"
+      [scale,shape] ->
+        concat ["#Frechet<", to_doc("scale=#{scale}, shape=#{shape}", opts), ">"]
+      list ->
+        concat ["#Frechet<", to_doc(list, opts), ">"]
+    end
+  end
+
+end

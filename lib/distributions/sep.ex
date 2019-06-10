@@ -97,3 +97,23 @@ defimpl Distribution, for: Distribution.SEP do
   def pdf(%SEP{pars: nil}), do: fn x,[a,b,lambda,alpha] -> sepPDF(a,b,lambda,alpha).(x) end
   def random(%SEP{}), do: raise Distribution.FunctionNotSupportedError, message: "random is not supported for the SEP distribution"
 end
+
+defimpl Inspect, for: Distribution.SEP do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case {dict.pars,dict.offset} do
+      {nil,nil} ->
+        "#SEP<>"
+      {nil,offset} ->
+        concat ["#SEP<", to_doc("offset=#{offset}", opts), ">"]
+      {[scale,lambda,alpha],nil} ->
+        concat ["#SEP<", to_doc("scale=#{scale}, lambda=#{lambda}, alpha=#{alpha}", opts), ">"]
+      {[scale,lambda,alpha],offset} ->
+        concat ["#SEP<", to_doc("offset=#{offset}, scale=#{scale}, lambda=#{lambda}, alpha=#{alpha}", opts), ">"]
+      {list,offset} ->
+        concat ["#SEP<", "offset=#{offset}, ", to_doc(list, opts), ">"]
+    end
+  end
+
+end

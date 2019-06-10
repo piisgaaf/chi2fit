@@ -22,7 +22,7 @@ defmodule Distribution.Bernoulli do
   defstruct [:pars]
   
   @type t() :: %__MODULE__{
-    pars: float
+    pars: [float]
   }
 
 end
@@ -47,4 +47,20 @@ defimpl Distribution, for: Distribution.Bernoulli do
   def pdf(%Bernoulli{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
   def random(%Bernoulli{pars: [value]}), do: bernoulli(value).()
   
+end
+
+defimpl Inspect, for: Distribution.Bernoulli do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Bernoulli<>"
+      [p] ->
+        concat ["#Bernoulli<", to_doc("p=#{p}", opts), ">"]
+      list ->
+        concat ["#Bernoulli<", to_doc(list, opts), ">"]
+    end
+  end
+
 end

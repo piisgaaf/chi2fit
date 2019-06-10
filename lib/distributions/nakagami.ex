@@ -78,3 +78,19 @@ defimpl Distribution, for: Distribution.Nakagami do
   def pdf(%Nakagami{pars: nil}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Nakagami distribution"
   def random(%Nakagami{pars: [scale,shape]}), do: nakagami(scale, shape).()
 end
+
+defimpl Inspect, for: Distribution.Nakagami do
+  import Inspect.Algebra
+  
+  def inspect(dict, opts) do
+    case dict.pars do
+      nil ->
+        "#Nakagami<>"
+      [scale,shape] ->
+        concat ["#Nakagami<", to_doc("scale=#{scale}, shape=#{shape}", opts), ">"]
+      list ->
+        concat ["#Nakagami<", to_doc(list, opts), ">"]
+    end
+  end
+
+end
