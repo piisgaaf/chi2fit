@@ -156,7 +156,9 @@ defmodule Gnuplotlib do
   ## Options
 
       `:bin` - the size of the bins to use,
+      `:offset` -- the offset of the bin,
       `:plottitle` - the title of the plot,
+      `:noerror` -- no error bars,
       `:xrange` - the range for the x-values to use in the format '[x1:x2]'
       `:xrange` - the range for the y-values to use in the format '[y1:y2]'
       `:xlabel` - the label to use for the x-axis,
@@ -169,15 +171,17 @@ defmodule Gnuplotlib do
   def pdf(data, options) do
     npoints = options[:npoints] || 100
     bin = options[:bin] || 1
+    offset = options[:offset] || 0
+    noerrors = options[:noerrors] || false
     maxx = data |> Enum.max |> Kernel.*(1.2)
     
     hist = data
-    |> U.make_histogram(bin,0)
+    |> U.make_histogram(bin,offset)
     |> Enum.map(&Tuple.to_list/1)
-    |> Enum.map(fn [x,y]->[(x-0.5)*bin,y] end)
+    |> Enum.map(fn [x,y]->[x*bin,y] end)
 
-    args = [ hist,hist,dofun(npoints,maxx,options[:pdf]) ]
-    
+    args = [ hist ] ++ if(noerrors, do: [], else: [hist]) ++ [ dofun(npoints,maxx,options[:pdf]) ]
+
     terminal(options)
       ++ [
         ['count=#{length(data)}'],
@@ -191,11 +195,11 @@ defmodule Gnuplotlib do
         if(options[:xlabel], do: [:set, :xlabel, options[:xlabel]], else: [:set,:xlabel]),
         if(options[:ylabel], do: [:set, :ylabel, options[:ylabel], :rotate, :by, 90], else: [:set,:ylabel]),
 
-        [:plot, G.list([
-                ~w|'-' u (hist($1,width)):($2/count/#{bin}) smooth freq w boxes lc rgb "green" title "Empirical PDF"|a,
-                ~w|'-' u (hist($1,width)):($2/count/#{bin}):(sqrt($2)/count/#{bin}) w errorbars ls 3 notitle|a,
-                ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]]
-            ])
+        [:plot, G.list(
+                [~w|'-' u (hist($1,width)):($2/count/#{bin}) smooth freq w boxes lc rgb "green" title "Empirical PDF"|a]
+                ++ if(noerrors, do: [], else: [~w|'-' u (hist($1,width)):($2/count/#{bin}):(sqrt($2)/count/#{bin}) w errorbars ls 3 notitle|a])
+                ++ [ ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]] ]
+            )
         ]
       ]
       |> do_output(args, options)

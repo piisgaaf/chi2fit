@@ -13,7 +13,7 @@
 # limitations under the License.
 
 #
-# This Eockerfile is intended for use in MyBinder,org
+# This Dockerfile is intended for use in MyBinder,org
 #
 
-FROM pietertje/chi2fit@sha256:e8fca4ea793b6988e0fdba46e7f7fd44cf91ab3ba1ce2e6a5160a9ce81b7af54
+FROM pietertje/chi2fit@sha256:46cda500c4b699cdf5b8d579fd67aedafd883258f2608ee13d828cf3f016c522
