@@ -38,7 +38,7 @@ RUN set -xe \
                 libntl-dev' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
-
+  
 # Install the XeTeX distribution with additional fonts
 RUN set -xe \
   && buildDeps='texlive-xetex \
@@ -46,6 +46,13 @@ RUN set -xe \
                 texlive-fonts-recommended' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
+
+# Reinstall anaconda
+RUN set -xe \
+  && rm -rf /opt/conda \
+  && mkdir -p /tmp \
+  && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
+  && bash /tmp/miniconda.sh -b -p /opt/conda
 
 # Install additional conda packages
 RUN set -xe \

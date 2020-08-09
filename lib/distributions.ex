@@ -129,6 +129,7 @@ defmodule Chi2fit.Distribution do
   def sigil_M(str, [?n|_]), do: %Distribution.Normal{pars: to_numbers(str)}
 
   def sigil_M(str, 'wald'), do: %Distribution.Wald{pars: to_numbers(str)}
+  def sigil_M("", [?w|_]), do: %Distribution.Weibull{}
   def sigil_M(str, [?w|_]), do: %Distribution.Weibull{pars: to_numbers(str)}
 
   def sigil_M(str, [?f|_]), do: %Distribution.Frechet{pars: to_numbers(str)}

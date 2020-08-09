@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "1.0.3",
+      version: "1.1.0",
       elixir: "~> 1.6",
       start_permanent: Mix.env == :prod,
       build_embedded: Mix.env == :prod,
@@ -55,7 +55,7 @@ defmodule Chi2fit.Mixfile do
       {:exboost, "~> 0.2.6"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
-      {:timex, "~> 3.5"},
+      {:timex, "~> 3.6"},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19"},
       {:excoveralls, "~> 0.11.0", only: :test},

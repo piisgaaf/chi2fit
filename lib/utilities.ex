@@ -649,7 +649,7 @@ defmodule Chi2fit.Utilities do
   def newton(a,b,func,maxiter \\ 10, options), do: newton(a,b,func,maxiter,{(a+b)/2,{a,b},{nil,nil}},options)
 
   @doc """
-  Unzips lists of 1-, 2-, 3-, 4-, and 5-tuples.
+  Unzips lists of 1-, 2-, 3-, 4-, 5-, 6-, 7-, and 8-tuples.
   """
   @spec unzip(list::[tuple]) :: tuple
   def unzip([]), do: {}
@@ -678,6 +678,31 @@ defmodule Chi2fit.Utilities do
       list |> Enum.map(&elem(&1,3)),
       list |> Enum.map(&elem(&1,4))
     }
+  end
+  def unzip(list=[{_,_,_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3)),
+      list |> Enum.map(&elem(&1,4)),
+      list |> Enum.map(&elem(&1,5))
+    }
+  end
+  def unzip(list=[{_,_,_,_,_,_,_}|_]) do
+    {
+      list |> Enum.map(&elem(&1,0)),
+      list |> Enum.map(&elem(&1,1)),
+      list |> Enum.map(&elem(&1,2)),
+      list |> Enum.map(&elem(&1,3)),
+      list |> Enum.map(&elem(&1,4)),
+      list |> Enum.map(&elem(&1,5)),
+      list |> Enum.map(&elem(&1,6))
+    }
+  end
+  def unzip(list=[_|_]) do
+    0..tuple_size(hd(list))-1
+    |> Enum.reduce({},fn i,tup -> Tuple.append(tup,list |> Enum.map(&elem(&1,i))) end)
   end
 
   ##
