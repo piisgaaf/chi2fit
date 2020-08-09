@@ -1146,7 +1146,7 @@ defmodule Chi2fit.Utilities do
   @doc """
   Pretty-prints a nested array-like structure (list or tuple) as a table.
   """
-  @spec as_table(rows :: [any], header :: list() | tuple()) :: list()
+  @spec as_table(rows :: [any], header :: tuple()) :: list()
   def as_table(rows, header) do
     map = 1..tuple_size(header) |> Enum.map(&{&1,0}) |> Enum.into(%{})
     table = [header|rows] |> _to_string()
