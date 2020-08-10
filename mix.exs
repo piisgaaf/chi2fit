@@ -59,7 +59,7 @@ defmodule Chi2fit.Mixfile do
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19.104"},
       {:excoveralls, "~> 0.11.0", only: :test},
-      {:ex_doc, "~> 0.18.0", only: :docs, runtime: false},
+      {:ex_doc, "~> 0.19", only: :docs, runtime: false},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :test, runtime: false}
     ]
