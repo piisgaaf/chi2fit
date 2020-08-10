@@ -57,7 +57,7 @@ defmodule Chi2fit.Mixfile do
       {:csv, "~> 2.3"},
       {:timex, "~> 3.6"},
       {:stream_data, "~> 0.4"},
-      {:gnuplot, "~> 1.19"},
+      {:gnuplot, "~> 1.19.104"},
       {:excoveralls, "~> 0.11.0", only: :test},
       {:ex_doc, "~> 0.18.0", only: :docs, runtime: false},
       {:poison, "~> 4.0", only: :test, override: true},

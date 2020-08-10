@@ -225,6 +225,29 @@ defmodule Gnuplotlib do
     |> do_output(Enum.concat(data), options)
   end
 
+  @spec surface(data :: [[number()]], options :: Keyword.t) :: none()
+  def surface(data, options) do
+    terminal(options)
+      ++ [
+        ['set cntrparam levels 50'],
+        ['set contour'],
+        ['set dgrid3d'],
+        ['unset key'],
+        ['set cntrlabel start 2 font ",7"'],
+
+        if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
+        if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
+        if(options[:yrange], do: [:set, :yrange, options[:yrange]], else: []),
+        if(options[:zrange], do: [:set, :zrange, options[:zrange]], else: []),
+        if(options[:xlabel], do: [:set, :xlabel, options[:xlabel]], else: [:set,:xlabel]),
+        if(options[:ylabel], do: [:set, :ylabel, options[:ylabel]], else: [:set,:ylabel]),
+        if(options[:zlabel], do: [:set, :zlabel, options[:zlabel], :rotate, :by, 90], else: [:set,:zlabel]),
+
+        ~w(splot '-' u 1:2:3 w lines notitle)a
+      ]
+      |> do_output([data], options)
+  end
+
   #############################################################################
   ##
   ## Local functions
