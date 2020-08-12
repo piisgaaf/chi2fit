@@ -69,6 +69,20 @@ defimpl Distribution, for: Distribution.Weibull do
     end
   end
 
+  @spec weibullPDF(number,number) :: (number -> number)
+  defp weibullPDF(k,_) when k<0, do: raise ArithmeticError, "Weibull is only defined for positive shape"
+  defp weibullPDF(_,lambda) when lambda<0, do: raise ArithmeticError, "Weibull is only defined for positive scale"
+  defp weibullPDF(k,lambda) when is_number(k) and is_number(lambda) do
+    fn
+      0 -> 0.0
+      0.0 -> 0.0
+      x when x<0 -> 0.0
+      x ->
+        t = :math.pow(x/lambda, k)
+        k*t/x*:math.exp( -t )
+    end
+  end
+  
   def skewness(%Weibull{pars: nil}) do
     fn [k,lambda] ->
       mu = lambda*tgamma(1+1/k)
@@ -84,9 +98,21 @@ defimpl Distribution, for: Distribution.Weibull do
       tgamma(1+4/k)*:math.pow(lambda/sigma,4) - 4*mu/sigma*skew - 6*:math.pow(mu/sigma,2) - :math.pow(mu/sigma,4) - 3.0
     end
   end
-  def size(%Weibull{}), do: 2
+  def size(%Weibull{pars: nil}), do: 2
+  def size(%Weibull{pars: [k,nil]}) when is_number(k), do: 1
+  def size(%Weibull{pars: [nil,lambda]}) when is_number(lambda), do: 1
+  def size(%Weibull{pars: [k,lambda]}) when is_number(k) and is_number(lambda), do: 0
+
   def cdf(%Weibull{pars: nil}), do: fn x,[k,lambda] -> weibullCDF(k,lambda).(x) end
-  def pdf(%Weibull{pars: nil}), do: fn x, [k,lambda] -> k/lambda*:math.pow(x/lambda, k-1)*:math.exp( -:math.pow(x/lambda,k) ) end
+  def cdf(%Weibull{pars: [k,nil]}), do: fn x,[lambda] -> weibullCDF(k,lambda).(x) end
+  def cdf(%Weibull{pars: [nil,lambda]}), do: fn x,[k] -> weibullCDF(k,lambda).(x) end
+  def cdf(%Weibull{pars: [k,lambda]}), do: fn x -> weibullCDF(k,lambda).(x) end
+
+  def pdf(%Weibull{pars: nil}), do: fn x, [k,lambda] -> weibullPDF(k,lambda).(x) end
+  def pdf(%Weibull{pars: [k,nil]}), do: fn x, [lambda] -> weibullPDF(k,lambda).(x) end
+  def pdf(%Weibull{pars: [nil,lambda]}), do: fn x, [k] -> weibullPDF(k,lambda).(x) end
+  def pdf(%Weibull{pars: [k,lambda]}), do: fn x -> weibullPDF(k,lambda).(x) end
+
   def random(%Weibull{pars: [k,lambda]}), do: weibull(k,lambda).()
   def random(%Weibull{pars: nil}), do: fn [k,lambda] -> weibull(k,lambda).() end
 

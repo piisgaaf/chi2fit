@@ -227,11 +227,14 @@ defmodule Gnuplotlib do
 
   @spec surface(data :: [[number()]], options :: Keyword.t) :: none()
   def surface(data, options) do
+    dgrid3d = options[:dgrid3d] || ""
+    using = options[:parameters] || "1:2"
+    
     terminal(options)
       ++ [
         ['set cntrparam levels 50'],
         ['set contour'],
-        ['set dgrid3d'],
+        ['set dgrid3d #{dgrid3d}'],
         ['unset key'],
         ['set cntrlabel start 2 font ",7"'],
 
@@ -243,7 +246,7 @@ defmodule Gnuplotlib do
         if(options[:ylabel], do: [:set, :ylabel, options[:ylabel]], else: [:set,:ylabel]),
         if(options[:zlabel], do: [:set, :zlabel, options[:zlabel], :rotate, :by, 90], else: [:set,:zlabel]),
 
-        ~w(splot '-' u 1:2:3 w lines notitle)a
+        ~w(splot '-' u #{using}:3 w lines notitle)a
       ]
       |> do_output([data], options)
   end
