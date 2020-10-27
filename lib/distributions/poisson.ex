@@ -59,7 +59,9 @@ defimpl Distribution, for: Distribution.Poisson do
   def kurtosis(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> 1/lambda/factor end
   def size(%Poisson{}), do: 1
   def cdf(%Poisson{pars: nil, period: factor}), do: fn x, [lambda] -> poissonCDF(lambda*factor).(x) end
+  def cdf(%Poisson{pars: [lambda], period: factor}), do: fn x -> poissonCDF(lambda*factor).(x) end
   def pdf(%Poisson{pars: nil, period: factor}), do: fn x, [lambda] -> :math.exp( x*:math.log(lambda*factor) - lambda*factor - M.lgamma(x+1) ) end
+  def pdf(%Poisson{pars: [lambda], period: factor}), do: fn x -> :math.exp( x*:math.log(lambda*factor) - lambda*factor - M.lgamma(x+1) ) end
 
   def random(%Poisson{pars: [lambda], period: factor}), do: poisson(lambda*factor).()
   def random(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> poisson(lambda*factor).() end
