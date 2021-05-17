@@ -317,8 +317,7 @@ defmodule Chi2fit.Fit do
       ArithmeticError ->
         chi2probe(observables, parranges, {fun,penalties}, num-1, best, options)
       err ->
-        stacktrace = System.stacktrace
-        reraise err, stacktrace
+        reraise err, __STACKTRACE__
     end
   end
 
@@ -557,7 +556,7 @@ defmodule Chi2fit.Fit do
                 end
             rescue
               ArithmeticError ->
-                Logger.warn "chi2fit: arithmetic error [#{inspect vec}] [#{inspect System.stacktrace}]"
+                Logger.warn "chi2fit: arithmetic error [#{inspect vec}] [#{inspect __STACKTRACE__}]"
                 {:cont, {pars,oldchi,minimum,data}}
             end
         end)
@@ -572,8 +571,7 @@ defmodule Chi2fit.Fit do
     rescue
       ArithmeticError ->
         Logger.warn "chi2: arithmetic error"
-        stack = System.stacktrace
-        IO.puts "#{inspect stack}"
+        IO.puts "#{inspect __STACKTRACE__}"
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
     catch
       {:impossible_inverse,error} ->

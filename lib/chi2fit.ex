@@ -226,7 +226,7 @@ defmodule Chi2fit.Cli do
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
 
     data = convert_cdf({cdf,bins|>Enum.map(&elem(&1,0))})
-
+	
     try do
       model = model(options[:name],options)
       ranges = elem(Code.eval_string(options[:ranges]),0)
@@ -532,7 +532,7 @@ defmodule Chi2fit.Cli do
           else
             options
           end
-          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, Distribution.cdf(model), &penalties/2}, options[:iterations], options)
+          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, Distribution.cdf(model), &penalties/2}, options[:iterations], [{:probes, [{chi2,parameters}]}|options])
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
           IO.puts "    Degrees of freedom:\t#{length(data)-Distribution.size(model)}"
