@@ -55,14 +55,14 @@ defmodule Chi2fit.Mixfile do
       {:exboost, "~> 0.2.6"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
-      {:timex, "~> 3.7"},
+      {:timex, "~> 3.6"},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19.104"},
       {:excoveralls, "~> 0.11.0", only: :test},
       {:ex_doc, "~> 0.19", only: :docs, runtime: false},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :test, runtime: false},
-	  {:tzdata, "~> 0.1.8", override: true}
+	    {:tzdata, "~> 0.1.8"}
     ]
   end
 
