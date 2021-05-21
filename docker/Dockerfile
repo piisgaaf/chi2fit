@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#FROM pprzetacznik/ielixir
-FROM pietertje/ielixir
+FROM pprzetacznik/ielixir
+#FROM pietertje/ielixir
 
 # Set the working directory
 WORKDIR /app
@@ -27,13 +27,13 @@ ENV ERL_LIBS=/app/chi2fit/_build/${MIX_ENV}/lib
 
 # Install the BOOST++ libraries
 RUN set -xe \
-  && buildDeps='libstdc++-6-dev \
-                libboost1.62-dev \
-                libboost-math1.62-dev \
-                libboost-random1.62-dev \
-                libboost-thread1.62-dev \
-                libboost-system1.62-dev \
-                libboost1.62-tools-dev \
+  && buildDeps='libstdc++-10-dev \
+                libboost1.71-dev \
+                libboost-math1.71-dev \
+                libboost-random1.71-dev \
+                libboost-thread1.71-dev \
+                libboost-system1.71-dev \
+                libboost1.71-tools-dev \
                 libmpfrc++-dev \
                 libntl-dev' \
   && apt-get update \
@@ -62,6 +62,7 @@ RUN set -xe \
 # Install additional packages needed for the Chi2fit package
 RUN set -xe \
   && buildDeps='gnuplot \
+                tini \
                 graphviz' \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
@@ -90,4 +91,5 @@ ADD notebooks/data/* ./data/
 RUN set -xe \
   && mkdir -p /app/notebooks \
   && mkdir -p /app/notebooks/images \
-  && chmod -R o+w /app/notebooks
+  && chmod -R o+w /app/notebooks \
+  && chown -R jovyan:users /home/jovyan

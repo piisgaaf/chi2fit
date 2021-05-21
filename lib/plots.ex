@@ -63,7 +63,7 @@ defmodule Gnuplotlib do
     terminal(options)
       ++ [
             ['width=#{binsize}'],
-            ['hist(x,width)=width*floor(x)+width/2.0'],
+            ['hist(x,width)=width*floor(x-1)+width/2.0'],
             [:set, :boxwidth, 'width*0.9'],
             [:set, :style, :fill, :solid, 0.5],
             if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
@@ -186,7 +186,7 @@ defmodule Gnuplotlib do
       ++ [
         ['count=#{length(data)}'],
         ['width=#{bin}'],
-        ['hist(x,width)=width*floor(x/width)+width/2.0'],
+        ['hist(x,width)=width*floor((x-1)/width)+width/2.0'],
         [:set, :boxwidth, 'width*0.9'],
         [:set, :style, :fill, :solid, 0.5],
         if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),

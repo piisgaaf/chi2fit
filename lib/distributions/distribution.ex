@@ -52,7 +52,9 @@ defimpl Enumerable, for: [
   Distribution.Weibull,
   Distribution.Frechet,
   Distribution.Nakagami,
-  Distribution.SEP] do
+  Distribution.SEP,
+  Distribution.BiModal,
+  Distribution.TriModal] do
 
   alias Distribution, as: D
 
