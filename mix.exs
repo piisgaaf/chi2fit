@@ -62,7 +62,8 @@ defmodule Chi2fit.Mixfile do
       {:ex_doc, "~> 0.19", only: :docs, runtime: false},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :test, runtime: false},
-	    {:tzdata, "~> 0.1.8"}
+	    {:tzdata, "~> 0.1.8"},
+      {:credo, "~> 1.5"}
     ]
   end
 
