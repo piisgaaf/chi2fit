@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "1.2.0",
+      version: "1.3.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env == :prod,
       build_embedded: Mix.env == :prod,
@@ -58,12 +58,13 @@ defmodule Chi2fit.Mixfile do
       {:timex, "~> 3.6"},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19.104"},
+      {:poison, "~> 4.0", only: :test, override: true},
+      {:ielixir, github: "pprzetacznik/IElixir", only: :nb, runtime: false},
+	    {:tzdata, "~> 0.1.8"},
       {:excoveralls, "~> 0.11.0", only: :test},
       {:ex_doc, "~> 0.19", only: :docs, runtime: false},
-      {:poison, "~> 4.0", only: :test, override: true},
-      {:ielixir, github: "pprzetacznik/IElixir", only: :test, runtime: false},
-	    {:tzdata, "~> 0.1.8"},
-      {:credo, "~> 1.5"}
+      {:credo, "~> 1.5", only: :dev},
+      {:mix_test_watch, "~> 1.0", only: :test}
     ]
   end
 
