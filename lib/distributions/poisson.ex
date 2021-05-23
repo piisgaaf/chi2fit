@@ -22,11 +22,12 @@ defmodule Distribution.Poisson do
 
   alias Exboost.Math, as: M
   
-  defstruct [:pars, period: 1.0]
+  defstruct [:pars, period: 1.0, name: "poisson"]
   
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
-    period: number()
+    period: number(),
+    name: String.t
   }
 
 end
@@ -65,6 +66,8 @@ defimpl Distribution, for: Distribution.Poisson do
 
   def random(%Poisson{pars: [lambda], period: factor}), do: poisson(lambda*factor).()
   def random(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> poisson(lambda*factor).() end
+
+  def name(model), do: model.name
 
 end
 

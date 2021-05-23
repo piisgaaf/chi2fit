@@ -19,9 +19,10 @@ defmodule Distribution.Constant do
   """
 
   @enforce_keys [:pars]
-  defstruct [:pars]
+  defstruct [:pars, name: "constant"]
   
   @type t() :: %__MODULE__{
+    name: String.t
   }
   
 end
@@ -48,6 +49,8 @@ defimpl Distribution, for: Distribution.Constant do
       5.0
   """
   def random(%Constant{pars: [avg]}), do: constant(avg).()
+  
+  def name(model), do: model.name
   
 end
 

@@ -19,10 +19,11 @@ defmodule Distribution.Bernoulli do
   """
 
   @enforce_keys [:pars]
-  defstruct [:pars]
+  defstruct [:pars, name: "bernoulli"]
   
   @type t() :: %__MODULE__{
-    pars: [float]
+    pars: [float],
+    name: String.t
   }
 
 end
@@ -46,6 +47,8 @@ defimpl Distribution, for: Distribution.Bernoulli do
   def cdf(%Bernoulli{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Constant distribution"
   def pdf(%Bernoulli{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
   def random(%Bernoulli{pars: [value]}), do: bernoulli(value).()
+  
+  def name(model), do: model.name
   
 end
 

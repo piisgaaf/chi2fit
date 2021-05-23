@@ -18,10 +18,11 @@ defmodule Distribution.Frechet do
   The Fréchet distribution, also known inverse Weibull distribution.
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "frechet"]
   
   @type t() :: %__MODULE__{
-    pars: [number()] | nil
+    pars: [number()] | nil,
+    name: String.t
   }
 
 end
@@ -74,6 +75,9 @@ defimpl Distribution, for: Distribution.Frechet do
 
   def pdf(%Frechet{pars: nil}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Frechet distribution"
   def random(%Frechet{pars: [scale,shape]}), do: frechet(scale, shape).()
+
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Frechet do

@@ -18,11 +18,12 @@ defmodule Distribution.TriModal do
   Bimodal distribution.
   """
 
-  defstruct [:weights,:distribs]
+  defstruct [:weights,:distribs,name: "trimodal"]
   
   @type t() :: %__MODULE__{
     weights: [number()] | nil,
     distribs: [Distribution.t()] | nil,
+    name: String.t
   }
 
 end
@@ -71,6 +72,8 @@ defimpl Distribution, for: Distribution.TriModal do
     |> Enum.sum
   end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.TriModal do

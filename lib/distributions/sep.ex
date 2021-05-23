@@ -31,12 +31,13 @@ defmodule Distribution.SEP do
       `:romberg3` - Romberg integration with linear transformstion.
   """
 
-  defstruct [:pars, :offset, options: []]
+  defstruct [:pars, :offset, options: [], name: "sep"]
   
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     offset: number() | nil,
-    options: Keyword.t
+    options: Keyword.t,
+    name: String.t
   }
 
 end
@@ -96,6 +97,9 @@ defimpl Distribution, for: Distribution.SEP do
 
   def pdf(%SEP{pars: nil}), do: fn x,[a,b,lambda,alpha] -> sepPDF(a,b,lambda,alpha).(x) end
   def random(%SEP{}), do: raise Distribution.FunctionNotSupportedError, message: "random is not supported for the SEP distribution"
+
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.SEP do

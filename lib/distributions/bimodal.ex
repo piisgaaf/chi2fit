@@ -18,11 +18,12 @@ defmodule Distribution.BiModal do
   Bimodal distribution.
   """
 
-  defstruct [:weights,:distribs]
+  defstruct [:weights,:distribs,name: "bimodal"]
   
   @type t() :: %__MODULE__{
     weights: [number()] | nil,
     distribs: [Distribution.t()] | nil,
+    name: String.t
   }
 
 end
@@ -80,6 +81,8 @@ defimpl Distribution, for: Distribution.BiModal do
 		end
   end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.BiModal do

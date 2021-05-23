@@ -18,10 +18,11 @@ defmodule Distribution.Uniform do
   Provides the Uniform distribution.
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "uniform"]
   
   @type t() :: %__MODULE__{
-    pars: [number()] | {number,number}
+    pars: [number()] | {number, number},
+    name: String.t
   }
 
 end
@@ -67,6 +68,8 @@ defimpl Distribution, for: Distribution.Uniform do
   def random(%Uniform{pars: r=%Range{}}), do: uniform(r).()
   def random(%Uniform{pars: list}), do: uniform(list).()
   def random(%Uniform{}), do: uniform([]).()
+  
+  def name(model), do: model.name
   
 end
 

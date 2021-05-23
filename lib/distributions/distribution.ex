@@ -36,6 +36,9 @@ defprotocol Distribution do
   @spec random(t) :: number
   def random(distrib)
 
+  @spec name(t) :: String.t
+  def name(distrib)
+
 end
 
 defimpl Enumerable, for: [
@@ -67,4 +70,5 @@ defimpl Enumerable, for: [
   def reduce(_distrib, {:halt, acc}, _fun), do: {:halted, acc}
   def reduce(distrib, {:suspend, acc}, fun), do: {:suspended, acc, &reduce(distrib, &1, fun)}
   def reduce(distrib, {:cont, acc}, fun), do: reduce(distrib, fun.(D.random(distrib), acc), fun)
+
 end

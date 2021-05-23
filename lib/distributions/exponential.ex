@@ -18,10 +18,11 @@ defmodule Distribution.Exponential do
   The exponential distribution.
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "exponential"]
   
   @type t() :: %__MODULE__{
-    pars: [number()] | nil
+    pars: [number()] | nil,
+    name: String.t
   }
 
 end
@@ -50,6 +51,8 @@ defimpl Distribution, for: Distribution.Exponential do
   def random(%Exponential{pars: [lambda]}), do: exponential(lambda).()
   def random(%Exponential{pars: nil}), do: fn [lambda] -> exponential(lambda).() end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Exponential do

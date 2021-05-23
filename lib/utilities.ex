@@ -32,10 +32,10 @@ defmodule Chi2fit.Utilities do
   alias Chi2fit.Matrix, as: M
   
   @typedoc "Cumulative Distribution Function"
-  @type cdf :: ((number)->{number,number,number})
+  @type cdf :: ((number)->{number, number, number})
 
   @typedoc "Binned data with error bounds specified through low and high values"
-  @type ecdf :: [{float,float,float,float}]
+  @type ecdf :: [{float, float, float, float}]
 
   @typedoc "Algorithm used to assign errors to frequencey data: Wald score and Wilson score."
   @type algorithm :: :wilson | :wald
@@ -51,31 +51,49 @@ defmodule Chi2fit.Utilities do
   
   The data is divided into bins of size `binsize` and the number of data points inside a bin are counted. A map
   is returned with the bin's index as a key and as value the number of data points in that bin.
+
+  The function returns a list of 2-tuples. Each tuple contains the index of the bin and the value of the count of the
+  number of items in the bin. The index of the bins start at 1 in the following way:
+
+    * [0..1) has index 1 (including 0 and excludes 1),
+    * [1..2) has index 2,
+    * etc.
+
+  When an offset is used, the bin starting from the offset, i.e. [offset..offset+1) gets index 1. Values less than
+  the offset are gathered in a bin with index 0.
   
   ## Examples
   
       iex> make_histogram [1,2,3]
-      [{1, 1}, {2, 1}, {3, 1}]
+      [{2, 1}, {3, 1}, {4, 1}]
       
       iex> make_histogram [1,2,3], 1.0, 0
-      [{1, 1}, {2, 1}, {3, 1}]
+      [{2, 1}, {3, 1}, {4, 1}]
       
       iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9]
-      [{1, 1}, {2, 1}, {3, 2}, {4, 3}, {5, 3}, {6, 2}, {7, 1}, {8, 1}, {9, 1}]
+      [{2, 1}, {3, 1}, {4, 2}, {5, 3}, {6, 3}, {7, 2}, {8, 1}, {9, 1}, {10  , 1}]
       
       iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9], 3, 1.5
       [{0, 1}, {1, 6}, {2, 6}, {3, 2}]
 
+      iex> make_histogram [0,0,0,1,3,4,3,2,6,7],1
+      [{1,3},{2,1},{3,1},{4,2},{5,1},{7,1},{8,1}]
+
+      iex> make_histogram [0,0,0,1,3,4,3,2,6,7],1,0.5
+      [{0,3},{1,1},{2,1},{3,2},{4,1},{6,1},{7,1}]
+
+
   """
-  @spec make_histogram([number],number,number) :: [{non_neg_integer,pos_integer}]
-  def make_histogram(list,binsize \\ 1.0,offset \\ 0.5)
-  def make_histogram(list,binsize,offset) when binsize>offset do
+  @spec make_histogram([number], number, number) :: [{non_neg_integer, pos_integer}]
+  def make_histogram(list, binsize \\ 1.0, offset \\ 0.0)
+  def make_histogram(list, binsize, offset) when binsize > offset do
     Enum.reduce(list, %{}, fn
-      (number,acc) ->
-        acc |> Map.update(if(number<=offset,do: 0, else: trunc(Float.ceil((number-offset)/binsize))),1,&(1+&1))
-    end) |> Enum.reduce([], fn (pair,acc)->[pair|acc] end) |> Enum.sort_by(fn ({k,_v})->k end)
+      (number, acc) ->
+        acc |> Map.update(if(number < offset, do: 0, else: trunc(Float.floor(1 + (number - offset) / binsize))), 1, &(1 + &1))
+    end) |> Enum.reduce([], fn (pair, acc) -> [pair|acc] end) |> Enum.sort_by(fn {k, _v} -> k end)
   end
-  def make_histogram(_list,_binsize,_offset), do: raise ArgumentError, message: "binsize must be larger than bin offset"
+  def make_histogram(_list, _binsize, _offset), do: raise ArgumentError, message: "binsize must be larger than bin offset"
+
 
   defmodule UnknownSampleErrorAlgorithmError do
     defexception message: "unknown sample error algorithm"
@@ -122,18 +140,18 @@ defmodule Chi2fit.Utilities do
           90% confidence ==> t = 1.645 for many data points (> 120)
           70% confidence ==> t = 1.000
   """
-  @spec empirical_cdf([{float,number}],{number,number},algorithm,integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
-  def empirical_cdf(data,bin \\ {1.0,0.5},algorithm \\ :wilson,correction \\ 0)
-  def empirical_cdf(data,{binsize,offset},algorithm,correction) do
-    {bins,sum} = data
-      |> Enum.sort(fn ({x1,_},{x2,_})->x1<x2 end)
-      |> Enum.reduce({[],0}, fn ({n,y},{acc,sum}) -> {[{offset+binsize*n,y+sum}|acc],sum+y} end)
+  @spec empirical_cdf([{float, number}], {number, number}, algorithm, integer) :: {cdf, bins :: [float], numbins :: pos_integer, sum :: float}
+  def empirical_cdf(data, bin \\ {1.0, 0.5}, algorithm \\ :wilson, correction \\ 0)
+  def empirical_cdf(data, {binsize, offset}, algorithm, correction) do
+    {bins, sum} = data
+      |> Enum.sort(fn ({x1, _}, {x2, _}) -> x1 < x2 end)
+      |> Enum.reduce({[], 0}, fn ({n, y}, {acc, sum}) -> {[{offset + binsize * n, y + sum}|acc], sum + y} end)
 
     normbins = bins
       |> Enum.reverse
-      |> Enum.map(fn ({x,y})->{x,y/(sum+correction),y} end)
+      |> Enum.map(fn ({x, y}) -> {x, y / (sum + correction), y} end)
 
-    {normbins |> to_cdf_fun(sum,algorithm),
+    {normbins |> to_cdf_fun(sum, algorithm),
      normbins,
      length(bins),
      sum}
@@ -144,12 +162,65 @@ defmodule Chi2fit.Utilities do
   
   Convenience function that chains `make_histogram/2` and `empirical_cdf/3`.
   """
-  @spec get_cdf([number], number|{number,number}, algorithm, integer) :: {cdf,bins :: [float], numbins :: pos_integer, sum :: float}
-  def get_cdf(data, binsize \\ {1.0,0.5},algorithm \\ :wilson, correction \\ 0)
-  def get_cdf(data, {binsize,offset},algorithm, correction) do
+  @spec get_cdf([number], number|{number, number}, algorithm, integer) :: {cdf, bins :: [float], numbins :: pos_integer, sum :: float}
+  def get_cdf(data, binsize \\ {1.0, 0.5}, algorithm \\ :wilson, correction \\ 0)
+  def get_cdf(data, {binsize, offset}, algorithm, correction) do
     data
-    |> make_histogram(binsize,offset)
-    |> empirical_cdf({binsize,offset},algorithm,correction)
+    |> make_histogram(binsize, offset)
+    |> empirical_cdf({binsize, offset}, algorithm, correction)
+  end
+
+  defp get_add_cdf(data, n \\ 2, binsize \\ {1.0, 0.5}, algorithm \\ :wilson, correction \\ 0)
+  defp get_add_cdf(data, n, binsize, algorithm, correction) when n > 1 do
+    data
+    |> List.duplicate(n)
+    |> Enum.reduce([], fn
+        list, [] -> list
+        list, acc -> Enum.flat_map(acc, fn d1 -> Enum.map(list, & d1+&1) end)
+    end)
+    |> get_cdf(binsize, algorithm, correction)
+  end
+
+  defp get_max_cdf(data, n \\ 2, binsize \\ {1.0, 0.5}, algorithm \\ :wilson, correction \\ 0)
+  defp get_max_cdf(data, n, binsize, algorithm, correction) when n > 1 do
+    data
+    |> List.duplicate(n)
+    |> Enum.reduce([], fn
+        list, [] -> list
+        list, acc -> Enum.flat_map(acc, fn d1 -> Enum.map(list, & max(d1,&1)) end)
+    end)
+    |> get_cdf(binsize, algorithm, correction)
+  end
+
+  defp statistic(data, fun1, fun2) do
+    data
+    |> Enum.map(&elem(&1, 0))
+    |> Enum.map(&{1 - elem(fun1.(&1), 0), 1 - elem(fun2.(&1), 0)})
+    |> Enum.filter(fn {d1, d2} -> d1 > 0 and d2 > 0 end)
+    |> Enum.map(fn {d1, d2} -> d1 / d2 end)
+    |> Enum.take(-1)
+    |> hd
+  end
+
+  @doc """
+  Calculates the test statistic for subexponentiality of a sample.
+
+  A value close to 0 is a strong indication that the sample shows subexponential behaviour (extremistan), i.e. is fat-tailed.
+  """
+  def subexponential_stat(data, test \\ :sum, n \\ 2, binsize \\ {1, 0})
+  def subexponential_stat(data, :sum, n, binsize) do
+    {cdf_fun, _, _, _} = data |> get_cdf(binsize)
+    {cdf_add_fun, cdf_emp, _, _} = data |> get_add_cdf(n, binsize)
+
+    test = statistic(cdf_emp, cdf_add_fun, cdf_fun)
+    abs(test - n)
+  end
+  def subexponential_stat(data, :max, n, binsize) do
+    {cdf_max_fun, _, _, _} = data |> get_max_cdf(n, binsize)
+    {cdf_add_fun, cdf_emp, _, _} = data |> get_add_cdf(n, binsize)
+
+    test = statistic(cdf_emp, cdf_add_fun, cdf_max_fun)
+    abs(test - 1)
   end
 
   @doc """

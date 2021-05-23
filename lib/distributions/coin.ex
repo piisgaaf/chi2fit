@@ -18,9 +18,10 @@ defmodule Distribution.Coin do
   Distribution for flipping coins.
   """
 
-  defstruct []
+  defstruct [name: "coin"]
   
   @type t() :: %__MODULE__{
+    name: String.t
   }
 
 end
@@ -48,6 +49,9 @@ defimpl Distribution, for: Distribution.Coin do
 
   def pdf(%Coin{}), do: fn _, _ -> 0.5 end
   def random(%Coin{}), do: coin().()
+
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Coin do

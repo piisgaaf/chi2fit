@@ -18,10 +18,11 @@ defmodule Distribution.Wald do
   Wald or Inverse Gauss distribution.
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "wald"]
   
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
+    name: String.t
   }
 
 end
@@ -70,6 +71,8 @@ defimpl Distribution, for: Distribution.Wald do
   def random(%Wald{pars: [k,lambda]}), do: wald(k,lambda).()
   def random(%Wald{pars: nil}), do: fn [k,lambda] -> wald(k,lambda).() end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Wald do

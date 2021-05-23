@@ -20,11 +20,12 @@ defmodule Distribution.Erlang do
 
   alias Exboost.Math, as: M
   
-  defstruct [:pars,:batches]
+  defstruct [:pars,:batches, name: "erlang"]
   
   @type t() :: %__MODULE__{
     pars: [number()],
-    batches: nil | pos_integer
+    batches: nil | pos_integer,
+    name: String.t
   }
 
 end
@@ -63,6 +64,8 @@ defimpl Distribution, for: Distribution.Erlang do
   def random(%Erlang{pars: [lambda], batches: k}), do: erlang(k,lambda).()
   def random(%Erlang{pars: nil, batches: nil}), do: fn [k,lambda] -> erlang(k,lambda).() end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Erlang do

@@ -18,10 +18,11 @@ defmodule Distribution.Weibull do
   Weibull distribution.
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "weibull"]
   
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
+    name: String.t
   }
 
 end
@@ -116,6 +117,8 @@ defimpl Distribution, for: Distribution.Weibull do
   def random(%Weibull{pars: [k,lambda]}), do: weibull(k,lambda).()
   def random(%Weibull{pars: nil}), do: fn [k,lambda] -> weibull(k,lambda).() end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Weibull do

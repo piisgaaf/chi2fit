@@ -18,10 +18,11 @@ defmodule Distribution.Nakagami do
   The Nakagami distribution.
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "nakagami"]
   
   @type t() :: %__MODULE__{
-    pars: [number()] | nil
+    pars: [number()] | nil,
+    name: String.t
   }
 
 end
@@ -77,6 +78,9 @@ defimpl Distribution, for: Distribution.Nakagami do
 
   def pdf(%Nakagami{pars: nil}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Nakagami distribution"
   def random(%Nakagami{pars: [scale,shape]}), do: nakagami(scale, shape).()
+
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Nakagami do

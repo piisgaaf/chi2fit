@@ -18,10 +18,11 @@ defmodule Distribution.Normal do
   The normal or Gauss distribution
   """
 
-  defstruct [:pars]
+  defstruct [:pars, name: "normal"]
   
   @type t() :: %__MODULE__{
-    pars: [number()] | nil
+    pars: [number()] | nil,
+    name: String.t
   }
 
 end
@@ -77,6 +78,8 @@ defimpl Distribution, for: Distribution.Normal do
   def random(%Normal{pars: [mu,sigma]}), do: normal(mu,sigma).()
   def random(%Normal{pars: nil}), do: fn [mu,sigma] -> normal(mu,sigma).() end
 
+  def name(model), do: model.name
+  
 end
 
 defimpl Inspect, for: Distribution.Normal do

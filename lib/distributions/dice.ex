@@ -18,10 +18,11 @@ defmodule Distribution.Dice do
   Provides the Dice distribution.
   """
 
-  defstruct [mode: :regular]
+  defstruct [mode: :regular, name: "dice"]
   
   @type t() :: %__MODULE__{
-    mode: :regular | :gk4
+    mode: :regular | :gk4,
+    name: String.t
   }
 
 end
@@ -49,6 +50,8 @@ defimpl Distribution, for: Distribution.Dice do
 
   def random(%Dice{mode: :regular}), do: Distribution.random(dice([]))
   def random(%Dice{mode: :gk4}), do: Distribution.random(dice_gk4([]))
+  
+  def name(model), do: model.name
   
 end
 
