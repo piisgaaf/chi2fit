@@ -170,8 +170,7 @@ defmodule Chi2fit.Utilities do
     |> empirical_cdf({binsize, offset}, algorithm, correction)
   end
 
-  defp get_add_cdf(data, n \\ 2, binsize \\ {1.0, 0.5}, algorithm \\ :wilson, correction \\ 0)
-  defp get_add_cdf(data, n, binsize, algorithm, correction) when n > 1 do
+  defp get_add_cdf(data, n, binsize, algorithm \\ :wilson, correction \\ 0) when n > 1 do
     data
     |> List.duplicate(n)
     |> Enum.reduce([], fn
@@ -181,8 +180,7 @@ defmodule Chi2fit.Utilities do
     |> get_cdf(binsize, algorithm, correction)
   end
 
-  defp get_max_cdf(data, n \\ 2, binsize \\ {1.0, 0.5}, algorithm \\ :wilson, correction \\ 0)
-  defp get_max_cdf(data, n, binsize, algorithm, correction) when n > 1 do
+  defp get_max_cdf(data, n, binsize, algorithm \\ :wilson, correction \\ 0) when n > 1 do
     data
     |> List.duplicate(n)
     |> Enum.reduce([], fn
@@ -235,22 +233,22 @@ defmodule Chi2fit.Utilities do
        {4, 0.01831563888873418, 0.0011447274305458862, 0.004578909722183545}]
 
   """
-  @type range :: {float,float} | [float,...]
-  @spec convert_cdf({cdf,range}) :: [{float,float,float,float}]
-  def convert_cdf({cdf,{mindur,maxdur}}), do: round(mindur)..round(maxdur) |> y_with_errors(cdf)
-  def convert_cdf({cdf,categories}) when is_list(categories), do: categories |> y_with_errors(cdf)
-  defp y_with_errors(list,cdf), do: list |> Enum.map(&Tuple.insert_at(cdf.(&1),0,&1)) 
+  @type range :: {float, float} | [float, ...]
+  @spec convert_cdf({cdf, range}) :: [{float, float, float, float}]
+  def convert_cdf({cdf, {mindur, maxdur}}), do: round(mindur)..round(maxdur) |> y_with_errors(cdf)
+  def convert_cdf({cdf, categories}) when is_list(categories), do: categories |> y_with_errors(cdf)
+  defp y_with_errors(list, cdf), do: list |> Enum.map(&Tuple.insert_at(cdf.(&1), 0,& 1)) 
 
   @doc """
   Converts raw data to binned data with (asymmetrical) errors.
   """
-  @spec to_bins(data :: [number], binsize :: {number,number}) :: ecdf()
-  def to_bins(data,binsize \\ {1.0,0.5}) do
+  @spec to_bins(data :: [number], binsize :: {number, number}) :: ecdf()
+  def to_bins(data, binsize \\ {1.0, 0.5}) do
     # Convert the raw data to binned data (histogram or frequency data):
-    {cdf,bins,_,_} = get_cdf data, binsize
+    {cdf, bins, _, _} = get_cdf data, binsize
 
     # Add the errors based on the binomial distribution (Wilson score):
-    convert_cdf {cdf,bins|>Enum.map(&elem(&1,0))}
+    convert_cdf {cdf, bins|>Enum.map(&elem(&1, 0))}
   end
   
   @doc """
@@ -261,9 +259,9 @@ defmodule Chi2fit.Utilities do
       iex> moment [1,2,3,4,5,6], 1
       3.5
   """
-  @spec moment(sample::[number],n::pos_integer) :: float
-  def moment(sample,n) when length(sample)>0 and is_integer(n) and n>0 do
-    (sample |> Stream.map(fn x-> :math.pow(x,n) end) |> Enum.sum)/length(sample)
+  @spec moment(sample::[number], n::pos_integer) :: float
+  def moment(sample, n) when length(sample)>0 and is_integer(n) and n>0 do
+    (sample |> Stream.map(fn x-> :math.pow(x, n) end) |> Enum.sum)/length(sample)
   end
 
   @doc """
@@ -346,15 +344,15 @@ defmodule Chi2fit.Utilities do
   The kurtosis returned is the 'excess kurtosis'.
   """
   @spec cullen_frey(sample::[number], n::integer) :: cullenfrey
-  def cullen_frey(sample,n \\ 100) do
-    bootstrap(n,sample,
+  def cullen_frey(sample, n \\ 100) do
+    bootstrap(n, sample,
       fn
-        data,_i ->
+        data, _i ->
           mean = data |> moment(1)
           sigma = :math.sqrt(data |> momentc(2))
-          skewness = data |> momentn(3,mean,sigma)
-          kurtosis = data |> momentn(4,mean,sigma)
-          {skewness*skewness,kurtosis-3.0}
+          skewness = data |> momentn(3, mean, sigma)
+          kurtosis = data |> momentn(4, mean, sigma)
+          {skewness*skewness, kurtosis-3.0}
       end)
   end
 
@@ -1004,6 +1002,30 @@ defmodule Chi2fit.Utilities do
     if all?, do: {avg,sd,tries}, else: {avg,sd}
   end
 
+  def total_mc(result, fun, mode \\ :use_bounds, iterations \\ 1000) do
+    {_, cov, parameters, _} = result
+
+    ranges = case mode do
+      :use_bounds ->
+        # Pick up the error in the paramater value
+        errors = cov |> M.diagonal |> Enum.map(fn x -> x|>abs|>:math.sqrt end)
+        Enum.zip(parameters, errors) |> Enum.map(fn {par, err} -> [par - err, par + err] end)
+
+      :use_ranges ->
+        {_, _, _, parranges} = result
+        parranges |> Tuple.to_list |> tl
+    end
+    outcomes = ranges
+    |> List.foldr([], fn
+      pair, [] -> pair
+      [left, right], acc -> Enum.flat_map(acc, & [[left|List.wrap(&1)], [right|List.wrap(&1)]])
+    end)
+    |> Enum.map(& mc(iterations, fun.(&1)))
+    |> Enum.map(& elem(&1,0))
+
+    {Enum.min(outcomes), Enum.max(outcomes)}
+  end
+
   @hours 24.0
   @default_workday {8.0,18.0}
   @default_epoch ~D[1970-01-01]
@@ -1127,7 +1149,7 @@ defmodule Chi2fit.Utilities do
       IO.puts device,"    pars:\t\t#{inspect parameters}"
       IO.puts device,"    ranges:\t\t#{inspect errors}\n"
   end
-  def display(device,{avg,sd,direction}) do
+  def display(device,{avg, sd, direction}) when direction in [:-, :+] do
     op = case direction do
       :+ -> &Kernel.+/2
       :- -> &Kernel.-/2
@@ -1137,7 +1159,18 @@ defmodule Chi2fit.Utilities do
     IO.puts device,"97.5%  => #{:math.ceil(op.(avg,2*sd))} units"
     IO.puts device,"99.85% => #{:math.ceil(op.(avg,3*sd))} units"
   end
-  
+  def display(device, {list, direction}) when is_list(list) and direction in [:-, :+] do
+    sorted = case direction do
+      :+ -> list |> Enum.sort
+      :- -> list |> Enum.sort |> Enum.reverse
+    end
+    max = length(sorted)
+    IO.puts device,"50%    => #{Enum.at(sorted,round(0.5 * max))} units"
+    IO.puts device,"84%    => #{Enum.at(sorted,round(0.84 * max))} units"
+    IO.puts device,"97.5%  => #{Enum.at(sorted,round(0.975 * max))} units"
+    IO.puts device,"99.85% => #{Enum.at(sorted,round(0.9985 * max))} units"
+  end
+
   @doc """
   Displays results of the function `Chi2fit.Fit.chi2fit/4`
   """
