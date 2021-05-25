@@ -83,13 +83,13 @@ RUN set -xe \
   && mix deps.compile \
   && mix compile
 
-# Add notebooks
-WORKDIR /app/notebooks
-ADD notebooks/*.ipynb ./
-ADD notebooks/data/* ./data/
-
 RUN set -xe \
   && mkdir -p /app/notebooks \
   && mkdir -p /app/notebooks/images \
   && chmod -R o+w /app/notebooks \
   && chown -R jovyan:users /home/jovyan
+
+# Add notebooks
+WORKDIR /app/notebooks
+ADD notebooks/*.ipynb ./
+ADD notebooks/data/* ./data/
