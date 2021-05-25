@@ -452,7 +452,7 @@ defmodule Chi2fit.Fit do
         fn
           (factor,{pars,oldchi,minimum,data}) ->
             dvec = factor |> M.from_diagonal |> Enum.map(&M.dotproduct(&1,delta))
-            vec = ExAlgebra.Vector.add(parameters,dvec)
+            vec = M.add(parameters,dvec)
             try do
               smoothing? = options[:smoothing] || false
               newchi = chi2smooth observables,vec,{fun,penalties},smoothing?,options
@@ -517,7 +517,7 @@ defmodule Chi2fit.Fit do
                     true ->
                       {nil,right}
                   end
-                  
+
                 local -> local
               end
 

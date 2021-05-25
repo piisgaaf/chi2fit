@@ -16,7 +16,7 @@ defmodule Chi2fit.Cli do
 
   @moduledoc """
   Provides a command line interface for fitting data against a known cumulative distribution function.
-  
+
   Tool for fitting particular probability distributions to empirical cumulative distribution functions.
   Distributions supported are Weibull, Wald (Inverse Gauss), Normal, Exponential, Erlang, and Skewed Exponential.
 
@@ -27,10 +27,10 @@ defmodule Chi2fit.Cli do
   errors in fitting the data.
 
   ## Basic usage: scanning the surface
-  
+
   As described above fitting the parameters is done by minimizing the chi-squared statistic. Usually this is a function of the
   distribution paremeters.
-  
+
   Scanning the surface is a simple way to have an initial guess of the parameters. The following command does a simple scan of
   the chi-squared surface against data:
 
@@ -247,7 +247,7 @@ defmodule Chi2fit.Cli do
     data |> Enum.sort |> Enum.each(fn
       (x)->
         jac = jacobian parameters, fn (pars)->D.cdf(model).(x,pars) end, options
-        error2 = alphainv |> Enum.map(&(ExAlgebra.Vector.dot(&1,jac))) |> ExAlgebra.Vector.dot(jac)
+        error2 = alphainv |> Enum.map(&(dotproduct(&1,jac))) |> dotproduct(jac)
         try do
           y = D.cdf(model).(x,parameters)
           error = if abs(error2/y) < 1.0e-6, do: 1.0e-6, else: :math.sqrt(error2)

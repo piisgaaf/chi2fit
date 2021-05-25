@@ -14,6 +14,8 @@ defmodule Chi2fit.CSV do
   # See the License for the specific language governing permissions and
   # limitations under the License.
 
+  alias Timex.Format.DateTime.Formatters
+
   @doc ~S"""
   Reads CSV data, extracts one column, and returns it as a list of `NaiveDateTime`.
   
@@ -46,10 +48,10 @@ defmodule Chi2fit.CSV do
     format = options[:format] || "{YYYY}/{0M}/{0D}"
     separator = options[:separator] || ?,
     parser = case options[:parser] do
-      :strftime -> Timex.Format.DateTime.Formatters.Strftime
-      :default -> Timex.Format.DateTime.Formatters.Default
-      nil -> Timex.Format.DateTime.Formatters.Default
-      _ -> Timex.Format.DateTime.Formatters.Default
+      :strftime -> Formatters.Strftime
+      :default -> Formatters.Default
+      nil -> Formatters.Default
+      _ -> Formatters.Default
     end
 
     formats = if is_list(format), do: format, else: [format]

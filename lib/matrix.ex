@@ -43,9 +43,6 @@ defmodule Chi2fit.Matrix do
   """
   @type matrix :: [vector]
 
-  import ExAlgebra.Matrix
-  import ExAlgebra.Vector, only: [dot: 2]
-
   @doc """
   Constructs a unit matrix of size n. All diagonal elements have value 1 and the rest has value 0.
   
@@ -287,9 +284,41 @@ defmodule Chi2fit.Matrix do
 
   """
   @spec dotproduct(vector,vector) :: number
-  def dotproduct(vector1, vector2) when length(vector1) != length(vector2) do
+  def dotproduct(vector1, vector2, sum \\ 0)
+  def dotproduct(vector1, vector2, _sum) when length(vector1) != length(vector2) do
     raise ArgumentError, message: "Vectors of unequal length"
   end
-  def dotproduct(vector1, vector2), do: dot(vector1,vector2)
+  def dotproduct([], [], sum), do: sum
+  def dotproduct([v1|rest1], [v2|rest2], sum), do: dotproduct(rest1, rest2, sum + v1*v2) 
+
+  defp subtract(matrix1, matrix2, result \\ [])
+  defp subtract([], [], result), do: Enum.reverse(result)
+  defp subtract([row1|rest1], [row2|rest2], result) do
+    subtract(rest1, rest2, [subtractv(row1,row2)|result])
+  end
+
+  defp subtractv(vector1, vector2, result \\ [])
+  defp subtractv([], [], result), do: Enum.reverse(result)
+  defp subtractv([v1|rest1], [v2|rest2], result) do
+    subtractv(rest1, rest2, [v1-v2|result])
+  end
+
+  defp scalar_multiply(matrix, scalar) when is_number(scalar) do
+    matrix |> Enum.map(fn row -> Enum.map(row, & &1*scalar) end)
+  end
+
+  defp multiply(matrix1, matrix2, result \\ [])
+  defp multiply([], _matrix2, result), do: Enum.reverse(result)
+  defp multiply([row|rest1], matrix2, result) do
+    multiply(rest1, matrix2, [matrix2
+      |> Stream.zip
+      |> Enum.reduce([], fn col, acc -> [dotproduct(row, col)|acc] end)
+      |> Enum.reverse | result])
+  end
+
+  defp transpose(matrix), do: matrix |> Stream.zip |> Enum.reverse
+
+  @spec add(vector, vector) :: vector
+  def add(vector1, vector2), do: Stream.zip(vector1, vector2) |> Enum.map(fn [v1,v2] -> v1 + v2 end)
 
 end

@@ -51,7 +51,6 @@ defmodule Chi2fit.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:exalgebra, "~> 0.0.5"},
       {:exboost, "~> 0.2.6"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
