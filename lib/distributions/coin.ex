@@ -1,4 +1,4 @@
-defmodule Distribution.Coin do
+defmodule Chi2fit.Distribution.Coin do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -26,9 +26,8 @@ defmodule Distribution.Coin do
 
 end
 
-defimpl Distribution, for: Distribution.Coin do
-  import Distribution.Coin
-  alias Distribution.Coin
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Coin do
+  alias Chi2fit.Distribution.Coin
 
   @spec coin() :: ((...) -> :heads|:tails)
   defp coin() do
@@ -54,7 +53,7 @@ defimpl Distribution, for: Distribution.Coin do
   
 end
 
-defimpl Inspect, for: Distribution.Coin do
+defimpl Inspect, for: Chi2fit.Distribution.Coin do
   def inspect(_dict, _opts), do: "#Coin<>"
 
 end

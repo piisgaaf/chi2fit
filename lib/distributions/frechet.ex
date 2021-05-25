@@ -1,4 +1,4 @@
-defmodule Distribution.Frechet do
+defmodule Chi2fit.Distribution.Frechet do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Frechet do
 
 end
 
-defimpl Distribution, for: Distribution.Frechet do
-  import Distribution.Frechet
-  alias Distribution.Frechet
+defimpl Chi2fit.Distribution, for: Distribution.Frechet do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Frechet
+  alias D.Frechet
 
   import Exboost.Math, only: [tgamma: 1]
 
@@ -73,14 +75,14 @@ defimpl Distribution, for: Distribution.Frechet do
   
   def cdf(%Frechet{pars: nil}), do: fn x, [scale,shape] -> frechetCDF(scale,shape).(x) end
 
-  def pdf(%Frechet{pars: nil}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Frechet distribution"
+  def pdf(%Frechet{pars: nil}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Frechet distribution"
   def random(%Frechet{pars: [scale,shape]}), do: frechet(scale, shape).()
 
   def name(model), do: model.name
   
 end
 
-defimpl Inspect, for: Distribution.Frechet do
+defimpl Inspect, for: Chi2fit.Distribution.Frechet do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

@@ -1,4 +1,4 @@
-defmodule Distribution.Constant do
+defmodule Chi2fit.Distribution.Constant do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Constant do
   
 end
 
-defimpl Distribution, for: Distribution.Constant do
-  import Distribution.Constant
-  alias Distribution.Constant
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Constant do
+  alias Chi2fit.Distribution, as: D
+
+  import Chi2fit.Distribution.Constant
+  alias Chi2fit.Distribution.Constant
 
   @spec constant(number | Keyword.t) :: ((...) -> number)
   defp constant([avg: average]), do: fn -> average end
@@ -39,8 +41,8 @@ defimpl Distribution, for: Distribution.Constant do
   def kurtosis(%Constant{}), do: fn _ -> 0 end
   def size(%Constant{}), do: 1
   
-  def cdf(%Constant{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Constant distribution"
-  def pdf(%Constant{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
+  def cdf(%Constant{}), do: raise D.FunctionNotSupportedError, message: "cdf is not supported for the Constant distribution"
+  def pdf(%Constant{}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
 
   @doc ~S"""
   ## Examples:
@@ -54,7 +56,7 @@ defimpl Distribution, for: Distribution.Constant do
   
 end
 
-defimpl Inspect, for: Distribution.Constant do
+defimpl Inspect, for: Chi2fit.Distribution.Constant do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

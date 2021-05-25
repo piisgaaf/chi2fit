@@ -1,4 +1,4 @@
-defmodule Distribution.Poisson do
+defmodule Chi2fit.Distribution.Poisson do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -32,9 +32,11 @@ defmodule Distribution.Poisson do
 
 end
 
-defimpl Distribution, for: Distribution.Poisson do
-  import Distribution.Poisson
-  alias Distribution.Poisson
+defimpl Chi2fit.Distribution, for: Distribution.Poisson do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Poisson
+  alias D.Poisson
   alias Exboost.Math, as: M
 
   @step 500
@@ -71,7 +73,7 @@ defimpl Distribution, for: Distribution.Poisson do
 
 end
 
-defimpl Inspect, for: Distribution.Poisson do
+defimpl Inspect, for: Chi2fit.Distribution.Poisson do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

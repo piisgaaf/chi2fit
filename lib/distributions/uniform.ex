@@ -1,4 +1,4 @@
-defmodule Distribution.Uniform do
+defmodule Chi2fit.Distribution.Uniform do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Uniform do
 
 end
 
-defimpl Distribution, for: Distribution.Uniform do
-  import Distribution.Uniform
-  alias Distribution.Uniform
+defimpl Chi2fit.Distribution, for: Distribution.Uniform do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Uniform
+  alias D.Uniform
 
   @spec uniform(Keyword.t) :: ((...) -> number)
   defp uniform([]), do: uniform(0, 2.0)
@@ -45,12 +47,12 @@ defimpl Distribution, for: Distribution.Uniform do
     min + (max-min)*:rand.uniform()
   end
 
-  def skewness(%Uniform{}), do: raise Distribution.FunctionNotSupportedError, message: "skewness is not supported for the Uniform distribution"
-  def kurtosis(%Uniform{}), do: raise Distribution.FunctionNotSupportedError, message: "kurtosis is not supported for the Uniform distribution"
+  def skewness(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "skewness is not supported for the Uniform distribution"
+  def kurtosis(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "kurtosis is not supported for the Uniform distribution"
   def size(%Uniform{}), do: 1
 
-  def cdf(%Uniform{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Uniform distribution"
-  def pdf(%Uniform{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Uniform distribution"
+  def cdf(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "cdf is not supported for the Uniform distribution"
+  def pdf(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Uniform distribution"
 
   @doc """
   ## Examples:
@@ -73,7 +75,7 @@ defimpl Distribution, for: Distribution.Uniform do
   
 end
 
-defimpl Inspect, for: Distribution.Uniform do
+defimpl Inspect, for: Chi2fit.Distribution.Uniform do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

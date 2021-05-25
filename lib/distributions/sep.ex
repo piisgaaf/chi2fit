@@ -1,4 +1,4 @@
-defmodule Distribution.SEP do
+defmodule Chi2fit.Distribution.SEP do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -42,9 +42,11 @@ defmodule Distribution.SEP do
 
 end
 
-defimpl Distribution, for: Distribution.SEP do
-  import Distribution.SEP
-  alias Distribution.SEP
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.SEP do
+  alias Chi2fit.Distribution, as: D
+
+  import D.SEP
+  alias D.SEP
 
   import Chi2fit.Utilities, only: [integrate: 5]
 
@@ -96,13 +98,13 @@ defimpl Distribution, for: Distribution.SEP do
   def cdf(%SEP{pars: nil, options: options}), do: fn x,[a,b,lambda,alpha] -> sepCDF(a,b,lambda,alpha,options).(x) end
 
   def pdf(%SEP{pars: nil}), do: fn x,[a,b,lambda,alpha] -> sepPDF(a,b,lambda,alpha).(x) end
-  def random(%SEP{}), do: raise Distribution.FunctionNotSupportedError, message: "random is not supported for the SEP distribution"
+  def random(%SEP{}), do: raise D.FunctionNotSupportedError, message: "random is not supported for the SEP distribution"
 
   def name(model), do: model.name
   
 end
 
-defimpl Inspect, for: Distribution.SEP do
+defimpl Inspect, for: Chi2fit.Distribution.SEP do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

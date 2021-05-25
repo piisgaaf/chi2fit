@@ -1,4 +1,4 @@
-defmodule Distribution.Normal do
+defmodule Chi2fit.Distribution.Normal do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Normal do
 
 end
 
-defimpl Distribution, for: Distribution.Normal do
-  import Distribution.Normal
-  alias Distribution.Normal
+defimpl Chi2fit.Distribution, for: Distribution.Normal do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Normal
+  alias D.Normal
 
   defp normal(mean,sigma) when is_number(mean) and is_number(sigma) and sigma>=0 do
     fn () ->
@@ -82,7 +84,7 @@ defimpl Distribution, for: Distribution.Normal do
   
 end
 
-defimpl Inspect, for: Distribution.Normal do
+defimpl Inspect, for: Chi2fit.Distribution.Normal do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

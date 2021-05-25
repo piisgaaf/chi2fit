@@ -1,4 +1,4 @@
-defmodule Chi2fit.Distribution do
+defmodule Chi2fit.Distribution.Utilities do
 
   # Copyright 2012-2017 Pieter Rijken
   #
@@ -19,7 +19,9 @@ defmodule Chi2fit.Distribution do
   """
 
   import Chi2fit.Utilities
-  
+  alias Chi2fit.Distribution, as: D
+
+
   defmodule UnsupportedDistributionError do
     defexception message: "Unsupported distribution function"
   end
@@ -49,22 +51,22 @@ defmodule Chi2fit.Distribution do
     params = options[:pars] || nil
     
     case name do
-      "constant" -> %Distribution.Constant{pars: params}
-      "uniform" -> %Distribution.Uniform{pars: params}
-      "dice" -> %Distribution.Dice{mode: :regular}
-      "dice_gk4" -> %Distribution.Dice{mode: :gk4}
-      "wald" -> %Distribution.Wald{pars: params}
-      "weibull" -> %Distribution.Weibull{pars: params}
-      "exponential" -> %Distribution.Exponential{pars: params}
-      "frechet" -> %Distribution.Frechet{pars: params}
-      "nakagami" -> %Distribution.Nakagami{pars: params}
-      "poisson" -> %Distribution.Poisson{pars: params}
-      {"poisson", period} when is_number(period) and period>0 -> %Distribution.Poisson{pars: params,period: period}
-      "erlang" -> %Distribution.Erlang{pars: params}
-      {"erlang", batches} when is_number(batches) and batches>0 -> %Distribution.Erlang{pars: params,batches: batches}
-      "normal" -> %Distribution.Normal{pars: params}
-      "sep" -> %Distribution.SEP{pars: params,options: options}
-      "sep0" -> %Distribution.SEP{pars: params,offset: 0.0, options: options}
+      "constant" -> %D.Constant{pars: params}
+      "uniform" -> %D.Uniform{pars: params}
+      "dice" -> %D.Dice{mode: :regular}
+      "dice_gk4" -> %D.Dice{mode: :gk4}
+      "wald" -> %D.Wald{pars: params}
+      "weibull" -> %D.Weibull{pars: params}
+      "exponential" -> %D.Exponential{pars: params}
+      "frechet" -> %D.Frechet{pars: params}
+      "nakagami" -> %D.Nakagami{pars: params}
+      "poisson" -> %D.Poisson{pars: params}
+      {"poisson", period} when is_number(period) and period>0 -> %D.Poisson{pars: params,period: period}
+      "erlang" -> %D.Erlang{pars: params}
+      {"erlang", batches} when is_number(batches) and batches>0 -> %D.Erlang{pars: params,batches: batches}
+      "normal" -> %D.Normal{pars: params}
+      "sep" -> %D.SEP{pars: params,options: options}
+      "sep0" -> %D.SEP{pars: params,offset: 0.0, options: options}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
@@ -104,37 +106,37 @@ defmodule Chi2fit.Distribution do
       %Distribution.Wald{pars: [1.2, 5.4]}
 
   """
-  def sigil_M(str, ''), do: %Distribution.Uniform{pars: to_numbers(str)}
-  def sigil_M(str, [?u|_]), do: %Distribution.Uniform{pars: to_numbers(str)}
-  def sigil_M("", 'coin'), do: %Distribution.Coin{}
-  def sigil_M(str, [?c|_]), do: %Distribution.Constant{pars: [to_number(str)]}
-  def sigil_M("", 'dgk'), do: %Distribution.Dice{mode: :gk4}
-  def sigil_M("", [?d|_]), do: %Distribution.Dice{mode: :regular}
+  def sigil_M(str, ''), do: %D.Uniform{pars: to_numbers(str)}
+  def sigil_M(str, [?u|_]), do: %D.Uniform{pars: to_numbers(str)}
+  def sigil_M("", 'coin'), do: %D.Coin{}
+  def sigil_M(str, [?c|_]), do: %D.Constant{pars: [to_number(str)]}
+  def sigil_M("", 'dgk'), do: %D.Dice{mode: :gk4}
+  def sigil_M("", [?d|_]), do: %D.Dice{mode: :regular}
 
-  def sigil_M(str, [?b|_]), do: %Distribution.Bernoulli{pars: [to_number(str)]}
+  def sigil_M(str, [?b|_]), do: %D.Bernoulli{pars: [to_number(str)]}
 
   def sigil_M(str, 'erlangb') do
     [rate, batches] = to_numbers(str)
-    %Distribution.Erlang{pars: [rate], batches: batches}
+    %D.Erlang{pars: [rate], batches: batches}
   end
-  def sigil_M(str, 'erlang'), do: %Distribution.Erlang{pars: to_numbers(str)}
-  def sigil_M(str, [?e|_]), do: %Distribution.Exponential{pars: [to_number(str)]}
+  def sigil_M(str, 'erlang'), do: %D.Erlang{pars: to_numbers(str)}
+  def sigil_M(str, [?e|_]), do: %D.Exponential{pars: [to_number(str)]}
   def sigil_M(str, 'pp') do
     [rate, period] = to_numbers(str)
-    %Distribution.Poisson{pars: [rate], period: period}
+    %D.Poisson{pars: [rate], period: period}
   end
-  def sigil_M(str, [?p|_]), do: %Distribution.Poisson{pars: [to_number(str)]}
+  def sigil_M(str, [?p|_]), do: %D.Poisson{pars: [to_number(str)]}
 
-  def sigil_M(str, 'nakagami'), do: %Distribution.Nakagami{pars: to_numbers(str)}
-  def sigil_M(str, [?n|_]), do: %Distribution.Normal{pars: to_numbers(str)}
+  def sigil_M(str, 'nakagami'), do: %D.Nakagami{pars: to_numbers(str)}
+  def sigil_M(str, [?n|_]), do: %D.Normal{pars: to_numbers(str)}
 
-  def sigil_M(str, 'wald'), do: %Distribution.Wald{pars: to_numbers(str)}
-  def sigil_M("", [?w|_]), do: %Distribution.Weibull{}
-  def sigil_M(str, [?w|_]), do: %Distribution.Weibull{pars: to_numbers(str)}
+  def sigil_M(str, 'wald'), do: %D.Wald{pars: to_numbers(str)}
+  def sigil_M("", [?w|_]), do: %D.Weibull{}
+  def sigil_M(str, [?w|_]), do: %D.Weibull{pars: to_numbers(str)}
 
-  def sigil_M(str, [?f|_]), do: %Distribution.Frechet{pars: to_numbers(str)}
-  def sigil_M(str, 'sz'), do: %Distribution.SEP{pars: to_numbers(str), offset: 0.0}
-  def sigil_M(str, [?s|_]), do: %Distribution.SEP{pars: to_numbers(str)}
+  def sigil_M(str, [?f|_]), do: %D.Frechet{pars: to_numbers(str)}
+  def sigil_M(str, 'sz'), do: %D.SEP{pars: to_numbers(str), offset: 0.0}
+  def sigil_M(str, [?s|_]), do: %D.SEP{pars: to_numbers(str)}
 
   def sigil_M(_term, modifiers) do
     raise UnsupportedDistributionError, message: "Unsupported modifiers #{inspect modifiers}"
@@ -161,14 +163,14 @@ defmodule Chi2fit.Distribution do
   end
   def guess(_sample,n,distrib) when is_integer(n) and n>0 do
     model = model(distrib)
-    params = 1..Distribution.size(model)
+    params = 1..D.size(model)
     1..n
     |> Enum.map(fn _ -> Enum.map(params, fn _ -> 50*:rand.uniform end) end)
     |> Enum.flat_map(fn
       pars ->
         try do
-          s = Distribution.skewness(model).(pars)
-          k = Distribution.kurtosis(model).(pars)
+          s = D.skewness(model).(pars)
+          k = D.kurtosis(model).(pars)
           [{s,k}]
         rescue
           _error -> []

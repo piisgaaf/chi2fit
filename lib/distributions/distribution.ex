@@ -1,4 +1,4 @@
-defprotocol Distribution do
+defprotocol Chi2fit.Distribution do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -42,24 +42,24 @@ defprotocol Distribution do
 end
 
 defimpl Enumerable, for: [
-  Distribution.Constant,
-  Distribution.Coin,
-  Distribution.Dice,
-  Distribution.Uniform,
-  Distribution.Bernoulli,
-  Distribution.Exponential,
-  Distribution.Poisson,
-  Distribution.Erlang,
-  Distribution.Normal,
-  Distribution.Wald,
-  Distribution.Weibull,
-  Distribution.Frechet,
-  Distribution.Nakagami,
-  Distribution.SEP,
-  Distribution.BiModal,
-  Distribution.TriModal] do
+  Chi2fit.Distribution.Constant,
+  Chi2fit.Distribution.Coin,
+  Chi2fit.Distribution.Dice,
+  Chi2fit.Distribution.Uniform,
+  Chi2fit.Distribution.Bernoulli,
+  Chi2fit.Distribution.Exponential,
+  Chi2fit.Distribution.Poisson,
+  Chi2fit.Distribution.Erlang,
+  Chi2fit.Distribution.Normal,
+  Chi2fit.Distribution.Wald,
+  Chi2fit.Distribution.Weibull,
+  Chi2fit.Distribution.Frechet,
+  Chi2fit.Distribution.Nakagami,
+  Chi2fit.Distribution.SEP,
+  Chi2fit.Distribution.BiModal,
+  Chi2fit.Distribution.TriModal] do
 
-  alias Distribution, as: D
+  alias Chi2fit.Distribution, as: D
 
   def count(_lazy), do: {:error, __MODULE__}
 

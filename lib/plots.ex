@@ -1,5 +1,5 @@
-defmodule Gnuplotlib do
-  
+defmodule Chi2fit.Gnuplotlib do
+
   # Copyright 2019-2019 Pieter Rijken
   #
   # Licensed under the Apache License, Version 2.0 (the "License");

@@ -1,4 +1,4 @@
-defmodule Distribution.BiModal do
+defmodule Chi2fit.Distribution.BiModal do
 
   # Copyright 2020 Pieter Rijken
   #
@@ -28,25 +28,27 @@ defmodule Distribution.BiModal do
 
 end
 
-defimpl Distribution, for: Distribution.BiModal do
-  import Distribution.BiModal
-  alias Distribution.BiModal
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.BiModal do
+  alias Chi2fit.Distribution, as: D
+
+  import D.BiModal
+  alias D.BiModal
 
   def skewness(%BiModal{distribs: nil}), do: raise ArithmeticError, "Skewness not supported for BiModal distribution"
   def kurtosis(%BiModal{distribs: nil}), do: raise ArithmeticError, "Kurtosis not supported for BiModal distribution"
   
-  def size(%BiModal{distribs: distribs}), do: 1 + (distribs|>Enum.map(&Distribution.size(&1))|>Enum.sum)
+  def size(%BiModal{distribs: distribs}), do: 1 + (distribs|>Enum.map(&D.size(&1))|>Enum.sum)
   
   def cdf(%BiModal{weights: nil, distribs: distribs}) do
     fn x,[w|parameters] ->
       distribs
-      |> Enum.map(&{&1,Distribution.size(&1)})
+      |> Enum.map(&{&1,D.size(&1)})
       |> Enum.reduce({[],parameters},fn {d,size},{result,rest} -> {[{d,Enum.take(rest,size)}|result],Enum.drop(rest,size)} end)
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip([w,1-w])
       |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*Distribution.cdf(d).(x,pars) end)
+      |> Enum.map(fn {d,pars,p} -> p*D.cdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
@@ -54,13 +56,13 @@ defimpl Distribution, for: Distribution.BiModal do
   def pdf(%BiModal{weights: nil, distribs: distribs}) do
     fn x,[w|parameters] ->
       distribs
-      |> Enum.map(&{&1,Distribution.size(&1)})
+      |> Enum.map(&{&1,D.size(&1)})
       |> Enum.reduce({[],parameters},fn {d,size},{result,rest} -> {[{d,Enum.take(rest,size)}|result],Enum.drop(rest,size)} end)
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip([w,1-w])
       |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*Distribution.pdf(d).(x,pars) end)
+      |> Enum.map(fn {d,pars,p} -> p*D.pdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
@@ -70,13 +72,13 @@ defimpl Distribution, for: Distribution.BiModal do
 			rnd = :rand.uniform()
 			
       distribs
-      |> Enum.map(&{&1,Distribution.size(&1)})
+      |> Enum.map(&{&1,D.size(&1)})
       |> Enum.reduce({[],parameters},fn {d,size},{result,rest} -> {[{d,Enum.take(rest,size)}|result],Enum.drop(rest,size)} end)
       |> elem(0)
       |> Enum.reverse()
     	|> Enum.zip([w,1])
       |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-    	|> Enum.map(fn {d,pars,p} -> {Distribution.random(d).(pars),p} end)
+    	|> Enum.map(fn {d,pars,p} -> {D.random(d).(pars),p} end)
 			|> Enum.reduce(nil, fn ({r,p},nil) -> if(rnd<p, do: r, else: nil); (_,acc) -> acc end)
 		end
   end
@@ -85,7 +87,7 @@ defimpl Distribution, for: Distribution.BiModal do
   
 end
 
-defimpl Inspect, for: Distribution.BiModal do
+defimpl Inspect, for: Chi2fit.Distribution.BiModal do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

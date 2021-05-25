@@ -60,7 +60,7 @@ defmodule Chi2fit.Cli do
   minimum Chi-squared and the parameter values at this minimum. The reported error ranges correspond to a change of Chi-squared of +1.
 
   Options available:
-  
+
     * `probes` - The number of probes to use for guessing parameter values at initialization
     * `progress` - Shows progress during 'probing' (shows progress every 1000 probes)
       * `c` - Mark progress every 100th probe
@@ -69,9 +69,9 @@ defmodule Chi2fit.Cli do
   More options are described below and are available using the option `--help`.
 
   ## Input data options
-  
+
   Several options control how the input data is interpreted. These are:
-  
+
     * `model` - determines how errors are assigned to the data points. Possible values include `simple|asimple|linear`
     * `data` - instead of using the file for data, use this option to pass a list of data points
     * `correction` - Estimate of number of events missed in the right tail of the sample
@@ -87,29 +87,29 @@ defmodule Chi2fit.Cli do
   Distributions supported are: Wald, Weibull, Normal, Erlang, Exponential, and SEP (Skewed Exponential: 3 and 4 parameters).
 
   For the distributions of SEP (4 parameters), and SEP0 (3 parameters) the following options exist:
-  
+
     * `method` -  Supported values are 'gauss|gauss2|gaus3|romberg|romberg2|romberg3'
-  
+
   Romberg integration supports the options:
-  
+
     * `tolerance` - The target precision for Romberg integration
     * `itermax` - The maximum number of iterations to use in Romberg integration
     
   Gauss integration supports the option:
 
     * `npoints` - The number of points to use in Gauss integration (4, 8, 16, and 32)
-  
+
   ## Fitting options
 
   AFter probing the surface for an initial guess of the parameters, a fine grained search for the optimum can be done by enabling
   the fit procedure. The algorithm implemented assumes that the initial guess is close enough to the minimum and uses a combination of
   parameter estimation and Monte Carlo methods.
-  
+
   An additional strategy is to use a so-called grid-search by changing only one parameter at a time. It selects the parameters in a
   round robin fashion. Using Romberg iteration and Newton root finding algorithm the parameter value minimizing chi-squared is determined
   while kepping the other parameters constant. Then the other parameters are varied. Especially fitting distributions with 3 or more
   parameters may benefit from this strategy.
-  
+
   Options controlling these are:
 
     * `fit` - Enables the fine-grained fitting of parameters
@@ -124,14 +124,14 @@ defmodule Chi2fit.Cli do
   The fitting procedures uses derivatives (first and second order) to estimate changes in the parameters that will result in
   a better fit. Derivaties are calculated using Romberg differentiation. The accuracy and maximum number of iterations are
   controlled by the options:
-  
+
     * `tolerance` - The target precision for Romberg integration
     * `itermax` - The maximum number of iterations to use in Romberg integration
-  
+
   ## Bootstrapping
 
   Bootstrapping can be enabled to estimate the errors in the parameters. The supported options are:
-  
+
     * `bootstrap` - Enables bootstrapping. Specifies the number of iterations to perform
     * `sample` - The sample size to use from the empirical distribution
 
@@ -149,9 +149,9 @@ defmodule Chi2fit.Cli do
   Options available for scanning, fitting, and bootstrapping:
 
     * `debug` - Outputs additional data for debugging purposes"
-  
+
   ## References
-  
+
     [1] R.A. Arndt and M.H. MacGregor, Methods in Computational Physics, Vol. 6 (1966) 256-296
 
     [2] Marius M. Nagels, Baryon-Baryon Scattering in a One-Boson-Exchange Potential Mode, PhD. Thesis, Nijmegen University, 1975
@@ -164,7 +164,9 @@ defmodule Chi2fit.Cli do
   import Chi2fit.Fit, only: [chi2fit: 4, chi2probe: 4, chi2: 4]
   import Chi2fit.Utilities
   import Chi2fit.Matrix
-  import Chi2fit.Distribution
+  import Chi2fit.Distribution.Utilities
+
+  alias Chi2fit.Distribution, as: D
 
   @datapoints 500
   @maxx 1.1
@@ -182,21 +184,21 @@ defmodule Chi2fit.Cli do
   @default_error_score :wilson
 
   @jac_threshold 0.01
-  
+
   defp penalties(_x,_pars), do: 0.0
 
   defp probe(data, {model,ranges}, options) do
     penalties = options[:penalties]
     surface = options[:surface]
     surface? = options[:surface?]
-    
+
     {:ok, file} = if surface?, do: File.open(surface, [:write]), else: {:ok,nil}
     options = options |> Keyword.put_new(:surfacefile,file)
-    result = chi2probe(data, ranges, {Distribution.cdf(model), penalties}, options)
+    result = chi2probe(data, ranges, {D.cdf(model), penalties}, options)
     if file, do: File.close(file)
     result
   end
-  
+
   defp print_cdf({cdf,[_,maxdur]}, options) do
     0..options[:datapoints]
     |> Stream.map(&(maxdur*options[:maxx]*&1/options[:datapoints]))
@@ -204,7 +206,7 @@ defmodule Chi2fit.Cli do
     |> Enum.each(fn ({x,{y,ylow,yhigh}})-> IO.puts("#{x},#{y},#{ylow},#{yhigh}") end)
     System.halt(0)
   end
-  
+
   defp prepare_data(data, options) do
     mcsample = options[:mcsample]
     correction = options[:correction]
@@ -226,26 +228,26 @@ defmodule Chi2fit.Cli do
     if options[:print?], do: print_cdf({cdf,[mindur,maxdur]}, options)
 
     data = convert_cdf({cdf,bins|>Enum.map(&elem(&1,0))})
-	
+
     try do
       model = model(options[:name],options)
       ranges = elem(Code.eval_string(options[:ranges]),0)
       {chi2, parameters,errors} = probe data, {model,ranges}, options
       {data,model, {chi2, parameters,errors}}
     rescue
-      _e in Chi2fit.Distribution.UnsupportedDistributionError ->
+      _e in D.UnsupportedDistributionError ->
         IO.puts :stderr, "ERROR: Unsupported distribution '#{options[:name]}'"
         System.halt 1
     end
   end
-  
+
   defp do_output(data, parameters, model, alphainv, options) do
     data |> Enum.sort |> Enum.each(fn
       (x)->
-        jac = jacobian parameters, fn (pars)->Distribution.cdf(model).(x,pars) end, options
+        jac = jacobian parameters, fn (pars)->D.cdf(model).(x,pars) end, options
         error2 = alphainv |> Enum.map(&(ExAlgebra.Vector.dot(&1,jac))) |> ExAlgebra.Vector.dot(jac)
         try do
-          y = Distribution.cdf(model).(x,parameters)
+          y = D.cdf(model).(x,parameters)
           error = if abs(error2/y) < 1.0e-6, do: 1.0e-6, else: :math.sqrt(error2)
           IO.puts("#{x},#{y},#{y-error},#{y+error}")
         rescue
@@ -253,7 +255,7 @@ defmodule Chi2fit.Cli do
         end
       end)
   end
-  
+
   defp usage(code) do
     IO.puts "Usage: #{__ENV__.file |> String.split("/") |> Enum.reverse |> hd} <options> <data file>"
     IO.puts "    --help\t\t\t\tShows this help"
@@ -362,7 +364,7 @@ defmodule Chi2fit.Cli do
     |> Keyword.put_new(:mcdata,     options[:data] || false)
     |> Keyword.put_new(:binsize,    @default_binsize)
     |> Keyword.put_new(:binoffset,  @default_binoffset)
-    
+
     options
     |> Keyword.put_new(:mark,       [
       m: fn -> if(options[:progress?], do: IO.write("M")) end,
@@ -382,21 +384,21 @@ defmodule Chi2fit.Cli do
       {data,model, {_chi2, parameters,_errors}} = prepare_data sample, options
       try do
         IO.write "...fitting..."
-        fit = {_,_,pars,_ranges} = chi2fit(data, {parameters, Distribution.cdf(model), &penalties/2}, options[:iterations], options)
-        jac = jacobian(pars,&chi2(data,fn (x)->Distribution.cdf(model).(x,&1) end,fn (x)->penalties(x,&1) end,options),options)
+        fit = {_,_,pars,_ranges} = chi2fit(data, {parameters, D.cdf(model), &penalties/2}, options[:iterations], options)
+        jac = jacobian(pars,&chi2(data,fn (x)->D.cdf(model).(x,&1) end,fn (x)->penalties(x,&1) end,options),options)
         |> Enum.map(&(&1*&1))|>Enum.sum|>:math.sqrt
         if jac<@jac_threshold, do: fit, else: {:error, "not in minimum #{jac}"}
       catch
         {:inverse_error, ArithmeticError, chi2, _parameters} ->
-          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-Distribution.size(model)})"
+          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-D.size(model)})"
           {chi2,[],parameters}
       else
         {:error, msg} ->
           IO.puts"..#{msg}...skipping"
           nil
-  
+
         {chi2, alphainv, parameters,_ranges} ->
-          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-Distribution.size(model)})"
+          IO.puts "(chi2=#{chi2}; dof=#{length(sample)-D.size(model)})"
           {chi2, alphainv, parameters}
       end
     end
@@ -413,7 +415,7 @@ defmodule Chi2fit.Cli do
       filename && !File.exists?(filename) ->
         IO.puts :stderr, "ERROR: failed to open file '#{filename}'"
         System.halt 1
-        
+
       options[:binsize] < options[:binoffset] ->
         IO.puts :stderr, "ERROR: 'binsize' must be larger than 'binoffset'"
         System.halt 1
@@ -431,8 +433,8 @@ defmodule Chi2fit.Cli do
             IO.puts :stderr, "ERROR: please specify 'ranges' for parameters"
             System.halt 1
 
-          length(ranges) != Distribution.size(model) ->
-            IO.puts :stderr, "ERROR: 'ranges' must be of length #{Distribution.size(model)} for '#{options[:cdf]}'"
+          length(ranges) != D.size(model) ->
+            IO.puts :stderr, "ERROR: 'ranges' must be of length #{D.size(model)} for '#{options[:cdf]}'"
             System.halt 1
 
           true -> options
@@ -444,7 +446,7 @@ defmodule Chi2fit.Cli do
 
   ## When called from 'mix run -e ...'
   def main, do: main(System.argv())
-  
+
   ## When called from escript
   def main args do
     {options, filename} = parse_args(args)
@@ -456,7 +458,7 @@ defmodule Chi2fit.Cli do
     options = try do
       options |> validate(filename) |> add_defaults
     rescue
-      Chi2fit.Distribution.UnsupportedDistributionError ->
+      D.UnsupportedDistributionError ->
         IO.puts :stderr, "ERROR: Unsupported distribution '#{options[:cdf]}'"
         System.halt 1
     end
@@ -494,7 +496,7 @@ defmodule Chi2fit.Cli do
 
         avgsd = boot |> Stream.map(fn {_,cov,_} -> cov end) |> Stream.filter(&(length(&1)>0)) |> Stream.map(&diagonal/1) |> Stream.map(&(Enum.map(&1,fn x->:math.sqrt(abs(x)) end))) |> Stream.map(&List.to_tuple/1) |> Enum.to_list |> :lists.unzip |> Tuple.to_list
         |> Enum.map(&(Enum.sum(&1)/length(&1)))
-      
+
         IO.puts "Sample:"
         IO.puts "    #{inspect wdata|>Enum.to_list}"
         IO.puts ""
@@ -504,7 +506,7 @@ defmodule Chi2fit.Cli do
         IO.puts "    parameters:\t\t\t#{inspect avgpars}"
         IO.puts "    SD (parameters; sample):\t#{inspect sdpars}"
         IO.puts "    SD (parameters; fit):\t#{inspect avgsd}"
-        IO.puts "    Degrees of freedom:\t\t#{length(wdata|>Enum.to_list)-Distribution.size(model)}"
+        IO.puts "    Degrees of freedom:\t\t#{length(wdata|>Enum.to_list)-D.size(model)}"
         IO.puts "    Total:\t\t\t#{length(boot)}"
 
         if options[:output?], do: do_output(wdata, avgpars, model, sdpars |> Enum.map(&(&1*&1)) |> from_diagonal, options)
@@ -517,7 +519,7 @@ defmodule Chi2fit.Cli do
         IO.puts "    chi2:\t\t#{chi2}"
         IO.puts "    pars:\t\t#{inspect parameters}"
         IO.puts "    errors:\t\t#{inspect errors}\n"
-  
+
         if options[:fit?] do
           options = if options[:debug?] do
             options
@@ -532,14 +534,14 @@ defmodule Chi2fit.Cli do
           else
             options
           end
-          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, Distribution.cdf(model), &penalties/2}, options[:iterations], [{:probes, [{chi2,parameters}]}|options])
+          {chi2, alphainv, parameters, ranges} = chi2fit(data, {parameters, D.cdf(model), &penalties/2}, options[:iterations], [{:probes, [{chi2,parameters}]}|options])
           IO.puts "Final:"
           IO.puts "    chi2:\t\t#{chi2}"
-          IO.puts "    Degrees of freedom:\t#{length(data)-Distribution.size(model)}"
+          IO.puts "    Degrees of freedom:\t#{length(data)-D.size(model)}"
           IO.puts "    covariance:\t\t["
           alphainv |> Enum.each(fn row -> IO.puts "    \t\t\t  #{inspect row}" end)
           IO.puts "    \t\t\t]"
-          IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->Distribution.cdf(model).(x,&1) end,fn (x)->penalties(x,&1) end,options),options)}"
+          IO.puts "    gradient:\t\t#{inspect jacobian(parameters,&chi2(data,fn (x)->D.cdf(model).(x,&1) end,fn (x)->penalties(x,&1) end,options),options)}"
           IO.puts "    parameters:\t\t#{inspect parameters}"
           IO.puts "    errors:\t\t#{inspect alphainv |> diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)}"
           IO.puts "    ranges:"
@@ -555,5 +557,5 @@ defmodule Chi2fit.Cli do
         end
     end
   end
-  
+
 end

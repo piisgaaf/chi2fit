@@ -1,4 +1,4 @@
-defmodule Distribution.Nakagami do
+defmodule Chi2fit.Distribution.Nakagami do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Nakagami do
 
 end
 
-defimpl Distribution, for: Distribution.Nakagami do
-  import Distribution.Nakagami
-  alias Distribution.Nakagami
+defimpl Chi2fit.Distribution, for: Distribution.Nakagami do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Nakagami
+  alias D.Nakagami
 
   import Exboost.Math, only: [tgamma: 1]
 
@@ -76,14 +78,14 @@ defimpl Distribution, for: Distribution.Nakagami do
   
   def cdf(%Nakagami{pars: nil}), do: fn x, [scale,shape] -> nakagamiCDF(scale,shape).(x) end
 
-  def pdf(%Nakagami{pars: nil}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Nakagami distribution"
+  def pdf(%Nakagami{pars: nil}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Nakagami distribution"
   def random(%Nakagami{pars: [scale,shape]}), do: nakagami(scale, shape).()
 
   def name(model), do: model.name
   
 end
 
-defimpl Inspect, for: Distribution.Nakagami do
+defimpl Inspect, for: Chi2fit.Distribution.Nakagami do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

@@ -1,4 +1,4 @@
-defmodule Distribution.Exponential do
+defmodule Chi2fit.Distribution.Exponential do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Exponential do
 
 end
 
-defimpl Distribution, for: Distribution.Exponential do
-  import Distribution.Exponential
-  alias Distribution.Exponential
+defimpl Chi2fit.Distribution, for: Distribution.Exponential do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Exponential
+  alias D.Exponential
 
   defp exponential([avg: average]) do
     fn ->
@@ -55,7 +57,7 @@ defimpl Distribution, for: Distribution.Exponential do
   
 end
 
-defimpl Inspect, for: Distribution.Exponential do
+defimpl Inspect, for: Chi2fit.Distribution.Exponential do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

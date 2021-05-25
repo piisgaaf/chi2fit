@@ -1,7 +1,26 @@
-defmodule Chi2fit.Utilities.Collector do
+defmodule Chi2fit.Collector do
+
+  # Copyright 2016-2017 Pieter Rijken
+  #
+  # Licensed under the Apache License, Version 2.0 (the "License");
+  # you may not use this file except in compliance with the License.
+  # You may obtain a copy of the License at
+  #
+  #     http://www.apache.org/licenses/LICENSE-2.0
+  #
+  # Unless required by applicable law or agreed to in writing, software
+  # distributed under the License is distributed on an "AS IS" BASIS,
+  # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  # See the License for the specific language governing permissions and
+  # limitations under the License.
+  
   use Agent
 
-  def start_link() do
+  @moduledoc """
+  Implements an agent for collecting data.
+  """
+
+  def start_link do
     Agent.start_link(fn -> [] end, name: __MODULE__)
   end
 
@@ -10,20 +29,20 @@ defmodule Chi2fit.Utilities.Collector do
       {:io_request, from, refid, {:put_chars, :unicode, data}} ->
         send from, {:io_reply, refid, :ok}
         capture [data|out]
-          
-      {:stop,from} ->
+
+      {:stop, from} ->
         send from, {:data, Enum.reverse(out)}
         :ok
-        
+
       msg ->
         raise ArgumentError, "[Collector] Received unexpected message: #{inspect msg}"
     end
   end
-  
+
   def collect, do: Agent.cast(__MODULE__, fn _ -> capture() end)
 
   def value do
-    send __MODULE__, {:stop,self()}
+    send __MODULE__, {:stop, self()}
     receive do
       {:data, data} -> Agent.update(__MODULE__, fn _ -> data end)
     end

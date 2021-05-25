@@ -578,7 +578,7 @@ defmodule Chi2fit.Utilities do
     * smaller than zero (0)
 
   """
-  @spec read_data(filename::String.t) :: Stream.t
+  @spec read_data(filename::String.t) :: Enumerable.t
   def read_data(filename) do
     filename
     |> File.stream!([],:line)
@@ -1180,8 +1180,8 @@ defmodule Chi2fit.Utilities do
 
       IO.puts device,"Final:"
       IO.puts device,"    chi2:\t\t#{chi2}"
-      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-Distribution.size(model)}"
-      IO.puts device,"    gradient:\t\t#{inspect jacobian(parameters,&F.chi2(hdata,fn x->Distribution.cdf(model).(x,&1) end,fn _->0.0 end,options),options)}"
+      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-D.size(model)}"
+      IO.puts device,"    gradient:\t\t#{inspect jacobian(parameters,&F.chi2(hdata,fn x->D.cdf(model).(x,&1) end,fn _->0.0 end,options),options)}"
       IO.puts device,"    parameters:\t\t#{inspect parameters}"
       IO.puts device,"    errors:\t\t#{inspect param_errors}"
       IO.puts device,"    ranges:"
@@ -1376,7 +1376,7 @@ defmodule Chi2fit.Utilities do
       [~D[2019-06-01], ~D[2019-05-11], ~D[2019-04-27], ~D[2019-04-13]]
 
   """
-  @spec intervals(options :: Keyword.t) :: Stream.t
+  @spec intervals(options :: Keyword.t) :: Enumerable.t
   def intervals(options \\ []) do
     type = options[:type] || :half_month
     periods = case options[:weeks] do

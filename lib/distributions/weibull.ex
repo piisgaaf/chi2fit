@@ -1,4 +1,4 @@
-defmodule Distribution.Weibull do
+defmodule Chi2fit.Distribution.Weibull do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,9 +27,11 @@ defmodule Distribution.Weibull do
 
 end
 
-defimpl Distribution, for: Distribution.Weibull do
-  import Distribution.Weibull
-  alias Distribution.Weibull
+defimpl Chi2fit.Distribution, for: Distribution.Weibull do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Weibull
+  alias D.Weibull
 
   import Exboost.Math, only: [tgamma: 1]
 
@@ -121,7 +123,7 @@ defimpl Distribution, for: Distribution.Weibull do
   
 end
 
-defimpl Inspect, for: Distribution.Weibull do
+defimpl Inspect, for: Chi2fit.Distribution.Weibull do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

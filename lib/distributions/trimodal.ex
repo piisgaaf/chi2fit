@@ -1,4 +1,4 @@
-defmodule Distribution.TriModal do
+defmodule Chi2fit.Distribution.TriModal do
 
   # Copyright 2020 Pieter Rijken
   #
@@ -22,31 +22,33 @@ defmodule Distribution.TriModal do
   
   @type t() :: %__MODULE__{
     weights: [number()] | nil,
-    distribs: [Distribution.t()] | nil,
+    distribs: [Chi2fit.Distribution.t()] | nil,
     name: String.t
   }
 
 end
 
-defimpl Distribution, for: Distribution.TriModal do
-  import Distribution.TriModal
-  alias Distribution.TriModal
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
+  alias Chi2fit.Distribution, as: D
+
+  import D.TriModal
+  alias D.TriModal
 
   def skewness(%TriModal{distribs: nil}), do: raise ArithmeticError, "Skewness not supported for TriModal distribution"
   def kurtosis(%TriModal{distribs: nil}), do: raise ArithmeticError, "Kurtosis not supported for TriModal distribution"
   
-  def size(%TriModal{distribs: distribs}), do: 2 + (distribs|>Enum.map(&Distribution.size(&1))|>Enum.sum)
+  def size(%TriModal{distribs: distribs}), do: 2 + (distribs|>Enum.map(&D.size(&1))|>Enum.sum)
   
   def cdf(%TriModal{weights: nil, distribs: distribs}) do
     fn x,[w1,w2|parameters] ->
       distribs
-      |> Enum.map(&{&1,Distribution.size(&1)})
+      |> Enum.map(&{&1,D.size(&1)})
       |> Enum.reduce({[],parameters},fn {d,size},{result,rest} -> {[{d,Enum.take(rest,size)}|result],Enum.drop(rest,size)} end)
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip([w1,(1-w1)*w2,(1-w1)*(1-w2)])
       |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*Distribution.cdf(d).(x,pars) end)
+      |> Enum.map(fn {d,pars,p} -> p*D.cdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
@@ -54,13 +56,13 @@ defimpl Distribution, for: Distribution.TriModal do
   def pdf(%TriModal{weights: nil, distribs: distribs}) do
     fn x,[w1,w2|parameters] ->
       distribs
-      |> Enum.map(&{&1,Distribution.size(&1)})
+      |> Enum.map(&{&1,D.size(&1)})
       |> Enum.reduce({[],parameters},fn {d,size},{result,rest} -> {[{d,Enum.take(rest,size)}|result],Enum.drop(rest,size)} end)
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip([w1,(1-w1)*w2,(1-w1)*(1-w2)])
       |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*Distribution.pdf(d).(x,pars) end)
+      |> Enum.map(fn {d,pars,p} -> p*D.pdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
@@ -68,7 +70,7 @@ defimpl Distribution, for: Distribution.TriModal do
   def random(%TriModal{weights: [w1,w2], distribs: distribs}) do
     distribs
     |> Enum.zip([w1,(1-w1)*w2,(1-w1)*(1-w2)])
-    |> Enum.map(fn {d,p} -> p*Distribution.random(d) end)
+    |> Enum.map(fn {d,p} -> p*D.random(d) end)
     |> Enum.sum
   end
 
@@ -76,7 +78,7 @@ defimpl Distribution, for: Distribution.TriModal do
   
 end
 
-defimpl Inspect, for: Distribution.TriModal do
+defimpl Inspect, for: Chi2fit.Distribution.TriModal do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

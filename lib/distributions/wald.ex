@@ -1,4 +1,4 @@
-defmodule Distribution.Wald do
+defmodule Chi2fit.Distribution.Wald do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -27,21 +27,23 @@ defmodule Distribution.Wald do
 
 end
 
-defimpl Distribution, for: Distribution.Wald do
-  import Distribution.Wald
-  alias Distribution.Wald
+defimpl Chi2fit.Distribution, for: Distribution.Wald do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Wald
+  alias D.Wald
 
   @spec phi(x :: float) :: float
   defp phi(x) do
-    d = %Distribution.Normal{pars: [0.0, 1.0]}
-    Distribution.cdf(d).(x)
+    d = %D.Normal{pars: [0.0, 1.0]}
+    D.cdf(d).(x)
   end
 
   @spec wald(mu::number(),lambda::number()) :: ((...) -> number)
   defp wald(mu,lambda) when is_number(mu) and is_number(lambda) do
-    d = %Distribution.Normal{pars: [0.0,1.0]}
+    d = %D.Normal{pars: [0.0,1.0]}
     fn () ->
-      w = Distribution.random(d)
+      w = D.random(d)
       y = w*w
       x = mu + mu*mu*y/2/lambda - mu/2/lambda*:math.sqrt(4*mu*lambda*y + mu*mu*y*y)
 
@@ -75,7 +77,7 @@ defimpl Distribution, for: Distribution.Wald do
   
 end
 
-defimpl Inspect, for: Distribution.Wald do
+defimpl Inspect, for: Chi2fit.Distribution.Wald do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

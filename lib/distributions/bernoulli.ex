@@ -1,4 +1,4 @@
-defmodule Distribution.Bernoulli do
+defmodule Chi2fit.Distribution.Bernoulli do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -28,9 +28,11 @@ defmodule Distribution.Bernoulli do
 
 end
 
-defimpl Distribution, for: Distribution.Bernoulli do
-  import Distribution.Bernoulli
-  alias Distribution.Bernoulli
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Bernoulli do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Bernoulli
+  alias D.Bernoulli
 
   @spec bernoulli(value :: number) :: ((...) -> number)
   defp bernoulli(value) when is_number(value) do
@@ -44,15 +46,15 @@ defimpl Distribution, for: Distribution.Bernoulli do
   def kurtosis(%Bernoulli{pars: [p]}), do: fn _ -> (1-6*p*(1.0-p))/p/(1.0-p) end
   def size(%Bernoulli{}), do: 1
   
-  def cdf(%Bernoulli{}), do: raise Distribution.FunctionNotSupportedError, message: "cdf is not supported for the Constant distribution"
-  def pdf(%Bernoulli{}), do: raise Distribution.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
+  def cdf(%Bernoulli{}), do: raise D.FunctionNotSupportedError, message: "cdf is not supported for the Constant distribution"
+  def pdf(%Bernoulli{}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Constant distribution"
   def random(%Bernoulli{pars: [value]}), do: bernoulli(value).()
   
   def name(model), do: model.name
   
 end
 
-defimpl Inspect, for: Distribution.Bernoulli do
+defimpl Inspect, for: Chi2fit.Distribution.Bernoulli do
   import Inspect.Algebra
   
   def inspect(dict, opts) do

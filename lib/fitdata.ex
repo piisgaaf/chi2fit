@@ -38,6 +38,7 @@ defmodule Chi2fit.Fit do
 
   require Logger
 
+  alias Chi2fit.Distribution, as: D
   alias Chi2fit.Matrix, as: M
   alias Chi2fit.Utilities, as: U
 
@@ -60,7 +61,7 @@ defmodule Chi2fit.Fit do
   @type chi2 :: float
 
   @typedoc "Covariance matrix"
-  @type cov :: Chi2fit.Matrix.matrix()
+  @type cov :: M.matrix()
 
   @typedoc "List of parameter ranges"
   @type params :: [{float,float}]
@@ -604,7 +605,7 @@ defmodule Chi2fit.Fit do
     binsize = options[:bin] || 1
     initial = options[:init]
     model = options[:fitmodel]
-    cdf = Distribution.cdf(model)
+    cdf = D.cdf(model)
 
     list |> _find_change(& probe_seq(&1,binsize,initial,cdf,options))
   end
@@ -623,7 +624,7 @@ defmodule Chi2fit.Fit do
       initial = options[:init]
       model = options[:fitmodel]
       tolerance = options[:tolerance] || 10
-      cdf = Distribution.cdf(model)
+      cdf = D.cdf(model)
 
       data
       |> Stream.chunk_while({0,nil,[]},

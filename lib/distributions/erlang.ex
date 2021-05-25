@@ -1,4 +1,4 @@
-defmodule Distribution.Erlang do
+defmodule Chi2fit.Distribution.Erlang do
 
   # Copyright 2019 Pieter Rijken
   #
@@ -30,9 +30,11 @@ defmodule Distribution.Erlang do
 
 end
 
-defimpl Distribution, for: Distribution.Erlang do
-  import Distribution.Erlang
-  alias Distribution.Erlang
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Erlang do
+  alias Chi2fit.Distribution, as: D
+
+  import D.Erlang
+  alias D.Erlang
   alias Exboost.Math, as: M
 
   defp erlang(k,lambda) when is_integer(k) and k>0 do
@@ -68,7 +70,7 @@ defimpl Distribution, for: Distribution.Erlang do
   
 end
 
-defimpl Inspect, for: Distribution.Erlang do
+defimpl Inspect, for: Chi2fit.Distribution.Erlang do
   import Inspect.Algebra
   
   def inspect(dict, opts) do
