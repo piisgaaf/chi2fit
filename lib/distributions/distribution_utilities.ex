@@ -18,7 +18,7 @@ defmodule Chi2fit.Distribution.Utilities do
   Provides various distributions.
   """
 
-  import Chi2fit.Utilities
+  import Chi2fit.Statistics
   alias Chi2fit.Distribution, as: D
 
 

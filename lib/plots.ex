@@ -18,9 +18,10 @@ defmodule Chi2fit.Gnuplotlib do
   Provides various various plots using the [Gnuplot](https://hex.pm/packages/gnuplot) package.
   """
 
-  alias Chi2fit.Utilities, as: U
   alias Gnuplot, as: G
-
+  alias Chi2fit.Statistics, as: S
+  alias Chi2fit.Utilities, as: U
+  
   @imgpath "/app/notebooks/images"
   @terminal "pngcairo"
   @pngoptions ~w(set terminal #{@terminal} transparent enhanced)a
@@ -58,7 +59,7 @@ defmodule Chi2fit.Gnuplotlib do
   @spec histogram(data :: [number], options :: Keyword.t) :: none()
   def histogram(data, options \\ []) do
     binsize = options[:bin] || 1
-    hist = data |> U.make_histogram(binsize,0) |> Enum.map(&Tuple.to_list/1)
+    hist = data |> S.make_histogram(binsize,0) |> Enum.map(&Tuple.to_list/1)
 
     terminal(options)
       ++ [
@@ -176,7 +177,7 @@ defmodule Chi2fit.Gnuplotlib do
     maxx = data |> Enum.max |> Kernel.*(1.2)
     
     hist = data
-    |> U.make_histogram(bin,offset)
+    |> S.make_histogram(bin,offset)
     |> Enum.map(&Tuple.to_list/1)
     |> Enum.map(fn [x,y]->[x*bin,y] end)
 

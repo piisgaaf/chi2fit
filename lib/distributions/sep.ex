@@ -48,7 +48,7 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.SEP do
   import D.SEP
   alias D.SEP
 
-  import Chi2fit.Utilities, only: [integrate: 5]
+  import Chi2fit.Math, only: [integrate: 5]
 
   @pi :math.pi()
   

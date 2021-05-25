@@ -162,8 +162,10 @@ defmodule Chi2fit.Cli do
   require Logger
 
   import Chi2fit.Fit, only: [chi2fit: 4, chi2probe: 4, chi2: 4]
-  import Chi2fit.Utilities
+  import Chi2fit.Math
   import Chi2fit.Matrix
+  import Chi2fit.Statistics
+  import Chi2fit.Utilities
   import Chi2fit.Distribution.Utilities
 
   alias Chi2fit.Distribution, as: D

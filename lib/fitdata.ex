@@ -40,6 +40,8 @@ defmodule Chi2fit.Fit do
 
   alias Chi2fit.Distribution, as: D
   alias Chi2fit.Matrix, as: M
+  alias Chi2fit.Math, as: Ma
+  alias Chi2fit.Statistics, as: S
   alias Chi2fit.Utilities, as: U
 
   @typedoc "Observation with symmetric errors 'dy'."
@@ -192,7 +194,7 @@ defmodule Chi2fit.Fit do
   defp gamma(k, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) do
     smoothing? = options[:smoothing] || false
     params_k = parameters |> derive_par(k)
-    -0.5*U.der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
+    -0.5*Ma.der params_k, fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
   end
 
   defp alpha(observables, {parameters, fun, penalties, options}) do
@@ -219,7 +221,7 @@ defmodule Chi2fit.Fit do
   defp alpha({k,j}, observables, {parameters, fun, penalties, options}) when k>0 and k<=length(parameters) and j>0 and j<=length(parameters) do
     smoothing? = options[:smoothing] || false
     params_kj = parameters |> derive_par(k) |> derive_par(j)
-    0.5*U.der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
+    0.5*Ma.der params_kj,fn (pars)->chi2smooth(observables, pars, {fun,penalties},smoothing?,options) end, options
   end
 
   #######################################################################################################
@@ -526,9 +528,9 @@ defmodule Chi2fit.Fit do
 
                   try do
                     smoothing? = options[:smoothing] || false
-                    {_, {left,right},{_vleft,_vright}} = U.newton(left_par, right_par, fn x->
+                    {_, {left,right},{_vleft,_vright}} = Ma.newton(left_par, right_par, fn x->
                       nvec = parameters |> List.replace_at(rem(max,length(parameters)), {x,1})
-                      U.der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},smoothing?,options) end,options)
+                      Ma.der(nvec, fn lp -> chi2smooth(observables,lp,{fun,penalties},smoothing?,options) end,options)
                     end, parmax, options)
 
                     nvec = pars |> List.replace_at(rem(max,length(parameters)), (left+right)/2)
@@ -590,7 +592,7 @@ defmodule Chi2fit.Fit do
 
   defp probe_seq(seq, binsize, initial, cdf, options) do
     seq
-    |> U.to_bins({binsize,0})
+    |> S.to_bins({binsize,0})
     |> chi2probe(initial, {cdf, &nopenalties/2}, options)
     |> Tuple.to_list
     |> Enum.take(2)
