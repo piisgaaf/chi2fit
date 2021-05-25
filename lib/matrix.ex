@@ -160,23 +160,14 @@ defmodule Chi2fit.Matrix do
       iex> inverse [[1,2],[3,4]]
       {:ok,[[-2.0, 1.0], [1.5, -0.5]]}
       
-      iex> inverse [[3,2,0],[0,0,1],[2,-2,1]]
-      {:ok,
-        [[0.2000000000000267, -0.19999999999873883, 0.1999999999998383],
-         [0.19999999999995877, 0.29999999999804805, -0.29999999999974974],
-         [-1.204377690852969e-13, 0.9999999999943042, 7.3034853221406e-13]]}
+      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]]) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,10)) end)
+      [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
        
-      iex> inverse [[3,2,0],[0,0,1],[2,-2,1]], algorithm: :soleymani
-      {:ok,
-        [[0.2000000000000003, -0.19999999999999973, 0.19999999999999926],
-         [0.2000000000000003, 0.29999999999999966, -0.29999999999999893],
-         [-6.617444900424221e-23, 0.9999999999999988, -1.1183551388713516e-21]]}
+      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], algorithm: :soleymani) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,14)) end)
+      [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
       
-      iex> inverse [[3,2,0],[0,0,1],[2,-2,1]], tolerance: 1.0e-15
-      {:ok,
-        [[0.20000000000000004, -0.2, 0.2],
-         [0.20000000000000004, 0.3, -0.3],
-         [-5.048709793414476e-29, 0.9999999999999999, -1.6087621596054126e-28]]}
+      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], tolerance: 1.0e-15) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,14)) end)
+      [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
       
   For matrices that have no inverse:
   
@@ -312,13 +303,41 @@ defmodule Chi2fit.Matrix do
   defp multiply([row|rest1], matrix2, result) do
     multiply(rest1, matrix2, [matrix2
       |> Stream.zip
-      |> Enum.reduce([], fn col, acc -> [dotproduct(row, col)|acc] end)
+      |> Enum.reduce([], fn col, acc -> [dotproduct(row, Tuple.to_list(col))|acc] end)
       |> Enum.reverse | result])
   end
 
-  defp transpose(matrix), do: matrix |> Stream.zip |> Enum.reverse
+  @doc """
+  Returns the tranpose of the matrix
 
+  ## Examples:
+
+      iex> transpose [ [1] ]
+      [[1]]
+
+      iex> transpose [ [1,2], [3,4] ]
+      [[1, 3], [2, 4]]
+
+  """
+  @spec transpose(matrix) :: matrix
+  def transpose(matrix), do: matrix |> Stream.zip |> Stream.map(&Tuple.to_list/1) |> Enum.into([])
+
+  @doc """
+  Adds two vectors.
+
+  ## Examples
+
+      iex> add [1,2], [3,4]
+      [4,6]
+
+      iex> add [], []
+      []
+
+      iex> add [1], [5]
+      [6]
+
+  """
   @spec add(vector, vector) :: vector
-  def add(vector1, vector2), do: Stream.zip(vector1, vector2) |> Enum.map(fn [v1,v2] -> v1 + v2 end)
+  def add(vector1, vector2), do: Stream.zip(vector1, vector2) |> Enum.map(fn {v1,v2} -> v1 + v2 end)
 
 end
