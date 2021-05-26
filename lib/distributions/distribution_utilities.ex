@@ -28,9 +28,9 @@ defmodule Chi2fit.Distribution.Utilities do
 
   @doc """
   Returns the model for a name.
-  
+
   The kurtosis is the so-called 'excess kurtosis'.
-  
+
   Supported disributions:
       "wald" - The Wald or Inverse Gauss distribution,
       "weibull" - The Weibull distribution,
@@ -49,7 +49,7 @@ defmodule Chi2fit.Distribution.Utilities do
   @spec model(name::String.t, options::Keyword.t) :: any
   def model(name, options \\ []) do
     params = options[:pars] || nil
-    
+
     case name do
       "constant" -> %D.Constant{pars: params}
       "uniform" -> %D.Uniform{pars: params}
@@ -61,12 +61,12 @@ defmodule Chi2fit.Distribution.Utilities do
       "frechet" -> %D.Frechet{pars: params}
       "nakagami" -> %D.Nakagami{pars: params}
       "poisson" -> %D.Poisson{pars: params}
-      {"poisson", period} when is_number(period) and period>0 -> %D.Poisson{pars: params,period: period}
+      {"poisson", period} when is_number(period) and period>0 -> %D.Poisson{pars: params, period: period}
       "erlang" -> %D.Erlang{pars: params}
-      {"erlang", batches} when is_number(batches) and batches>0 -> %D.Erlang{pars: params,batches: batches}
+      {"erlang", batches} when is_number(batches) and batches>0 -> %D.Erlang{pars: params, batches: batches}
       "normal" -> %D.Normal{pars: params}
-      "sep" -> %D.SEP{pars: params,options: options}
-      "sep0" -> %D.SEP{pars: params,offset: 0.0, options: options}
+      "sep" -> %D.SEP{pars: params, options: options}
+      "sep0" -> %D.SEP{pars: params, offset: 0.0, options: options}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
@@ -74,14 +74,14 @@ defmodule Chi2fit.Distribution.Utilities do
 
   defp to_number(string) when is_binary(string) do
     case Integer.parse(string) do
-      {val,""} -> val
+      {val, ""} -> val
       _ -> String.to_float(string)
     end
   end
-  defp to_numbers(list), do: String.split(list," ") |> Enum.map(& to_number &1)
+  defp to_numbers(list), do: String.split(list, " ") |> Enum.map(& to_number &1)
 
   @doc ~S"""
-  
+
   ## Examples
 
       iex> ~M(3 4 5)

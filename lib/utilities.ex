@@ -23,7 +23,11 @@ defmodule Chi2fit.Utilities do
   
   """
 
+  alias Chi2fit.Distribution, as: D
   alias Chi2fit.Fit, as: F
+  alias Chi2fit.Math, as: M
+  alias Chi2fit.Matrix, as: Mx
+  alias Chi2fit.Statistics, as: S
   
   @typedoc "Average and standard deviationm (error)"
   @type avgsd :: {avg :: float, sd :: float}
@@ -177,6 +181,22 @@ defmodule Chi2fit.Utilities do
     |> Stream.run()
   end
 
+  @doc """
+  Displays results of the function `Chi2fit.Fit.chi2fit/4`
+  """
+  @spec display(device :: IO.device(),hdata :: S.ecdf(),model :: D.model(),F.chi2fit(),options :: Keyword.t) :: none()
+  def display(device \\ :stdio,hdata,model,{chi2, cov, parameters, errors},options) do
+      param_errors = cov |> Mx.diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)
+
+      IO.puts device,"Final:"
+      IO.puts device,"    chi2:\t\t#{chi2}"
+      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-D.size(model)}"
+      IO.puts device,"    gradient:\t\t#{inspect M.jacobian(parameters,&F.chi2(hdata,fn x->D.cdf(model).(x,&1) end,fn _->0.0 end,options),options)}"
+      IO.puts device,"    parameters:\t\t#{inspect parameters}"
+      IO.puts device,"    errors:\t\t#{inspect param_errors}"
+      IO.puts device,"    ranges:"
+      puts_errors device,errors
+  end
 
   @doc """
   Walks a map structure while applying the function `fun`.

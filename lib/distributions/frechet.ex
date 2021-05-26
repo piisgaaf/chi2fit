@@ -27,7 +27,7 @@ defmodule Chi2fit.Distribution.Frechet do
 
 end
 
-defimpl Chi2fit.Distribution, for: Distribution.Frechet do
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Frechet do
   alias Chi2fit.Distribution, as: D
 
   import D.Frechet

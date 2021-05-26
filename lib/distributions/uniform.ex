@@ -27,7 +27,7 @@ defmodule Chi2fit.Distribution.Uniform do
 
 end
 
-defimpl Chi2fit.Distribution, for: Distribution.Uniform do
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Uniform do
   alias Chi2fit.Distribution, as: D
 
   import D.Uniform

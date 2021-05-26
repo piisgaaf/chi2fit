@@ -27,7 +27,7 @@ defmodule Chi2fit.Distribution.Weibull do
 
 end
 
-defimpl Chi2fit.Distribution, for: Distribution.Weibull do
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Weibull do
   alias Chi2fit.Distribution, as: D
 
   import D.Weibull

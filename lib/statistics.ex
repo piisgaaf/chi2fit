@@ -15,13 +15,10 @@ defmodule Chi2fit.Statistics do
   # limitations under the License.
 
   import Chi2fit.FFT
-  import Chi2fit.Math
   import Chi2fit.Utilities
 
-  alias Chi2fit.Distribution, as: D
   alias Chi2fit.Fit, as: F
-  alias Chi2fit.Matrix, as: M
-
+  
   @typedoc "Algorithm used to assign errors to frequencey data: Wald score and Wilson score."
   @type algorithm :: :wilson | :wald
 
@@ -545,23 +542,6 @@ defmodule Chi2fit.Statistics do
         }
       end)
     |> Enum.sort(fn t1,t2 -> elem(t1,0)<elem(t2,0) end)
-  end
-
-  @doc """
-  Displays results of the function `Chi2fit.Fit.chi2fit/4`
-  """
-  @spec display(device :: IO.device(),hdata :: ecdf(),model :: D.model(),F.chi2fit(),options :: Keyword.t) :: none()
-  def display(device \\ :stdio,hdata,model,{chi2, cov, parameters, errors},options) do
-      param_errors = cov |> M.diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)
-
-      IO.puts device,"Final:"
-      IO.puts device,"    chi2:\t\t#{chi2}"
-      IO.puts device,"    Degrees of freedom:\t#{length(hdata)-D.size(model)}"
-      IO.puts device,"    gradient:\t\t#{inspect jacobian(parameters,&F.chi2(hdata,fn x->D.cdf(model).(x,&1) end,fn _->0.0 end,options),options)}"
-      IO.puts device,"    parameters:\t\t#{inspect parameters}"
-      IO.puts device,"    errors:\t\t#{inspect param_errors}"
-      IO.puts device,"    ranges:"
-      puts_errors device,errors
   end
 
   ##

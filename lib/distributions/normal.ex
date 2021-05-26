@@ -27,7 +27,7 @@ defmodule Chi2fit.Distribution.Normal do
 
 end
 
-defimpl Chi2fit.Distribution, for: Distribution.Normal do
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Normal do
   alias Chi2fit.Distribution, as: D
 
   import D.Normal

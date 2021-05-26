@@ -32,7 +32,7 @@ defmodule Chi2fit.Distribution.Poisson do
 
 end
 
-defimpl Chi2fit.Distribution, for: Distribution.Poisson do
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Poisson do
   alias Chi2fit.Distribution, as: D
 
   import D.Poisson

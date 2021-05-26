@@ -20,19 +20,19 @@ defprotocol Chi2fit.Distribution do
 
   @spec skewness(t) :: number
   def skewness(distrib)
-  
+
   @spec kurtosis(t) :: number
   def kurtosis(distrib)
-  
+
   @spec size(t) :: number
   def size(distrib)
-  
+
   @spec cdf(t) :: number
   def cdf(distrib)
-  
+
   @spec pdf(t) :: number
   def pdf(distrib)
-  
+
   @spec random(t) :: number
   def random(distrib)
 
