@@ -16,10 +16,10 @@ defmodule FitDistributionTest do
 
   use ExUnit.Case, async: true
   import Chi2fit.Fit
-  import Chi2fit.Utilities
-  alias Distribution, as: D
+  import Chi2fit.Statistics
+  alias Chi2fit.Distribution, as: D
 
-  @moduletag distrib_mod: Chi2fit.Distribution
+  @moduletag distrib_mod: Chi2fit.Distribution.Utilities
   @moduletag fit: true
   @moduletag p_value: 0.005
 
@@ -49,7 +49,7 @@ defmodule FitDistributionTest do
     errors = cov |> Chi2fit.Matrix.diagonal
     Enum.zip([params,errors,expect_params])
     |> Enum.each(fn {par,err,check}->
-      ssd = 3.0*:math.sqrt(err)
+      ssd = 4.0*:math.sqrt(err)
       assert par-ssd < check and check < par+ssd, "#{par-ssd} < #{check} < #{par+ssd}"
     end)
   end

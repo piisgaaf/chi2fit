@@ -18,7 +18,7 @@ defmodule NotebookTest do
   use NotebookUnit.Case, dir: "notebooks"
 
   @moduletag timeout: 120000
-
+  
   nbtest "README.ipynb"
   nbtest "AgileNXT-Jupiter.ipynb"
   nbtest "Forecasting-empirical-data.ipynb"

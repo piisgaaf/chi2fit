@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.Exponential do
   """
 
   defstruct [:pars, name: "exponential"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     name: String.t
@@ -54,12 +54,12 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Exponential do
   def random(%Exponential{pars: nil}), do: fn [lambda] -> exponential(lambda).() end
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Exponential do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

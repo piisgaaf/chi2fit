@@ -15,24 +15,24 @@ defmodule Chi2fitDistributionTest do
   # limitations under the License.
 
   use ExUnit.Case, async: true
-  import Chi2fit.Distribution
+  alias Chi2fit.Distribution, as: D
   
   doctest Chi2fit.Distribution
   
-  doctest Distribution.Distribution.Constant, import: true
-  doctest Distribution.Distribution.Uniform, import: true
-  doctest Distribution.Distribution.Exponential, import: true
-  doctest Distribution.Distribution.Poisson, import: true
-  doctest Distribution.Distribution.Erlang, import: true
-  doctest Distribution.Distribution.Normal, import: true
+  doctest D.Constant, import: true
+  doctest D.Uniform, import: true
+  doctest D.Exponential, import: true
+  doctest D.Poisson, import: true
+  doctest D.Erlang, import: true
+  doctest D.Normal, import: true
 
   @tag long: true
   test "exponential distribution" do
-    dist = %Distribution.Exponential{pars: [5.0]}
+    dist = %D.Exponential{pars: [5.0]}
 
     total = 10_000_000
 
-    data = 1..total |> Stream.map(fn _ -> Distribution.random(dist) end)
+    data = 1..total |> Stream.map(fn _ -> D.random(dist) end)
     avg = Enum.sum(data)/total
     sd = :math.sqrt(Enum.reduce(data, 0, fn (x,sum)->sum+(x-avg)*(x-avg) end)/total)
     assert_in_delta 5.0, 1/avg, 0.005
@@ -41,12 +41,12 @@ defmodule Chi2fitDistributionTest do
 
   @tag long: true
   test "exponential distribution - convolution" do
-    dist = %Distribution.Exponential{pars: [5.0]}
+    dist = %D.Exponential{pars: [5.0]}
 
     total = 10_000_000
     chunk = 10
 
-    data = 1..total |> Stream.map(fn _ ->Distribution.random(dist) end) |> Stream.chunk_every(chunk) |> Stream.map(&Enum.sum/1)
+    data = 1..total |> Stream.map(fn _ ->D.random(dist) end) |> Stream.chunk_every(chunk) |> Stream.map(&Enum.sum/1)
     avg = Enum.sum(data)/(total/chunk)
     sd = :math.sqrt(Enum.reduce(data, 0, fn (x,sum)->sum+(x-avg)*(x-avg) end)/(total/chunk))
     assert_in_delta 5.0, chunk/avg, 0.2

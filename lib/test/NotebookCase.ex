@@ -99,6 +99,7 @@ defmodule NotebookUnit.Case do
   defmacro nbtest(notebook) do
     quote do
       @tag notebooks: true
+      @tag :notest
       test "Notebook - #{unquote notebook}" do
         json = (@nbdir <> "/" <> unquote notebook) |> File.read!() |> Poison.decode!()
 

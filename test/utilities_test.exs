@@ -15,8 +15,10 @@ defmodule UtilitiesTest do
   # limitations under the License.
 
   use ExUnit.Case, async: true
+  import Chi2fit.Math
   import Chi2fit.Utilities
-
+  
+  doctest Chi2fit.Math
   doctest Chi2fit.Utilities
 
   test "Third derivatives" do

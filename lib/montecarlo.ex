@@ -51,7 +51,7 @@ defmodule Chi2fit.MonteCarlo do
     end
     outcomes = ranges
     |> List.foldr([], fn
-      pair, [] -> pair
+      [left, right], [] -> [[left],[right]]
       [left, right], acc -> Enum.flat_map(acc, & [[left|List.wrap(&1)], [right|List.wrap(&1)]])
     end)
     |> Enum.map(& mc(iterations, fun.(&1)))
