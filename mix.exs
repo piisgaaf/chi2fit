@@ -35,7 +35,7 @@ defmodule Chi2fit.Mixfile do
       package: package(),
       name: "Chi-SquaredFit",
       source_url: "https://github.com/piisgaaf/chi2fit",
-      
+
       ## Docs
       docs: docs()
     ]
@@ -90,7 +90,7 @@ defmodule Chi2fit.Mixfile do
     the full covariance matrix describing the fitted parameters.
     """
   end
-  
+
   defp package() do
     [
       maintainers: [ "Pieter Rijken" ],
@@ -147,7 +147,7 @@ defmodule Mix.Tasks.Compile.Md do
   def run(_) do
     outdir = "#{Mix.Project.build_path()}/lib/chi2fit/docs"
     docs = Chi2fit.Mixfile.project()[:docs][:extras]
-    
+
     {result, _error_code} = System.cmd("make", docs, stderr_to_stdout: true, env: [{"OUTDIR",outdir}])
     Mix.shell.info result
   end

@@ -25,7 +25,7 @@ defmodule NotebookUnit.Case do
       Module.put_attribute __MODULE__, :nbdir, unquote(options)[:dir] || "."
     end
   end
-  
+
   defmacro nbrun(json, _notebook) do
     quote do
       capture_io :stderr, fn ->
@@ -106,7 +106,7 @@ defmodule NotebookUnit.Case do
         warns = nbrun json, unquote(notebook)
         assert_received {:execute, _out}
         assert warns == ""
-        
+
         headers = md_headers(json)
         toc = md_toc(json)
 

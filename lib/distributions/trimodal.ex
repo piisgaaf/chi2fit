@@ -18,8 +18,8 @@ defmodule Chi2fit.Distribution.TriModal do
   Bimodal distribution.
   """
 
-  defstruct [:weights,:distribs,name: "trimodal"]
-  
+  defstruct [:weights, :distribs, name: "trimodal"]
+
   @type t() :: %__MODULE__{
     weights: [number()] | nil,
     distribs: [Chi2fit.Distribution.t()] | nil,
@@ -36,9 +36,9 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
 
   def skewness(%TriModal{distribs: nil}), do: raise ArithmeticError, "Skewness not supported for TriModal distribution"
   def kurtosis(%TriModal{distribs: nil}), do: raise ArithmeticError, "Kurtosis not supported for TriModal distribution"
-  
+
   def size(%TriModal{distribs: distribs}), do: 2 + (distribs|>Enum.map(&D.size(&1))|>Enum.sum)
-  
+
   def cdf(%TriModal{weights: nil, distribs: distribs}) do
     fn x,[w1,w2|parameters] ->
       distribs
@@ -52,7 +52,7 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
       |> Enum.sum
     end
   end
-  
+
   def pdf(%TriModal{weights: nil, distribs: distribs}) do
     fn x,[w1,w2|parameters] ->
       distribs
@@ -75,12 +75,12 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
   end
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.TriModal do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case {dict.weights,dict.distribs} do
       {_,nil} ->

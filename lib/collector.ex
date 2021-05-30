@@ -13,8 +13,8 @@ defmodule Chi2fit.Collector do
   # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   # See the License for the specific language governing permissions and
   # limitations under the License.
-  
-  use Agent
+
+  use Agent, shutdown: 1_000, restart:
 
   @moduledoc """
   Implements an agent for collecting data.
@@ -34,6 +34,9 @@ defmodule Chi2fit.Collector do
         send from, {:data, Enum.reverse(out)}
         :ok
 
+      :shutdown ->
+        :ok
+
       msg ->
         raise ArgumentError, "[Collector] Received unexpected message: #{inspect msg}"
     end
@@ -49,5 +52,9 @@ defmodule Chi2fit.Collector do
     Agent.get(__MODULE__, fn acc -> acc end)
   end
 
-  def stop, do: Agent.stop(__MODULE__)
+  def stop do
+    send __MODULE__, :shutdown
+    Agent.stop(__MODULE__)
+  end
+
 end

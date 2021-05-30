@@ -16,14 +16,14 @@ defmodule Chi2fit.Distribution.Poisson do
 
   @moduledoc """
   The Poisson distribution.
-  
+
   For the implementation, see https://en.wikipedia.org/wiki/Poisson_distribution, 'Generating Poisson-distributed random variables'
   """
 
   alias Exboost.Math, as: M
-  
+
   defstruct [:pars, period: 1.0, name: "poisson"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     period: number(),
@@ -54,9 +54,10 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Poisson do
   end
 
   defp poisson(rate), do: fn -> _poisson(rate) end
-  defp poissonCDF(rate) when rate > 0.0 do
+  defp poissonCDF(rate) when rate >= 0.0 do
     fn t -> 1.0 - M.gamma_p(Float.floor(t+1.0),rate) end
   end
+  defp poissonCDF(rate) when rate < 0.0, do: fn _t -> 0.0 end
 
   def skewness(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> 1/:math.sqrt(lambda*factor) end
   def kurtosis(%Poisson{pars: nil, period: factor}), do: fn [lambda] -> 1/lambda/factor end
@@ -75,7 +76,7 @@ end
 
 defimpl Inspect, for: Chi2fit.Distribution.Poisson do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

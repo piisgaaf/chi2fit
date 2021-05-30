@@ -22,4 +22,5 @@ chi2fit
 
 /notebooks/*.md
 /notebooks/*_files
+/notebooks/.ipynb_checkpoints
 /envs

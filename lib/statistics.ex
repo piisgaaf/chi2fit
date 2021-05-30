@@ -18,7 +18,7 @@ defmodule Chi2fit.Statistics do
   import Chi2fit.Utilities
 
   alias Chi2fit.Fit, as: F
-  
+
   @typedoc "Algorithm used to assign errors to frequencey data: Wald score and Wilson score."
   @type algorithm :: :wilson | :wald
 
@@ -30,7 +30,7 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Converts a list of numbers to frequency data.
-  
+
   The data is divided into bins of size `binsize` and the number of data points inside a bin are counted. A map
   is returned with the bin's index as a key and as value the number of data points in that bin.
 
@@ -43,18 +43,18 @@ defmodule Chi2fit.Statistics do
 
   When an offset is used, the bin starting from the offset, i.e. [offset..offset+1) gets index 1. Values less than
   the offset are gathered in a bin with index 0.
-  
+
   ## Examples
-  
+
       iex> make_histogram [1,2,3]
       [{2, 1}, {3, 1}, {4, 1}]
-      
+
       iex> make_histogram [1,2,3], 1.0, 0
       [{2, 1}, {3, 1}, {4, 1}]
-      
+
       iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9]
       [{2, 1}, {3, 1}, {4, 2}, {5, 3}, {6, 3}, {7, 2}, {8, 1}, {9, 1}, {10  , 1}]
-      
+
       iex> make_histogram [1,2,3,4,5,6,5,4,3,4,5,6,7,8,9], 3, 1.5
       [{0, 1}, {1, 6}, {2, 6}, {3, 2}]
 
@@ -83,21 +83,21 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Generates an empirical Cumulative Distribution Function from sample data.
-  
+
   Three parameters determine the resulting empirical distribution:
 
     1) algorithm for assigning errors,
-    
+
     2) the size of the bins,
-    
+
     3) a correction for limiting the bounds on the 'y' values
-  
+
   When e.g. task effort/duration is modeled, some tasks measured have 0 time. In practice
   what is actually is meant, is that the task effort is between 0 and 1 hour. This is where
   binning of the data happens. Specify a size of the bins to control how this is done. A bin
   size of 1 means that 0 effort will be mapped to 1/2 effort (at the middle of the bin).
   This also prevents problems when the fited distribution cannot cope with an effort os zero.
-  
+
   Supports two ways of assigning errors: Wald score or Wilson score. See [1]. Valie values for the `algorithm`
   argument are `:wald` or `:wilson`.
 
@@ -109,12 +109,12 @@ defmodule Chi2fit.Statistics do
   happening.
   Especially the combination of 0 correction, algorithm `:wald`, and 'linear' model for
   handling asymmetric errors gives problems.
-  
+
   The algorithm parameter determines how the errors onthe 'y' value are determined. Currently
   supported values include `:wald` and `:wilson`.
-  
+
   ## References
-  
+
       [1] "Handbook of Monte Carlo Methods" by Kroese, Taimre, and Botev, section 8.4
       [2] See https://en.wikipedia.org/wiki/Cumulative_frequency_analysis
       [3] https://arxiv.org/pdf/1112.2593v3.pdf
@@ -141,7 +141,7 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates the empirical CDF from a sample.
-  
+
   Convenience function that chains `make_histogram/2` and `empirical_cdf/3`.
   """
   @spec get_cdf([number], number|{number, number}, algorithm, integer) :: {cdf, bins :: [float], numbins :: pos_integer, sum :: float}
@@ -205,9 +205,9 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Converts a CDF function to a list of data points.
-  
+
   ## Example
-  
+
       iex> convert_cdf {fn x->{:math.exp(-x),:math.exp(-x)/16,:math.exp(-x)/4} end, {1,4}}
       [{1, 0.36787944117144233, 0.022992465073215146, 0.09196986029286058},
        {2, 0.1353352832366127, 0.008458455202288294, 0.033833820809153176},
@@ -219,7 +219,7 @@ defmodule Chi2fit.Statistics do
   @spec convert_cdf({cdf, range}) :: [{float, float, float, float}]
   def convert_cdf({cdf, {mindur, maxdur}}), do: round(mindur)..round(maxdur) |> y_with_errors(cdf)
   def convert_cdf({cdf, categories}) when is_list(categories), do: categories |> y_with_errors(cdf)
-  defp y_with_errors(list, cdf), do: list |> Enum.map(&Tuple.insert_at(cdf.(&1), 0,& 1)) 
+  defp y_with_errors(list, cdf), do: list |> Enum.map(&Tuple.insert_at(cdf.(&1), 0,& 1))
 
   @doc """
   Converts raw data to binned data with (asymmetrical) errors.
@@ -232,12 +232,12 @@ defmodule Chi2fit.Statistics do
     # Add the errors based on the binomial distribution (Wilson score):
     convert_cdf {cdf, bins|>Enum.map(&elem(&1, 0))}
   end
-  
+
   @doc """
   Calculates the nth moment of the sample.
-  
+
   ## Example
-  
+
       iex> moment [1,2,3,4,5,6], 1
       3.5
   """
@@ -248,12 +248,12 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates the nth centralized moment of the sample.
-  
+
   ## Example
-  
+
       iex> momentc [1,2,3,4,5,6], 1
       0.0
-  
+
       iex> momentc [1,2,3,4,5,6], 2
       2.9166666666666665
   """
@@ -262,12 +262,12 @@ defmodule Chi2fit.Statistics do
     mean = sample |> moment(1)
     sample |> momentc(n,mean)
   end
-  
+
   @doc """
   Calculates the nth centralized moment of the sample.
-  
+
   ## Example
-  
+
       iex> momentc [1,2,3,4,5,6], 2, 3.5
       2.9166666666666665
   """
@@ -278,15 +278,15 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates the nth normalized moment of the sample.
-  
+
   ## Example
-  
+
       iex> momentn [1,2,3,4,5,6], 1
       0.0
-  
+
       iex> momentn [1,2,3,4,5,6], 2
       1.0
-  
+
       iex> momentn [1,2,3,4,5,6], 4
       1.7314285714285718
   """
@@ -298,9 +298,9 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates the nth normalized moment of the sample.
-  
+
   ## Example
-  
+
       iex> momentn [1,2,3,4,5,6], 4, 3.5
       1.7314285714285718
   """
@@ -319,10 +319,10 @@ defmodule Chi2fit.Statistics do
   end
 
   @type cullenfrey :: [{squared_skewness::float,kurtosis::float}|nil]
-  
+
   @doc """
   Generates a Cullen & Frey plot for the sample data.
-  
+
   The kurtosis returned is the 'excess kurtosis'.
   """
   @spec cullen_frey(sample::[number], n::integer) :: cullenfrey
@@ -353,12 +353,12 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Converts the input so that the result is a Puiseaux diagram, that is a strict convex shape.
-  
+
   ## Examples
-  
+
       iex> puiseaux [1]
       [1]
-      
+
       iex> puiseaux [5,3,3,2]
       [5, 3, 2.5, 2]
 
@@ -379,19 +379,19 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates the autocorrelation coefficient of a list of observations.
-  
+
   The implementation uses the discrete Fast Fourier Transform to calculate the autocorrelation.
   For available options see `Chi2fit.FFT.fft/2`. Returns a list of the autocorrelation coefficients.
-  
+
   ## Example
-  
+
       iex> auto [1,2,3]
       [14.0, 7.999999999999999, 2.999999999999997]
 
   """
   @spec auto([number],Keyword.t) :: [number]
   def auto(list,opts \\ [nproc: 1])
-  
+
   def auto([],_opts), do: []
   def auto([x],_opts), do: [x*x]
   def auto(list,opts) do
@@ -406,18 +406,18 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates and returns the error associated with a list of observables.
-  
+
   Usually these are the result of a Markov Chain Monte Carlo simulation run.
-  
+
   The only supported method is the so-called `Initial Sequence Method`. See section 1.10.2 (Initial sequence method)
   of [1].
-  
+
   Input is a list of autocorrelation coefficients. This may be the output of `auto/2`.
-  
+
   ## References
-  
+
       [1] 'Handbook of Markov Chain Monte Carlo'
-  
+
   """
   @spec error([{gamma :: number,k :: pos_integer}], :initial_sequence_method) :: {var :: number, lag :: number}
   def error(nauto, :initial_sequence_method) do
@@ -435,22 +435,22 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Implements bootstrapping procedure as resampling with replacement.
-  
+
   It supports saving intermediate results to a file using `:dets`. Use the options `:safe` and `:filename` (see below)
-  
+
   ## Arguments:
-  
+
       `total` - Total number resamplings to perform
       `data` - The sample data
       `fun` - The function to evaluate
       `options` - A keyword list of options, see below.
-      
+
   ## Options
-  
+
       `:safe` - Whether to safe intermediate results to a file, so as to support continuation when it is interrupted.
             Valid values are `:safe` and `:cont`.
       `:filename` - The filename to use for storing intermediate results
-  
+
   """
   @spec bootstrap(total :: integer, data :: [number], fun :: (([number],integer)->number), options :: Keyword.t) :: [any]
   def bootstrap(total, data, fun, options \\ []) do
@@ -461,7 +461,7 @@ defmodule Chi2fit.Statistics do
         file = options |> Keyword.fetch!(:filename)
         {:ok,:storage} = :dets.open_file :storage, type: :set, file: file, auto_save: 1000, estimated_no_objects: total
         :ok = :dets.delete_all_objects :storage
-        {1,[]}        
+        {1,[]}
       :cont ->
         file = options |> Keyword.fetch!(:filename)
         {:ok,:storage} = :dets.open_file :storage, type: :set, file: file, auto_save: 1000, estimated_no_objects: total
@@ -487,9 +487,9 @@ defmodule Chi2fit.Statistics do
       end
     end)
   end
-  
+
   @doc """
-  Reamples the subsequences of numbers contained in the list as determined by `analyze/2`
+  Resamples the subsequences of numbers contained in the list as determined by `analyze/2`
   """
   @spec resample(data :: [number], options :: Keyword.t) :: [number]
   def resample(data,options) do
@@ -504,9 +504,9 @@ defmodule Chi2fit.Statistics do
 
   @doc """
   Calculates the systematic errors for bins due to uncertainty in assigning data to bins.
-  
+
   ## Options
-  
+
       `bin` - the size of bins to use (defaults to 1)
       `iterations` - the number of iterations to use to estimate the error due to noise (defatuls to 100)
 
