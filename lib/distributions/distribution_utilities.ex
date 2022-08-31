@@ -37,11 +37,12 @@ defmodule Chi2fit.Distribution.Utilities do
       "exponential" - The exponential distribution,
       "poisson" - The Poisson distribution,
       "normal" - The normal or Gaussian distribution,
-      "fechet" - The Fréchet distribution,
+      "frechet" - The Fréchet distribution,
       "nakagami" - The Nakagami distribution,
       "sep" - The Skewed Exponential Power distribution (Azzalini),
       "erlang" - The Erlang distribution,
-      "sep0" - The Skewed Exponential Power distribution (Azzalini) with location parameter set to zero (0).
+      "sep0" - The Skewed Exponential Power distribution (Azzalini) with location parameter set to zero (0),
+      "tw" - The Tracy-Widom distributions TW1, TW2, and TW4.
       
   ## Options
   Available only for the SEP distribution, see 'sepCDF/5'.
@@ -67,6 +68,10 @@ defmodule Chi2fit.Distribution.Utilities do
       "normal" -> %D.Normal{pars: params}
       "sep" -> %D.SEP{pars: params, options: options}
       "sep0" -> %D.SEP{pars: params, offset: 0.0, options: options}
+      "tw" -> %D.TracyWidom{type: 1}
+      "tw1" -> %D.TracyWidom{type: 1}
+      "tw2" -> %D.TracyWidom{type: 2}
+      "tw4" -> %D.TracyWidom{type: 4}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
@@ -138,6 +143,10 @@ defmodule Chi2fit.Distribution.Utilities do
   def sigil_M(str, 'sz'), do: %D.SEP{pars: to_numbers(str), offset: 0.0}
   def sigil_M(str, [?s|_]), do: %D.SEP{pars: to_numbers(str)}
 
+  def sigil_M(_str, 'tw'), do: %D.TracyWidom{pars: [], type: 1}
+  def sigil_M(_str, 'tww'), do: %D.TracyWidom{pars: [], type: 2}
+  def sigil_M(_str, 'twwww'), do: %D.TracyWidom{pars: [], type: 4}
+  
   def sigil_M(_term, modifiers) do
     raise UnsupportedDistributionError, message: "Unsupported modifiers #{inspect modifiers}"
   end
@@ -146,7 +155,7 @@ defmodule Chi2fit.Distribution.Utilities do
   Guesses what distribution is likely to fit the sample data
   """
   @spec guess(sample::[number], n::integer, list::[String.t] | String.t) :: [any]
-  def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull","frechet","nakagami"])
+  def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull","frechet","nakagami","tw","tww"])
   def guess(sample,n,list) when is_integer(n) and n>0 and is_list(list) do
     {{skewness,err_s},{kurtosis,err_k}} = sample |> cullen_frey(n) |> cullen_frey_point
     list
