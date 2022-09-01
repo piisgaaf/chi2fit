@@ -106,13 +106,13 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TracyWidom do
 
   def size(%TracyWidom{}), do: 0
 
-  def cdf(%TracyWidom{type: 1}), do: fn x -> tracywidomCDF(@t1k,@t1theta,@t1alpha).(x) end
-  def cdf(%TracyWidom{type: 2}), do: fn x -> tracywidomCDF(@t2k,@t2theta,@t2alpha).(x) end
-  def cdf(%TracyWidom{type: 4}), do: fn x -> tracywidomCDF(@t4k,@t4theta,@t4alpha).(x) end
+  def cdf(%TracyWidom{type: 1}), do: fn x,[] -> tracywidomCDF(@t1k,@t1theta,@t1alpha).(x) end
+  def cdf(%TracyWidom{type: 2}), do: fn x,[] -> tracywidomCDF(@t2k,@t2theta,@t2alpha).(x) end
+  def cdf(%TracyWidom{type: 4}), do: fn x,[] -> tracywidomCDF(@t4k,@t4theta,@t4alpha).(x) end
 
-  def pdf(%TracyWidom{type: 1}), do: fn x -> tracywidomPDF(@t1k,@t1theta,@t1alpha).(x) end
-  def pdf(%TracyWidom{type: 2}), do: fn x -> tracywidomPDF(@t2k,@t2theta,@t2alpha).(x) end
-  def pdf(%TracyWidom{type: 4}), do: fn x -> tracywidomPDF(@t4k,@t4theta,@t4alpha).(x) end
+  def pdf(%TracyWidom{type: 1}), do: fn x,[] -> tracywidomPDF(@t1k,@t1theta,@t1alpha).(x) end
+  def pdf(%TracyWidom{type: 2}), do: fn x,[] -> tracywidomPDF(@t2k,@t2theta,@t2alpha).(x) end
+  def pdf(%TracyWidom{type: 4}), do: fn x,[] -> tracywidomPDF(@t4k,@t4theta,@t4alpha).(x) end
 
   def random(%TracyWidom{type: 1}), do: fn -> tracywidom(@t1k,@t1theta,@t1alpha).() end
   def random(%TracyWidom{type: 2}), do: fn -> tracywidom(@t2k,@t2theta,@t2alpha).() end

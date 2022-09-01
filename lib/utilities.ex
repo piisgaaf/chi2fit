@@ -57,6 +57,7 @@ defmodule Chi2fit.Utilities do
   """
   @spec unzip(list::[tuple]) :: tuple
   def unzip([]), do: {}
+  def unzip([{}|_]), do: {}
   def unzip(list=[{_}|_]), do: {Enum.map(list,fn {x}->x end)}
   def unzip(list=[{_,_}|_]), do: Enum.unzip(list)
   def unzip(list=[{_,_,_}|_]) do
