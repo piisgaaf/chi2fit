@@ -71,28 +71,28 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TracyWidom do
     _gamma(k) - (1..trunc(k) |> Enum.map(fn _ -> :math.log(:rand.uniform()) end) |> Enum.sum)
   end
   
-  @spec tracywidom(number, number, number) :: ((...) -> number)
-  defp tracywidom(k, theta, alpha) do
-    fn -> theta*gamma(k,1.0) - alpha end
+  @spec tracywidom(number, number, number, number, number) :: ((...) -> number)
+  defp tracywidom(mu, scale, k, theta, alpha) do
+    fn -> mu + scale*( theta*gamma(k,1.0) - alpha ) end
   end
   
-  @spec tracywidomCDF(number,number,number) :: (number -> number)
-  defp tracywidomCDF(k,theta,alpha) do
+  @spec tracywidomCDF(number,number,number,number,number) :: (number -> number)
+  defp tracywidomCDF(mu,scale,k,theta,alpha) when is_number(mu) and is_number(scale) do
     fn
-      x when x == alpha -> 0.0
-      x when x < -alpha -> 0.0
-      x when x > -alpha ->
-        1/tgamma(k)*tgamma_lower(k, (x + alpha)/theta)
+      x when x == mu - scale*alpha -> 0.0
+      x when x < mu - scale*alpha -> 0.0
+      x when x > mu - scale*alpha ->
+        1/tgamma(k)*tgamma_lower(k, (x - mu + scale*alpha)/theta/scale)
     end
   end
 
-  @spec tracywidomPDF(number,number,number) :: (number -> number)
-  defp tracywidomPDF(k,theta,alpha) do
+  @spec tracywidomPDF(number,number,number,number,number) :: (number -> number)
+  defp tracywidomPDF(mu,scale,k,theta,alpha) when is_number(mu) and is_number(scale) do
     fn
-      x when x == alpha -> 0.0
-      x when x < -alpha -> 0.0
-      x when x > -alpha ->
-        1/tgamma(k)*:math.pow(theta,-k)*:math.pow(x+alpha,k-1)*:math.exp(-(x+alpha)/theta)
+      x when x == mu - scale*alpha -> 0.0
+      x when x < mu - scale*alpha -> 0.0
+      x when x > mu - scale*alpha ->
+        1/tgamma(k)*:math.pow(theta*scale,-k)*:math.pow(x - mu + scale*alpha,k-1)*:math.exp(-(x - mu + scale*alpha)/theta/scale)
     end
   end
   
@@ -104,32 +104,41 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TracyWidom do
   def kurtosis(%TracyWidom{type: 2}), do: fn -> 0.0934480876 end
   def kurtosis(%TracyWidom{type: 4}), do: fn -> 0.0491951565 end
 
-  def size(%TracyWidom{}), do: 0
+  def size(%TracyWidom{}), do: 2
 
-  def cdf(%TracyWidom{type: 1}), do: fn x,[] -> tracywidomCDF(@t1k,@t1theta,@t1alpha).(x) end
-  def cdf(%TracyWidom{type: 2}), do: fn x,[] -> tracywidomCDF(@t2k,@t2theta,@t2alpha).(x) end
-  def cdf(%TracyWidom{type: 4}), do: fn x,[] -> tracywidomCDF(@t4k,@t4theta,@t4alpha).(x) end
+  def cdf(%TracyWidom{pars: nil, type: 1}), do: fn x,[mu,scale] -> tracywidomCDF(mu,scale,@t1k,@t1theta,@t1alpha).(x) end
+  def cdf(%TracyWidom{pars: nil, type: 2}), do: fn x,[mu,scale] -> tracywidomCDF(mu,scale,@t2k,@t2theta,@t2alpha).(x) end
+  def cdf(%TracyWidom{pars: nil, type: 4}), do: fn x,[mu,scale] -> tracywidomCDF(mu,scale,@t4k,@t4theta,@t4alpha).(x) end
 
-  def pdf(%TracyWidom{type: 1}), do: fn x,[] -> tracywidomPDF(@t1k,@t1theta,@t1alpha).(x) end
-  def pdf(%TracyWidom{type: 2}), do: fn x,[] -> tracywidomPDF(@t2k,@t2theta,@t2alpha).(x) end
-  def pdf(%TracyWidom{type: 4}), do: fn x,[] -> tracywidomPDF(@t4k,@t4theta,@t4alpha).(x) end
+  def pdf(%TracyWidom{pars: nil, type: 1}), do: fn x,[mu,scale] -> tracywidomPDF(mu,scale,@t1k,@t1theta,@t1alpha).(x) end
+  def pdf(%TracyWidom{pars: nil, type: 2}), do: fn x,[mu,scale] -> tracywidomPDF(mu,scale,@t2k,@t2theta,@t2alpha).(x) end
+  def pdf(%TracyWidom{pars: nil, type: 4}), do: fn x,[mu,scale] -> tracywidomPDF(mu,scale,@t4k,@t4theta,@t4alpha).(x) end
 
-  def random(%TracyWidom{type: 1}), do: fn -> tracywidom(@t1k,@t1theta,@t1alpha).() end
-  def random(%TracyWidom{type: 2}), do: fn -> tracywidom(@t2k,@t2theta,@t2alpha).() end
-  def random(%TracyWidom{type: 4}), do: fn -> tracywidom(@t4k,@t4theta,@t4alpha).() end
+  def random(%TracyWidom{pars: nil, type: 1}), do: fn [mu,scale] -> tracywidom(mu,scale,@t1k,@t1theta,@t1alpha).() end
+  def random(%TracyWidom{pars: nil, type: 2}), do: fn [mu,scale] -> tracywidom(mu,scale,@t2k,@t2theta,@t2alpha).() end
+  def random(%TracyWidom{pars: nil, type: 4}), do: fn [mu,scale] -> tracywidom(mu,scale,@t4k,@t4theta,@t4alpha).() end
 
   def name(model), do: model.name
   
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.TracyWidom do
-  def inspect(dict, _opts) do
+  def inspect(dict, opts) do
+    import Inspect.Algebra
+  
     type = cond do
       is_integer(dict.type) -> "_#{dict.type}"
       true -> ""
     end
         
-    "#TracyWidom#{type}<>"
+    case dict.pars do
+      nil ->
+        "#TracyWidom#{type}<>"
+      [mu,scale] ->
+        concat ["#TracyWidom#{type}<", to_doc("mu=#{mu}, scale=#{scale}", opts), ">"]
+      list ->
+        concat ["#TracyWidom#{type}<", to_doc(list, opts), ">"]
+    end
   end
 
 end

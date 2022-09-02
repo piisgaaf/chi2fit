@@ -68,10 +68,10 @@ defmodule Chi2fit.Distribution.Utilities do
       "normal" -> %D.Normal{pars: params}
       "sep" -> %D.SEP{pars: params, options: options}
       "sep0" -> %D.SEP{pars: params, offset: 0.0, options: options}
-      "tw" -> %D.TracyWidom{type: 1}
-      "tw1" -> %D.TracyWidom{type: 1}
-      "tw2" -> %D.TracyWidom{type: 2}
-      "tw4" -> %D.TracyWidom{type: 4}
+      "tw" -> %D.TracyWidom{pars: params, type: 1}
+      "tw1" -> %D.TracyWidom{pars: params, type: 1}
+      "tw2" -> %D.TracyWidom{pars: params, type: 2}
+      "tw4" -> %D.TracyWidom{pars: params, type: 4}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
@@ -143,9 +143,12 @@ defmodule Chi2fit.Distribution.Utilities do
   def sigil_M(str, 'sz'), do: %D.SEP{pars: to_numbers(str), offset: 0.0}
   def sigil_M(str, [?s|_]), do: %D.SEP{pars: to_numbers(str)}
 
-  def sigil_M(_str, 'tw'), do: %D.TracyWidom{pars: [], type: 1}
-  def sigil_M(_str, 'tww'), do: %D.TracyWidom{pars: [], type: 2}
-  def sigil_M(_str, 'twwww'), do: %D.TracyWidom{pars: [], type: 4}
+  def sigil_M("", 'tw'), do: %D.TracyWidom{pars: nil, type: 1}
+  def sigil_M(str, 'tw'), do: %D.TracyWidom{pars: to_numbers(str), type: 1}
+  def sigil_M("", 'tww'), do: %D.TracyWidom{pars: nil, type: 2}
+  def sigil_M(str, 'tww'), do: %D.TracyWidom{pars: to_numbers(str), type: 2}
+  def sigil_M("", 'twwww'), do: %D.TracyWidom{pars: nil, type: 4}
+  def sigil_M(str, 'twwww'), do: %D.TracyWidom{pars: to_numbers(str), type: 4}
   
   def sigil_M(_term, modifiers) do
     raise UnsupportedDistributionError, message: "Unsupported modifiers #{inspect modifiers}"
