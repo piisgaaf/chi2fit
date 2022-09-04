@@ -59,7 +59,7 @@ defmodule Chi2fit.Mixfile do
       {:gnuplot, "~> 1.19.104"},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :nb, runtime: false},
-	    {:tzdata, "~> 0.1.8"},
+      {:tzdata, "~> 0.1.8"},
       {:excoveralls, "~> 0.11.0", only: :test},
       {:ex_doc, "~> 0.19", only: :docs, runtime: false},
       {:credo, "~> 1.5", only: :dev},
@@ -94,7 +94,7 @@ defmodule Chi2fit.Mixfile do
   defp package() do
     [
       maintainers: [ "Pieter Rijken" ],
-      licenses: [ "Apache 2.0" ],
+      licenses: [ "Apache-2.0" ],
       files: [ "lib", "mix.exs", "README*", "LICENSE*", "NOTICE", "config", "chi2fit" ],
       links: %{
         "GitHub" => "https://github.com/piisgaaf/chi2fit",
@@ -125,7 +125,7 @@ defmodule Chi2fit.Mixfile do
         "Forecasting-fit-to-known-distribution.md",
         "Forecasting-bootstrapping.md",
         "Forecasting-non-equilibrium.md",
-        "Forecasting-multiplot.md",
+        "Example-multi-plot.md",
         "Forecasting-cycle-times.md",
       ] |> Enum.map(& "#{Mix.Project.build_path()}/lib/chi2fit/docs/"<>&1)
     ]
