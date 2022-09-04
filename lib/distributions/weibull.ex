@@ -67,7 +67,7 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Weibull do
             t = :math.pow(x/lambda,k)
             t*(1 - 0.5*t)
           true ->
-            1.0 - :math.exp -:math.pow(x/lambda,k)
+            1.0 - :math.exp(-:math.pow(x/lambda,k))
         end
     end
   end

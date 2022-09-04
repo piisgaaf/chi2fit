@@ -42,7 +42,10 @@ defmodule Chi2fit.Distribution.Utilities do
       "sep" - The Skewed Exponential Power distribution (Azzalini),
       "erlang" - The Erlang distribution,
       "sep0" - The Skewed Exponential Power distribution (Azzalini) with location parameter set to zero (0),
-      "tw" - The Tracy-Widom distributions TW1, TW2, and TW4.
+      "tw" / "tw1" - The Tracy-Widom distributions TW1,
+      "tw2" - The Tracy-Widom distributions TW2,
+      "tw4" - The Tracy-Widom distributions TW4,
+      "wishart" - The Wishart distribution.
       
   ## Options
   Available only for the SEP distribution, see 'sepCDF/5'.
@@ -72,6 +75,9 @@ defmodule Chi2fit.Distribution.Utilities do
       "tw1" -> %D.TracyWidom{pars: params, type: 1}
       "tw2" -> %D.TracyWidom{pars: params, type: 2}
       "tw4" -> %D.TracyWidom{pars: params, type: 4}
+      "wishart:" <> dim -> %D.Wishart{pars: params, dim: to_numbers(dim)}
+      "wishart" -> %D.Wishart{pars: params, dim: options[:dim]}
+      {"wishart", [m,n]} when is_integer(m)and is_integer(n) -> %D.Wishart{pars: params, dim: [m,n]}
       unknown ->
         raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
     end
@@ -136,6 +142,13 @@ defmodule Chi2fit.Distribution.Utilities do
   def sigil_M(str, [?n|_]), do: %D.Normal{pars: to_numbers(str)}
 
   def sigil_M(str, 'wald'), do: %D.Wald{pars: to_numbers(str)}
+  def sigil_M(str, 'wishart') do
+    case String.split(str,"|") do
+      [dim,pars] ->  %D.Wishart{pars: to_numbers(pars), dim: to_numbers(dim)}
+      [dim] -> %D.Wishart{pars: nil, dim: to_numbers(dim)}
+      _else -> %D.Wishart{pars: nil, dim: nil}
+    end
+  end
   def sigil_M("", [?w|_]), do: %D.Weibull{}
   def sigil_M(str, [?w|_]), do: %D.Weibull{pars: to_numbers(str)}
 

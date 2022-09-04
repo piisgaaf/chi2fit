@@ -282,7 +282,11 @@ defmodule Chi2fit.Matrix do
   def dotproduct([], [], sum), do: sum
   def dotproduct([v1|rest1], [v2|rest2], sum), do: dotproduct(rest1, rest2, sum + v1*v2) 
 
-  defp subtract(matrix1, matrix2, result \\ [])
+  @doc """
+  Subtracts two matrices and returns the result.
+  """
+  @spec subtract(matrix,matrix) :: matrix
+  def subtract(matrix1, matrix2), do: subtract(matrix1,matrix2,[])
   defp subtract([], [], result), do: Enum.reverse(result)
   defp subtract([row1|rest1], [row2|rest2], result) do
     subtract(rest1, rest2, [subtractv(row1,row2)|result])
@@ -340,4 +344,11 @@ defmodule Chi2fit.Matrix do
   @spec add(vector, vector) :: vector
   def add(vector1, vector2), do: Stream.zip(vector1, vector2) |> Enum.map(fn {v1,v2} -> v1 + v2 end)
 
+  @doc """
+  Calculates the determinant of the matrix.
+  """
+  @spec det(matrix) :: number 
+  def det([x]), do: x
+  def det([ [a11,a12], [a21,a22]] ), do: a11*a22 - a12*a21
+  
 end

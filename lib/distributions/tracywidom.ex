@@ -37,6 +37,8 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TracyWidom do
 
   import Exboost.Math, only: [tgamma: 1, tgamma_lower: 2]
 
+  # "Distribution of the largest eigenvalue for real Wishart and Gaussian random matrices and a simple approximation for the Tracy-Widom distribution", arXiv:1209.3394, Journal of Multivariate Analysis, Vol. 129, p. 69-81, 2014
+  # See https://arxiv.org/pdf/1209.3394.pdf, Table 1
   @t1k 46.446
   @t1theta 0.186054
   @t1alpha 9.84801
