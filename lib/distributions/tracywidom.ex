@@ -97,14 +97,22 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TracyWidom do
         1/tgamma(k)*:math.pow(theta*scale,-k)*:math.pow(x - mu + scale*alpha,k-1)*:math.exp(-(x - mu + scale*alpha)/theta/scale)
     end
   end
-  
-  def skewness(%TracyWidom{type: 1}), do: fn -> 2.0/:math.sqrt(@t1k) end
-  def skewness(%TracyWidom{type: 2}), do: fn -> 2.0/:math.sqrt(@t2k) end
-  def skewness(%TracyWidom{type: 4}), do: fn -> 2.0/:math.sqrt(@t4k) end
 
-  def kurtosis(%TracyWidom{type: 1}), do: fn -> 0.1652429384 end
-  def kurtosis(%TracyWidom{type: 2}), do: fn -> 0.0934480876 end
-  def kurtosis(%TracyWidom{type: 4}), do: fn -> 0.0491951565 end
+  defp mean(%TracyWidom{type: 1}), do: fn [mu,scale] -> (-1.2065335745820 - mu)/scale end
+  defp mean(%TracyWidom{type: 2}), do: fn [mu,scale] -> (-1.7710868074110 - mu)/scale end
+  defp mean(%TracyWidom{type: 4}), do: fn [mu,scale] -> (-2.3068848932410 - mu)/scale end
+  
+  defp variantie(d=%TracyWidom{type: 1}), do: fn [mu,scale] -> (1.6077810345810 - 2*mu*scale*mean(d).([mu,scale]) - mu*mu)/scale/scale end
+  defp variantie(d=%TracyWidom{type: 2}), do: fn [mu,scale] -> (0.8131947928320 - 2*mu*scale*mean(d).([mu,scale]) - mu*mu)/scale/scale end
+  defp variantie(d=%TracyWidom{type: 4}), do: fn [mu,scale] -> (0.5177237207726 - 2*mu*scale*mean(d).([mu,scale]) - mu*mu)/scale/scale end
+
+  def skewness(d=%TracyWidom{type: 1}), do: fn [mu,scale] -> (2.0/:math.sqrt(@t1k) -3*mu*scale*scale*variantie(d).([mu,scale]) - 3*mu*mu*scale*mean(d).([mu,scale]) - mu*mu*mu)/scale/scale/scale end
+  def skewness(d=%TracyWidom{type: 2}), do: fn [mu,scale] -> (2.0/:math.sqrt(@t2k) -3*mu*scale*scale*variantie(d).([mu,scale]) - 3*mu*mu*scale*mean(d).([mu,scale]) - mu*mu*mu)/scale/scale/scale end
+  def skewness(d=%TracyWidom{type: 4}), do: fn [mu,scale] -> (2.0/:math.sqrt(@t4k) -3*mu*scale*scale*variantie(d).([mu,scale]) - 3*mu*mu*scale*mean(d).([mu,scale]) - mu*mu*mu)/scale/scale/scale end
+
+  def kurtosis(d=%TracyWidom{type: 1}), do: fn [mu,scale] -> (0.1652429384 - 4*mu*scale*scale*scale*skewness(d).([mu,scale]) - 6*mu*mu*scale*scale*variantie(d).([mu,scale]) - 4*mu*mu*mu*scale*mean(d).([mu,scale]) - mu*mu*mu*mu)/scale/scale/scale/scale end
+  def kurtosis(d=%TracyWidom{type: 2}), do: fn [mu,scale] -> (0.0934480876 - 4*mu*scale*scale*scale*skewness(d).([mu,scale]) - 6*mu*mu*scale*scale*variantie(d).([mu,scale]) - 4*mu*mu*mu*scale*mean(d).([mu,scale]) - mu*mu*mu*mu)/scale/scale/scale/scale end
+  def kurtosis(d=%TracyWidom{type: 4}), do: fn [mu,scale] -> (0.0491951565 - 4*mu*scale*scale*scale*skewness(d).([mu,scale]) - 6*mu*mu*scale*scale*variantie(d).([mu,scale]) - 4*mu*mu*mu*scale*mean(d).([mu,scale]) - mu*mu*mu*mu)/scale/scale/scale/scale end
 
   def size(%TracyWidom{}), do: 2
 

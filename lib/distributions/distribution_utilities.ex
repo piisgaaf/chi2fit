@@ -172,7 +172,7 @@ defmodule Chi2fit.Distribution.Utilities do
   Guesses what distribution is likely to fit the sample data
   """
   @spec guess(sample::[number], n::integer, list::[String.t] | String.t) :: [any]
-  def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull","frechet","nakagami","tw","tww"])
+  def guess(sample,n \\ 100,list \\ ["exponential","poisson","normal","erlang","wald","sep","weibull","frechet","nakagami","tw1","tw2"])
   def guess(sample,n,list) when is_integer(n) and n>0 and is_list(list) do
     {{skewness,err_s},{kurtosis,err_k}} = sample |> cullen_frey(n) |> cullen_frey_point
     list

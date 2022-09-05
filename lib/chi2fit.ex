@@ -473,6 +473,7 @@ defmodule Chi2fit.Cli do
       IO.puts String.pad_trailing(~s(Distribution),20)<>"Score"
       IO.puts String.pad_trailing(~s(------------),20)<>"_____"
       data
+      |> Enum.into([])
       |> guess(options[:guess])
       |> Enum.each(fn {name,score} -> IO.puts String.pad_trailing(name,20)<>"#{score}" end)
       System.halt 0
