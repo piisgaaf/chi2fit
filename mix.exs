@@ -19,7 +19,7 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "2.0.1",
+      version: "2.0.2",
       elixir: "~> 1.13",
       start_permanent: Mix.env == :prod,
       build_embedded: Mix.env == :prod,
