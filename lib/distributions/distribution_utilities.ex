@@ -21,6 +21,7 @@ defmodule Chi2fit.Distribution.Utilities do
   import Chi2fit.Statistics
   alias Chi2fit.Distribution, as: D
 
+  @type model :: any
 
   defmodule UnsupportedDistributionError do
     defexception message: "Unsupported distribution function"

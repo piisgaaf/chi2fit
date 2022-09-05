@@ -24,6 +24,7 @@ defmodule Chi2fit.Utilities do
   """
 
   alias Chi2fit.Distribution, as: D
+  alias Chi2fit.Distribution.Utilities, as: U
   alias Chi2fit.Fit, as: F
   alias Chi2fit.Math, as: M
   alias Chi2fit.Matrix, as: Mx
@@ -185,7 +186,7 @@ defmodule Chi2fit.Utilities do
   @doc """
   Displays results of the function `Chi2fit.Fit.chi2fit/4`
   """
-  @spec display(device :: IO.device(),hdata :: S.ecdf(),model :: D.model(),F.chi2fit(),options :: Keyword.t) :: none()
+  @spec display(device :: IO.device(),hdata :: S.ecdf(),model :: U.model(),F.chi2fit(),options :: Keyword.t) :: none()
   def display(device \\ :stdio,hdata,model,{chi2, cov, parameters, errors},options) do
       param_errors = cov |> Mx.diagonal |> Enum.map(fn x->x|>abs|>:math.sqrt end)
 

@@ -19,8 +19,8 @@ defmodule Chi2fit.Mixfile do
   def project do
     [
       app: :chi2fit,
-      version: "2.0.0",
-      elixir: "~> 1.12",
+      version: "2.0.1",
+      elixir: "~> 1.13",
       start_permanent: Mix.env == :prod,
       build_embedded: Mix.env == :prod,
       deps: deps(),
@@ -51,17 +51,17 @@ defmodule Chi2fit.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:exboost, "~> 0.2.6"},
+      {:exboost, "~> 0.2"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
-      {:timex, "~> 3.6"},
+      {:timex, "~> 3.7"},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19.104"},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :nb, runtime: false},
-      {:tzdata, "~> 0.1.8"},
+      {:tzdata, "~> 1.1"},
       {:excoveralls, "~> 0.11.0", only: :test},
-      {:ex_doc, "~> 0.19", only: :docs, runtime: false},
+      {:ex_doc, "~> 0.24", only: :docs, runtime: false},
       {:credo, "~> 1.5", only: :dev},
       {:mix_test_watch, "~> 1.0", only: :test}
     ]
