@@ -44,7 +44,7 @@ defmodule Chi2fit.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [ :logger ]
+      extra_applications: [ :logger]
     ]
   end
 
@@ -54,12 +54,12 @@ defmodule Chi2fit.Mixfile do
       {:exboost, "~> 0.2"},
       {:graphvix,"~> 1.0"},
       {:csv, "~> 2.3"},
-      {:timex, "~> 3.7"},
+      {:timex, "~> 3.7", runtime: false},
       {:stream_data, "~> 0.4"},
       {:gnuplot, "~> 1.19.104"},
       {:poison, "~> 4.0", only: :test, override: true},
       {:ielixir, github: "pprzetacznik/IElixir", only: :nb, runtime: false},
-      {:tzdata, "~> 1.1"},
+      {:tzdata, "~> 1.1", runtime: false},
       {:excoveralls, "~> 0.11.0", only: :test},
       {:ex_doc, "~> 0.24", only: :docs, runtime: false},
       {:credo, "~> 1.5", only: :dev},

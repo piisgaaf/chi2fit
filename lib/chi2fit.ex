@@ -471,7 +471,7 @@ defmodule Chi2fit.Cli do
     ## Guess
     if options[:guess] do
       IO.puts String.pad_trailing(~s(Distribution),20)<>"Score"
-      IO.puts String.pad_trailing(~s(------------),20)<>"_____"
+      IO.puts String.pad_trailing(~s(------------),20)<>"-----"
       data
       |> Enum.into([])
       |> guess(options[:guess])
