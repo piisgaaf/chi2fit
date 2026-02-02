@@ -67,6 +67,7 @@ defmodule Chi2fit.Distribution.Utilities do
       "nakagami" -> %D.Nakagami{pars: params}
       "poisson" -> %D.Poisson{pars: params}
       {"poisson", period} when is_number(period) and period>0 -> %D.Poisson{pars: params, period: period}
+      "bipoisson" -> %D.BiModal{weights: (if params, do: Enum.at(params,0), else: nil), distribs: [%D.Poisson{pars: (if params, do: Enum.at(params,1), else: nil)}, %D.Poisson{pars: (if params, do: Enum.at(params,2), else: nil)}]}
       "erlang" -> %D.Erlang{pars: params}
       {"erlang", batches} when is_number(batches) and batches>0 -> %D.Erlang{pars: params, batches: batches}
       "normal" -> %D.Normal{pars: params}
