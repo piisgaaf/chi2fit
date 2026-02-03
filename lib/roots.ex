@@ -20,21 +20,21 @@ defmodule Chi2fit.Roots do
 
   @doc """
   Returns the real roots of polynoms of order 1, 2 and 3 as a list.
-  
+
   ## Examples
-  
+
       Solve `2.0*x + 5.0 = 0`
       iex> solve [2.0,5.0]
       [-2.5]
-      
+
       iex> solve [2.0,-14.0,24.0]
       [4.0,3.0]
-      
+
       iex> solve [1.0,0.0,5.0,6.0]
       [-0.9999999999999999]
   """
   @spec solve([float]) :: [float]
-  def solve([0.0|rest]), do: solve rest
+  def solve([+0.0|rest]), do: solve rest
 
   def solve([a1,a0]), do: [-a0/a1]
 
@@ -47,7 +47,7 @@ defmodule Chi2fit.Roots do
     end
   end
 
-  def solve([1.0,0.0,p,q]) do
+  def solve([1.0,+0.0,p,q]) do
     ## For details see equations (83) and (84) in http://mathworld.wolfram.com/CubicFormula.html
     c = -0.5*q*:math.pow(3/abs(p),1.5)
     cond do

@@ -34,8 +34,8 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
   import D.TriModal
   alias D.TriModal
 
-  def skewness(%TriModal{distribs: nil}), do: raise ArithmeticError, "Skewness not supported for TriModal distribution"
-  def kurtosis(%TriModal{distribs: nil}), do: raise ArithmeticError, "Kurtosis not supported for TriModal distribution"
+  def skewness(%TriModal{distribs: nil}), do: raise(ArithmeticError, "Skewness not supported for TriModal distribution")
+  def kurtosis(%TriModal{distribs: nil}), do: raise(ArithmeticError, "Kurtosis not supported for TriModal distribution")
 
   def size(%TriModal{distribs: distribs}), do: 2 + (distribs|>Enum.map(&D.size(&1))|>Enum.sum)
 
@@ -47,8 +47,8 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip([w1,(1-w1)*w2,(1-w1)*(1-w2)])
-      |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*D.cdf(d).(x,pars) end)
+      |> Enum.map(fn {tup,p} -> Tuple.to_list(tup) ++ [p] end)
+      |> Enum.map(fn [d,pars,p] -> p*D.cdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
@@ -61,8 +61,8 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.TriModal do
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip([w1,(1-w1)*w2,(1-w1)*(1-w2)])
-      |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*D.pdf(d).(x,pars) end)
+      |> Enum.map(fn {tup,p} -> Tuple.to_list(tup) ++ [p] end)
+      |> Enum.map(fn [d,pars,p] -> p*D.pdf(d).(x,pars) end)
       |> Enum.sum
     end
   end

@@ -13,15 +13,15 @@ defmodule Chi2fit.Distribution.Erlang do
   # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   # See the License for the specific language governing permissions and
   # limitations under the License.
-  
+
   @moduledoc """
   The Erlang distribution.
   """
 
   alias Exboost.Math, as: M
-  
+
   defstruct [:pars,:batches, name: "erlang"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()],
     batches: nil | pos_integer,
@@ -42,8 +42,8 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Erlang do
       -1.0/lambda*:math.log(1..k |> Enum.reduce(1.0, fn _,acc -> :rand.uniform()*acc end))
     end
   end
-  
-  defp erlangCDF(k,lambda) when k<0 or lambda<0, do: raise ArithmeticError, "Erlang is only defined for positive shape and mode"
+
+  defp erlangCDF(k,lambda) when k<0 or lambda<0, do: raise(ArithmeticError, "Erlang is only defined for positive shape and mode")
   defp erlangCDF(k,lambda) when k>0, do: &M.gamma_p(k,lambda*&1)
 
   def skewness(%Erlang{pars: nil, batches: nil}), do: fn [k, _] -> 2/:math.sqrt(k) end
@@ -67,12 +67,12 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Erlang do
   def random(%Erlang{pars: nil, batches: nil}), do: fn [k,lambda] -> erlang(k,lambda).() end
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Erlang do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

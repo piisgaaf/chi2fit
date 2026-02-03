@@ -19,9 +19,9 @@ defmodule Chi2fit.Matrix do
 
   It provides 2 types of matrix norms and an iterative approach to calculating the matrix inverse.
   The implementation is based on the work [1].
-  
+
   ## References
-  
+
   [1] F. Soleymani, A Rapid Numerical Algorithm to Compute Matrix Inversion, International Journal of Mathematics and
   Mathematical Sciences, Volume 2012, Article ID 134653, doi:10.1155/2012/134653
 
@@ -37,7 +37,7 @@ defmodule Chi2fit.Matrix do
   A list of numbers
   """
   @type vector :: [number]
-  
+
   @typedoc """
   A list of vectors (list of lists of numbers)
   """
@@ -45,12 +45,12 @@ defmodule Chi2fit.Matrix do
 
   @doc """
   Constructs a unit matrix of size n. All diagonal elements have value 1 and the rest has value 0.
-  
+
   ## Examples
-  
+
       iex> unit(3)
       [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-      
+
       iex> unit(0)
       ** (ArgumentError) Illegal argument '0'
 
@@ -66,15 +66,15 @@ defmodule Chi2fit.Matrix do
     {result,_} = List.duplicate(0,n) |> List.duplicate(n) |> Enum.reduce({[],-1}, fn (list,{acc,m}) -> {[list |> List.replace_at(m,1)|acc],m-1} end)
     result
   end
-  def unit(n), do: raise ArgumentError, message: "Illegal argument '#{inspect n}'"
-  
+  def unit(n), do: raise(ArgumentError, message: "Illegal argument '#{inspect n}'")
+
   defp abssum(list), do: list |> Enum.map(&abs/1) |> Enum.sum
 
   @doc """
   Calculates the norm of the matrix as the sum of the absolutes value of all elements.
-  
+
   ## Example
-  
+
       iex> norm [[1,2,3],[4,5,6],[7,8,9]]
       45
 
@@ -85,9 +85,9 @@ defmodule Chi2fit.Matrix do
   @doc """
   Calculates the norm of the matrix. All absolute values of the elements of each row are summed. The maximum
   value is returned
-  
+
   ## Example
-  
+
       iex> norm_1 [[1,2,3],[4,5,6],[7,8,9]]
       24
 
@@ -97,9 +97,9 @@ defmodule Chi2fit.Matrix do
 
   @doc """
   Calculates the norm of the matrix as `norm_1/1` but over the columns instead of over the rows.
-  
+
   ## Example
-  
+
       iex> norm_inf [[1,2,3],[4,5,6],[7,8,9]]
       18
 
@@ -141,7 +141,7 @@ defmodule Chi2fit.Matrix do
 
   @doc """
   Returns the matrix inverse of the argument.
-  
+
   ## Options
 
       `:tolerance` - Iterate until the `norm_1/1` of I-AV is less than this value
@@ -151,29 +151,29 @@ defmodule Chi2fit.Matrix do
       `:range` - Range of values from -range to +range as a multiple of the unit matrix to try as an estimate
           of the inverse matric; defaults to #{@default_range}
       `:size` - Number of tries to estimate initial inverse; defautls to #{@default_size}
-  
+
   ## Examples
-  
+
       iex> inverse [[3]]
       {:ok,[[0.3333333333333333]]}
 
       iex> inverse [[1,2],[3,4]]
       {:ok,[[-2.0, 1.0], [1.5, -0.5]]}
-      
+
       iex> inverse([[3,2,0],[0,0,1],[2,-2,1]]) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,10)) end)
       [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
-       
+
       iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], algorithm: :soleymani) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,14)) end)
       [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
-      
+
       iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], tolerance: 1.0e-15) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,14)) end)
       [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
-      
+
   For matrices that have no inverse:
-  
+
       iex> try do inverse [[1,2,3],[4,5,6],[7,8,9]] catch x->x end
       :no_inverse
-  
+
   """
   @spec inverse(matrix, options :: Keyword.t) :: {:ok,inverse :: matrix} | :failed_to_find_v0 | :no_inverse | {:failed_to_reach_tolerance,inverse :: matrix,error :: float}
   def inverse(matrix, options \\ [])
@@ -230,9 +230,9 @@ defmodule Chi2fit.Matrix do
 
   @doc """
   Returns the diagonal elements of the matrix as a vector.
-  
+
   ## Example
-  
+
       iex> diagonal [[1,2,3],[4,5,6],[7,8,9]]
       [1, 5, 9]
 
@@ -244,12 +244,12 @@ defmodule Chi2fit.Matrix do
 
   @doc """
   Returns a matrix with the supplied vector as its diagonal elements.
-  
+
   ## Examples
-  
+
       iex> from_diagonal [1,5,9]
       [[1, 0, 0], [0, 5, 0], [0, 0, 9]]
-  
+
   """
   @spec from_diagonal(vector) :: matrix
   def from_diagonal(vector) do
@@ -258,15 +258,15 @@ defmodule Chi2fit.Matrix do
 
   @doc """
   Calculates the inner product of two vectors.
-  
+
   ## Examples
-  
+
       iex> dotproduct [1,2], [3,4]
       11
 
       iex> dotproduct [], []
       0
-  
+
       iex> dotproduct [1,2], []
       ** (ArgumentError) Vectors of unequal length
 
@@ -280,7 +280,7 @@ defmodule Chi2fit.Matrix do
     raise ArgumentError, message: "Vectors of unequal length"
   end
   def dotproduct([], [], sum), do: sum
-  def dotproduct([v1|rest1], [v2|rest2], sum), do: dotproduct(rest1, rest2, sum + v1*v2) 
+  def dotproduct([v1|rest1], [v2|rest2], sum), do: dotproduct(rest1, rest2, sum + v1*v2)
 
   @doc """
   Subtracts two matrices and returns the result.
@@ -347,8 +347,8 @@ defmodule Chi2fit.Matrix do
   @doc """
   Calculates the determinant of the matrix.
   """
-  @spec det(matrix) :: number 
+  @spec det(matrix) :: number
   def det([x]), do: x
   def det([ [a11,a12], [a21,a22]] ), do: a11*a22 - a12*a21
-  
+
 end

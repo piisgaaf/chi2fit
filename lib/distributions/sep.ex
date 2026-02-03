@@ -32,7 +32,7 @@ defmodule Chi2fit.Distribution.SEP do
   """
 
   defstruct [:pars, :offset, options: [], name: "sep"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     offset: number() | nil,
@@ -51,7 +51,7 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.SEP do
   import Chi2fit.Math, only: [integrate: 5]
 
   @pi :math.pi()
-  
+
   @spec sepCDF(a :: float,b :: float,lambda :: float,alpha :: float, options :: Keyword.t) :: (number -> number)
   defp sepCDF(a,b,lambda,alpha,options) do
     method = options[:method] || :romberg2
@@ -94,19 +94,19 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.SEP do
 
   def size(%SEP{offset: nil}), do: 4
   def size(%SEP{offset: offset}) when is_number(offset), do: 3
-  
+
   def cdf(%SEP{pars: nil, options: options}), do: fn x,[a,b,lambda,alpha] -> sepCDF(a,b,lambda,alpha,options).(x) end
 
   def pdf(%SEP{pars: nil}), do: fn x,[a,b,lambda,alpha] -> sepPDF(a,b,lambda,alpha).(x) end
-  def random(%SEP{}), do: raise D.FunctionNotSupportedError, message: "random is not supported for the SEP distribution"
+  def random(%SEP{}), do: raise(D.FunctionNotSupportedError, message: "random is not supported for the SEP distribution")
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.SEP do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case {dict.pars,dict.offset} do
       {nil,nil} ->

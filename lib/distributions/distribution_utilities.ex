@@ -47,7 +47,7 @@ defmodule Chi2fit.Distribution.Utilities do
       "tw2" - The Tracy-Widom distributions TW2,
       "tw4" - The Tracy-Widom distributions TW4,
       "wishart" - The Wishart distribution.
-      
+
   ## Options
   Available only for the SEP distribution, see 'sepCDF/5'.
   """
@@ -81,7 +81,7 @@ defmodule Chi2fit.Distribution.Utilities do
       "wishart" -> %D.Wishart{pars: params, dim: options[:dim]}
       {"wishart", [m,n]} when is_integer(m)and is_integer(n) -> %D.Wishart{pars: params, dim: [m,n]}
       unknown ->
-        raise UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'"
+        raise(UnsupportedDistributionError, message: "Unsupported cumulative distribution function '#{inspect unknown}'")
     end
   end
 
@@ -119,32 +119,32 @@ defmodule Chi2fit.Distribution.Utilities do
       %Distribution.Wald{pars: [1.2, 5.4]}
 
   """
-  def sigil_M(str, ''), do: %D.Uniform{pars: to_numbers(str)}
+  def sigil_M(str, ""), do: %D.Uniform{pars: to_numbers(str)}
   def sigil_M(str, [?u|_]), do: %D.Uniform{pars: to_numbers(str)}
-  def sigil_M("", 'coin'), do: %D.Coin{}
+  def sigil_M("", "coin"), do: %D.Coin{}
   def sigil_M(str, [?c|_]), do: %D.Constant{pars: [to_number(str)]}
-  def sigil_M("", 'dgk'), do: %D.Dice{mode: :gk4}
+  def sigil_M("", "dgk"), do: %D.Dice{mode: :gk4}
   def sigil_M("", [?d|_]), do: %D.Dice{mode: :regular}
 
   def sigil_M(str, [?b|_]), do: %D.Bernoulli{pars: [to_number(str)]}
 
-  def sigil_M(str, 'erlangb') do
+  def sigil_M(str, "erlangb") do
     [rate, batches] = to_numbers(str)
     %D.Erlang{pars: [rate], batches: batches}
   end
-  def sigil_M(str, 'erlang'), do: %D.Erlang{pars: to_numbers(str)}
+  def sigil_M(str, "erlang"), do: %D.Erlang{pars: to_numbers(str)}
   def sigil_M(str, [?e|_]), do: %D.Exponential{pars: [to_number(str)]}
-  def sigil_M(str, 'pp') do
+  def sigil_M(str, "pp") do
     [rate, period] = to_numbers(str)
     %D.Poisson{pars: [rate], period: period}
   end
   def sigil_M(str, [?p|_]), do: %D.Poisson{pars: [to_number(str)]}
 
-  def sigil_M(str, 'nakagami'), do: %D.Nakagami{pars: to_numbers(str)}
+  def sigil_M(str, "nakagami"), do: %D.Nakagami{pars: to_numbers(str)}
   def sigil_M(str, [?n|_]), do: %D.Normal{pars: to_numbers(str)}
 
-  def sigil_M(str, 'wald'), do: %D.Wald{pars: to_numbers(str)}
-  def sigil_M(str, 'wishart') do
+  def sigil_M(str, "wald"), do: %D.Wald{pars: to_numbers(str)}
+  def sigil_M(str, "wishart") do
     case String.split(str,"|") do
       [dim,pars] ->  %D.Wishart{pars: to_numbers(pars), dim: to_numbers(dim)}
       [dim] -> %D.Wishart{pars: nil, dim: to_numbers(dim)}
@@ -155,18 +155,18 @@ defmodule Chi2fit.Distribution.Utilities do
   def sigil_M(str, [?w|_]), do: %D.Weibull{pars: to_numbers(str)}
 
   def sigil_M(str, [?f|_]), do: %D.Frechet{pars: to_numbers(str)}
-  def sigil_M(str, 'sz'), do: %D.SEP{pars: to_numbers(str), offset: 0.0}
+  def sigil_M(str, "sz"), do: %D.SEP{pars: to_numbers(str), offset: 0.0}
   def sigil_M(str, [?s|_]), do: %D.SEP{pars: to_numbers(str)}
 
-  def sigil_M("", 'tw'), do: %D.TracyWidom{pars: nil, type: 1}
-  def sigil_M(str, 'tw'), do: %D.TracyWidom{pars: to_numbers(str), type: 1}
-  def sigil_M("", 'tww'), do: %D.TracyWidom{pars: nil, type: 2}
-  def sigil_M(str, 'tww'), do: %D.TracyWidom{pars: to_numbers(str), type: 2}
-  def sigil_M("", 'twwww'), do: %D.TracyWidom{pars: nil, type: 4}
-  def sigil_M(str, 'twwww'), do: %D.TracyWidom{pars: to_numbers(str), type: 4}
-  
+  def sigil_M("", "tw"), do: %D.TracyWidom{pars: nil, type: 1}
+  def sigil_M(str, "tw"), do: %D.TracyWidom{pars: to_numbers(str), type: 1}
+  def sigil_M("", "tww"), do: %D.TracyWidom{pars: nil, type: 2}
+  def sigil_M(str, "tww"), do: %D.TracyWidom{pars: to_numbers(str), type: 2}
+  def sigil_M("", "twwww"), do: %D.TracyWidom{pars: nil, type: 4}
+  def sigil_M(str, "twwww"), do: %D.TracyWidom{pars: to_numbers(str), type: 4}
+
   def sigil_M(_term, modifiers) do
-    raise UnsupportedDistributionError, message: "Unsupported modifiers #{inspect modifiers}"
+    raise(UnsupportedDistributionError, message: "Unsupported modifiers #{inspect modifiers}")
   end
 
   @doc """

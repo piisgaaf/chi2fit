@@ -58,7 +58,7 @@ defimpl Enumerable, for: [
   Chi2fit.Distribution.SEP,
   Chi2fit.Distribution.BiModal,
   Chi2fit.Distribution.TriModal,
-  Chi2Fit.Distribution.TracyWidom] do
+  Chi2fit.Distribution.TracyWidom] do
 
   alias Chi2fit.Distribution, as: D
 

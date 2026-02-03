@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.Wald do
   """
 
   defstruct [:pars, name: "wald"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     name: String.t
@@ -54,8 +54,8 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Wald do
   defp wald([avg: average],lambda), do: wald(average,lambda)
 
   @spec waldCDF(number,number) :: (number -> number)
-  defp waldCDF(mu,_) when mu < 0, do: raise ArithmeticError, "Wald is only defined for positive average"
-  defp waldCDF(_,lambda) when lambda < 0, do: raise ArithmeticError, "Wald is only defined for positive shape"
+  defp waldCDF(mu,_) when mu < 0, do: raise(ArithmeticError, "Wald is only defined for positive average")
+  defp waldCDF(_,lambda) when lambda < 0, do: raise(ArithmeticError, "Wald is only defined for positive shape")
   defp waldCDF(mu,lambda) do
     fn
       x when x == 0 -> 0.0
@@ -74,12 +74,12 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Wald do
   def random(%Wald{pars: nil}), do: fn [k,lambda] -> wald(k,lambda).() end
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Wald do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

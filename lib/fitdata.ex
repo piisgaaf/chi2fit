@@ -16,14 +16,14 @@ defmodule Chi2fit.Fit do
 
   @moduledoc """
   Implements fitting a distribution function to sample data. It minimizes the liklihood function.
-  
+
   ## Asymmetric Errors
   To handle asymmetric errors the module provides three ways of determining the contribution to the likelihood function:
       `simple` - value difference of the observable and model divided by the averaged error lower and upper bounds;
       `asimple` - value difference of the observable and model divided by the difference between upper/lower bound and the observed
         value depending on whether the model is larger or smaller than the observed value;
       `linear` - value difference of the observable and model divided by a linear tranformation (See below).
-      
+
   ### 'linear': Linear transformation
   Linear transformation that:
       - is continuous in u=0,
@@ -70,16 +70,16 @@ defmodule Chi2fit.Fit do
 
   @typedoc "Tuple with chi-squared, parameter values, and parameter errors at the found minimum (see `chi2probe/4`)"
   @type chi2probe_simple :: {chi2(),[parameters::float],{[float],[float]}}
-  
+
   @typedoc "Tuple with chi-squared, parameter values, parameter errors, and list of intermediate fit results (see `chi2probe/4`)"
   @type chi2probe_saved :: {chi2(),[parameters::float],{[float],[float]},[{float,[float]}]}
-  
+
   @typedoc "Result of chi-squared probe (see &chi2probe/4)"
   @type chi2probe :: chi2probe_simple() | chi2probe_saved()
-  
+
   @typedoc "Tuple holding chi-squared value, covariance matrix, parameter values, and parameter errors at the minimum chi2fit(see `chi2fit/4`)"
   @type chi2fit :: {chi2(), cov(), parameters :: [float], errors :: [float]}
-  
+
   @arithmic_penalty 1_000_000_000
   @extreme_punishment 1_000_000
 
@@ -111,9 +111,9 @@ defmodule Chi2fit.Fit do
     end
   end
 
-  defp likelihood_contrib(:linear, y,y1,y2,f), do: dchi2_linear y,y1,y2,f
-  defp likelihood_contrib(:simple, y,y1,y2,f), do: dchi2_simple y,y1,y2,f
-  defp likelihood_contrib(:asimple, y,y1,y2,f), do: dchi2_asimple y,y1,y2,f
+  defp likelihood_contrib(:linear, y,y1,y2,f), do: dchi2_linear(y,y1,y2,f)
+  defp likelihood_contrib(:simple, y,y1,y2,f), do: dchi2_simple(y,y1,y2,f)
+  defp likelihood_contrib(:asimple, y,y1,y2,f), do: dchi2_asimple(y,y1,y2,f)
 
   @doc """
   Calculates the Chi-squared function for a list of observables.
@@ -140,7 +140,7 @@ defmodule Chi2fit.Fit do
           - asymptotically reaches -y at u->-infinity
 
   ## Examples
-  
+
       iex> fun = &(&1)
       ...> chi2 [{0,3,1}], fun
       9.0
@@ -250,17 +250,17 @@ defmodule Chi2fit.Fit do
 
   @doc """
   Probes the chi-squared surface within a certain range of the parameters.
-  
+
   It does so by randomly selecting parameter value combinations and calculate the chi-squared for the list
   of observations based on the selected parameter values. This routine is used to roughly probe the chi-squared
   surface and perform more detailed and expensive calculations to precisely determine the minimum by `chi2fit/4`.
-  
+
   Returns the minimum chi-squared found, the parameter values, and all probes that resulted in chi-squared difference
   less than 1 with the minimum. The parameter values found in this set correspond with the errors in determining
   the parameters.
-  
+
   ## Options
-  
+
       `num` or `probes` - the number of points to calculate,
       `mark` - progress indicator: a keyword list with keys `m`, `c`, `x`, and `*`; the value must be a call back
       function taking zero arguments. These are called when 1000, 100, 10, probes have been done. The value of
@@ -286,7 +286,7 @@ defmodule Chi2fit.Fit do
       |> Tuple.to_list
       |> Enum.map(fn plist -> [ Enum.min(plist),Enum.max(plist) ] end)
       |> List.to_tuple}
-    if options[:saved?], do: Tuple.append(result,saved), else: result
+    if options[:saved?], do: Tuple.to_list(result) ++ saved, else: result
   end
   defp chi2probe(observables, parranges, {fun,penalties}, num, best, options) do
     if options[:progress] do
@@ -301,7 +301,7 @@ defmodule Chi2fit.Fit do
       smoothing = options[:smoothing] || false
       parameters = parranges |> sample
       chi2 = chi2smooth observables,parameters,{fun,penalties},smoothing,options
-      if options[:surfacefile], do: IO.puts options[:surfacefile], "#{Enum.join(parameters,",")},#{chi2}"
+      if options[:surfacefile], do: IO.puts(options[:surfacefile], "#{Enum.join(parameters,",")},#{chi2}")
       if options[:save], do: options[:save].(parameters,chi2)
       chi2probe(observables, parranges, {fun,penalties}, num-1,
         case best do
@@ -358,13 +358,13 @@ defmodule Chi2fit.Fit do
 
   @doc """
   Fits observables to a known model.
-  
+
   Returns the found minimum chi-squared value, covariance matrix, gradient at the minimum, and the corresponding parameter values including
   error estimates.
   For a good fit check the following:
       `chi2 per degree of freedom` - this should be about 1 or less,
       `gradient` - at the minimum the gradient should be zero at all directions.
-  
+
   For asymmetric errors use the option `model` equal to `linear`.
   Rough chi-squared surfaces or if numerically unstable, use the option `smoothing` set to `true`.
 
@@ -388,7 +388,7 @@ defmodule Chi2fit.Fit do
     chi2fit observables, model, max, {nil,probes}, options
   end
 
-  defp chi2fit(observables, {parameters, fun}, max, data, options), do: chi2fit observables, {parameters, fun, &nopenalties/2}, max, data, options
+  defp chi2fit(observables, {parameters, fun}, max, data, options), do: chi2fit(observables, {parameters, fun, &nopenalties/2}, max, data, options)
   defp chi2fit(observables, {parameters, fun, penalties}, 0, {{cov,_error}, params}, options) do
     chi = chi2(observables, &(fun.(&1,parameters)), &(penalties.(&1,parameters)), options)
     ranges = params
@@ -559,13 +559,13 @@ defmodule Chi2fit.Fit do
                 end
             rescue
               ArithmeticError ->
-                Logger.warn "chi2fit: arithmetic error [#{inspect vec}] [#{inspect __STACKTRACE__}]"
+                Logger.warning "chi2fit: arithmetic error [#{inspect vec}] [#{inspect __STACKTRACE__}]"
                 {:cont, {pars,oldchi,minimum,data}}
             end
         end)
 
       cond do
-        Enum.all?(delta, &(&1 == 0)) -> 
+        Enum.all?(delta, &(&1 == 0)) ->
           chi2fit observables, {params,fun,penalties}, 0, {{cov,error},ranges}, options
 
         true ->
@@ -573,15 +573,15 @@ defmodule Chi2fit.Fit do
       end
     rescue
       ArithmeticError ->
-        Logger.warn "chi2: arithmetic error"
+        Logger.warning "chi2: arithmetic error"
         IO.puts "#{inspect __STACKTRACE__}"
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
     catch
       {:impossible_inverse,error} ->
-        Logger.warn "chi2: impossible inverse: #{error}"
+        Logger.warning "chi2: impossible inverse: #{error}"
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
       {:failed_to_reach_tolerance,_pars,error} ->
-        Logger.warn "chi2: failed to reach tolerance: #{error}"
+        Logger.warning "chi2: failed to reach tolerance: #{error}"
         chi2fit observables, {parameters,fun,penalties}, 0, {preverror,ranges}, options
     end
 
@@ -598,7 +598,7 @@ defmodule Chi2fit.Fit do
     |> Enum.take(2)
     |> List.to_tuple
   end
-  
+
   @doc """
   Finds the point in the data where the chi-squared has a jump when fitting the model
   """
@@ -617,7 +617,7 @@ defmodule Chi2fit.Fit do
   """
   @spec find_all(nil | [number],options :: Keyword.t) :: [[float()]]
   def find_all(data,options), do: find_all(data,[],options)
-  
+
   defp find_all(data, acc, options)
   defp find_all(nil, acc, _options), do: Enum.reverse(acc)
   defp find_all(data, _acc, options) do

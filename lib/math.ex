@@ -20,7 +20,7 @@ defmodule Chi2fit.Math do
 
   @doc """
   Calculates the partial derivative of a function and returns the value.
-  
+
   ## Examples
 
       The function value at a point:
@@ -55,9 +55,9 @@ defmodule Chi2fit.Math do
 
   @doc """
   Calculates the jacobian of the function at the point `x`.
-  
+
   ## Examples
-  
+
       iex> jacobian([2.0,3.0], fn [x,y] -> x*y end) |> Enum.map(&Float.round(&1))
       [3.0, 2.0]
 
@@ -173,7 +173,7 @@ defmodule Chi2fit.Math do
 
     {result,acc} = func.(init)
     {new,last,error,_} = results |> Enum.reduce({[],result,nil,factor}, fn
-        _prev,{acc,item,0.0,order} ->
+        _prev,{acc,item,+0.0,order} ->
           {acc,item,0.0,order}
         prev,{acc,item,_,order} ->
           diff = (order*item - prev)/(order-1.0)
@@ -191,7 +191,7 @@ defmodule Chi2fit.Math do
 
   @doc """
   Newton-Fourier method for locating roots and returning the interval where the root is located.
-  
+
   See [https://en.wikipedia.org/wiki/Newton%27s_method#Newton.E2.80.93Fourier_method]
   """
   @spec newton(a::float,b::float,func::((x::float)->float),maxiter::non_neg_integer,options::Keyword.t) :: {float, {float,float}, {float,float}}
@@ -272,24 +272,24 @@ defmodule Chi2fit.Math do
               xplus = x*(1.0+h)
               xmin = x*(1.0-h)
               dx = xplus-xmin
-              [{{xplus,n-1,factor*dx}},{xmin,n-1,factor*dx}] |> expand_pars(h) |> List.flatten 
+              [{{xplus,n-1,factor*dx}},{xmin,n-1,factor*dx}] |> expand_pars(h) |> List.flatten
             ({{x,n}}) when n>0 ->
               xplus = x*(1.0+h)
               xmin = x*(1.0-h)
               dx = xplus-xmin
-              [{{xplus,n-1,dx}},{xmin,n-1,dx}] |> expand_pars(h) |> List.flatten 
+              [{{xplus,n-1,dx}},{xmin,n-1,dx}] |> expand_pars(h) |> List.flatten
             ({x,0,factor}) -> {x,0,factor}
             ({x,0}) -> {x,0,1.0}
             ({x,n,factor}) when n>0 ->
               xplus = x*(1.0+h)
               xmin = x*(1.0-h)
               dx = xplus-xmin
-              [{xplus,n-1,factor*dx},{{xmin,n-1,factor*dx}}] |> expand_pars(h) |> List.flatten 
+              [{xplus,n-1,factor*dx},{{xmin,n-1,factor*dx}}] |> expand_pars(h) |> List.flatten
             ({x,n}) when n>0 ->
               xplus = x*(1.0+h)
               xmin = x*(1.0-h)
               dx = xplus-xmin
-              [{xplus,n-1,dx},{{xmin,n-1,dx}}] |> expand_pars(h) |> List.flatten 
+              [{xplus,n-1,dx},{{xmin,n-1,dx}}] |> expand_pars(h) |> List.flatten
             (x) when is_number(x) -> {x,0,1.0}
           end)
   end

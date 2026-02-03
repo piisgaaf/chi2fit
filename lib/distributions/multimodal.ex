@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.MultiModal do
   """
 
   defstruct [:weights,:distribs,name: "multimodal"]
-  
+
   @type t() :: %__MODULE__{
     weights: [number()] | nil,
     distribs: [Distribution.t()] | nil,
@@ -36,15 +36,15 @@ defmodule Chi2fit.Distribution.MultiModal do
 
 end
 
-defimpl Chi2fit.Distribution, for: Distribution.MultiModal do
+defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.MultiModal do
   alias Chi2fit.Distribution, as: D
   alias D.MultiModal
 
-  def skewness(%MultiModal{distribs: nil}), do: raise ArithmeticError, "Skewness not supported for MultiModal distribution"
-  def kurtosis(%MultiModal{distribs: nil}), do: raise ArithmeticError, "Kurtosis not supported for MultiModal distribution"
-  
+  def skewness(%MultiModal{distribs: nil}), do: raise(ArithmeticError, "Skewness not supported for MultiModal distribution")
+  def kurtosis(%MultiModal{distribs: nil}), do: raise(ArithmeticError, "Kurtosis not supported for MultiModal distribution")
+
   def size(%MultiModal{distribs: distribs}), do: length(distribs)-1 + (distribs|>Enum.map(&D.size(&1))|>Enum.sum)
-  
+
   def cdf(%MultiModal{weights: nil, distribs: distribs}) do
     fn x,list when is_list(list) ->
       {weights,parameters} = Enum.split(list,length(distribs))
@@ -54,12 +54,12 @@ defimpl Chi2fit.Distribution, for: Distribution.MultiModal do
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip(MultiModal.weights(weights))
-      |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*D.cdf(d).(x,pars) end)
+      |> Enum.map(fn {tup,p} -> Tuple.to_list(tup) ++ [p] end)
+      |> Enum.map(fn [d,pars,p] -> p*D.cdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
-  
+
   def pdf(%MultiModal{weights: nil, distribs: distribs}) do
     fn x,list when is_list(list) ->
       {weights,parameters} = Enum.split(list,length(distribs))
@@ -69,8 +69,8 @@ defimpl Chi2fit.Distribution, for: Distribution.MultiModal do
       |> elem(0)
       |> Enum.reverse()
       |> Enum.zip(MultiModal.weights(weights))
-      |> Enum.map(fn {tup,p} -> Tuple.append(tup,p) end)
-      |> Enum.map(fn {d,pars,p} -> p*D.pdf(d).(x,pars) end)
+      |> Enum.map(fn {tup,p} -> Tuple.to_list(tup) ++ [p] end)
+      |> Enum.map(fn [d,pars,p] -> p*D.pdf(d).(x,pars) end)
       |> Enum.sum
     end
   end
@@ -83,13 +83,13 @@ defimpl Chi2fit.Distribution, for: Distribution.MultiModal do
   end
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.MultiModal do
   import Inspect.Algebra
   alias Chi2fit.Distribution.MultiModal
-  
+
   def inspect(dict, opts) do
     case {dict.weights,dict.distribs} do
       {_,nil} ->

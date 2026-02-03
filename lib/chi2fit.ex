@@ -94,7 +94,7 @@ defmodule Chi2fit.Cli do
 
     * `tolerance` - The target precision for Romberg integration
     * `itermax` - The maximum number of iterations to use in Romberg integration
-    
+
   Gauss integration supports the option:
 
     * `npoints` - The number of points to use in Gauss integration (4, 8, 16, and 32)
@@ -237,7 +237,7 @@ defmodule Chi2fit.Cli do
       {chi2, parameters,errors} = probe data, {model,ranges}, options
       {data,model, {chi2, parameters,errors}}
     rescue
-      _e in D.UnsupportedDistributionError ->
+      _e in D.Utilities.UnsupportedDistributionError ->
         IO.puts :stderr, "ERROR: Unsupported distribution '#{options[:name]}'"
         System.halt 1
     end
@@ -460,7 +460,7 @@ defmodule Chi2fit.Cli do
     options = try do
       options |> validate(filename) |> add_defaults
     rescue
-      D.UnsupportedDistributionError ->
+      D.Utilities.UnsupportedDistributionError ->
         IO.puts :stderr, "ERROR: Unsupported distribution '#{options[:cdf]}'"
         System.halt 1
     end

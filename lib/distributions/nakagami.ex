@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.Nakagami do
   """
 
   defstruct [:pars, name: "nakagami"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     name: String.t
@@ -50,7 +50,7 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Nakagami do
         Exboost.Math.tgamma_lower(shape,shape*(x/scale)*(x/scale))
     end
   end
-  defp nakagamiCDF(_scale,_shape), do: raise ArithmeticError, "Nakagami is only defined for positive scale and shape"
+  defp nakagamiCDF(_scale,_shape), do: raise(ArithmeticError, "Nakagami is only defined for positive scale and shape")
 
   def skewness(%Nakagami{pars: nil}) do
     fn [_scale,shape] ->
@@ -75,19 +75,19 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Nakagami do
     end
   end
   def size(%Nakagami{}), do: 2
-  
+
   def cdf(%Nakagami{pars: nil}), do: fn x, [scale,shape] -> nakagamiCDF(scale,shape).(x) end
 
-  def pdf(%Nakagami{pars: nil}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Nakagami distribution"
+  def pdf(%Nakagami{pars: nil}), do: raise(D.FunctionNotSupportedError, message: "pdf is not supported for the Nakagami distribution")
   def random(%Nakagami{pars: [scale,shape]}), do: nakagami(scale, shape).()
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Nakagami do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

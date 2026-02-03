@@ -20,13 +20,12 @@ defmodule Chi2fit.Mixfile do
     [
       app: :chi2fit,
       version: "2.0.2",
-      elixir: "~> 1.13",
+      elixir: "~> 1.19",
       start_permanent: Mix.env == :prod,
       build_embedded: Mix.env == :prod,
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
-      preferred_cli_env: preferred_cli_env(),
       compilers: Mix.compilers ++ if(Mix.env == :docs, do: [:md], else: []), # Add the make compiler
       test_coverage: [tool: ExCoveralls],
 
@@ -52,17 +51,16 @@ defmodule Chi2fit.Mixfile do
   defp deps do
     [
       {:exboost, "~> 0.2"},
-      {:graphvix,"~> 1.0"},
-      {:csv, "~> 2.3"},
-      {:timex, "~> 3.7", runtime: false},
-      {:stream_data, "~> 0.4"},
-      {:gnuplot, "~> 1.19.104"},
-      {:poison, "~> 4.0", only: :test, override: true},
-      {:ielixir, github: "pprzetacznik/IElixir", only: :nb, runtime: false},
+      {:graphvix,"~> 1.1"},
+      {:csv, "~> 3.2"},
+      {:timex, "~> 3.7.13", runtime: false},
+      {:stream_data, "~> 1.2"},
+      {:gnuplot, "~> 1.22"},
+      {:ielixir, "~> 1.0", only: :nb, runtime: false},
       {:tzdata, "~> 1.1", runtime: false},
       {:excoveralls, "~> 0.11.0", only: :test},
-      {:ex_doc, "~> 0.24", only: :docs, runtime: false},
-      {:credo, "~> 1.5", only: :dev},
+      {:ex_doc, "~> 0.40", runtime: false},
+      {:credo, "~> 1.7", only: :dev},
       {:mix_test_watch, "~> 1.0", only: :test}
     ]
   end
@@ -104,16 +102,18 @@ defmodule Chi2fit.Mixfile do
     ]
   end
 
-  defp preferred_cli_env() do
+  def cli do
     [
-      test: :test,
-      test_all: :test,
-      test_perf: :test,
-      test_notebook: :test,
-      coveralls: :test,
-      docs: :docs,
-      "coveralls.html": :test,
-      "hex.publish": :docs,
+      preferred_envs: [
+        test: :test,
+        test_all: :test,
+        test_perf: :test,
+        test_notebook: :test,
+        coveralls: :test,
+        docs: :docs,
+        "coveralls.html": :test,
+        "hex.publish": :docs,
+      ]
     ]
   end
 

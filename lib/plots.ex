@@ -21,7 +21,7 @@ defmodule Chi2fit.Gnuplotlib do
   alias Gnuplot, as: G
   alias Chi2fit.Statistics, as: S
   alias Chi2fit.Utilities, as: U
-  
+
   @imgpath "/app/notebooks/images"
   @terminal "pngcairo"
   @pngoptions ~w(set terminal #{@terminal} transparent enhanced)a
@@ -45,7 +45,7 @@ defmodule Chi2fit.Gnuplotlib do
 
   @doc """
   Draws a histogram of the data.
-  
+
   ## Options
 
       `:bin` - the size of the bins to use,
@@ -63,9 +63,9 @@ defmodule Chi2fit.Gnuplotlib do
 
     terminal(options)
       ++ [
-            ['width=#{binsize}'],
-            ['hist(x,width)=width*floor(x-1)+width/2.0'],
-            [:set, :boxwidth, 'width*0.9'],
+            ["width=#{binsize}"],
+            ["hist(x,width)=width*floor(x-1)+width/2.0"],
+            [:set, :boxwidth, "width*0.9"],
             [:set, :style, :fill, :solid, 0.5],
             if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
             if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
@@ -73,16 +73,16 @@ defmodule Chi2fit.Gnuplotlib do
             if(options[:xlabel], do: [:set, :xlabel, options[:xlabel]], else: [:set, :xlabel]),
             if(options[:ylabel], do: [:set, :ylabel, options[:ylabel], :rotate, :by, 90], else: [:set, :ylabel]),
 
-            [:plot, "-", :u, '(hist($1,width)):2', :smooth, :freq, :w, :boxes, :lc, 'rgb"green"', :notitle]
+            [:plot, "-", :u, "(hist($1,width)):2", :smooth, :freq, :w, :boxes, :lc, "rgb\"green\"", :notitle]
           ]
       |> do_output([hist], options)
   end
 
   @doc """
   Draws a graph of the empirical CDF as steps, the data points with error bars, and the (fitted) function.
-  
+
   ## Options
-  
+
       `:bin` - the size of the bins to use,
       `:plottitle` - the title of the plot,
       `:xrange`- the range for the x-values to use in the format '[x1:x2]'
@@ -130,7 +130,7 @@ defmodule Chi2fit.Gnuplotlib do
         ~w(set key left top)a,
         if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
         if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
-        if(options[:yrange], do: [:set, :yrange, options[:yrange]], else: [:set,:yrange,'[0:1.2]']),
+        if(options[:yrange], do: [:set, :yrange, options[:yrange]], else: [:set,:yrange,"[0:1.2]"]),
         if(options[:xlabel], do: [:set, :xlabel, options[:xlabel]], else: [:set, :xlabel]),
         if(options[:ylabel], do: [:set, :ylabel, options[:ylabel], :rotate, :by, 90], else: [:set, :ylabel]),
 
@@ -138,10 +138,10 @@ defmodule Chi2fit.Gnuplotlib do
                 ~w('-' u 1:2 w steps ls 1 notitle)a,
                 ~w('' u 1:2 w points ls 1 notitle)a,
                 ~w('' u 1:2:3:4 w yerrorbars ls 2 title 'Empirical CDF')a,
-                if(options[:func], do: ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]], else: [])
+                if(options[:func], do: ["", :u, "1:2", :w, :lines, :ls, 3, :title, options[:title]], else: [])
             ] ++ case options[:bounds] do
                   {_,_} -> [
-                    ["", :u, '1:2:3', :lc, :rgb, "grey", :w, :filledcurve, :closed, :title, "Error bounds"]
+                    ["", :u, "1:2:3", :lc, :rgb, "grey", :w, :filledcurve, :closed, :title, "Error bounds"]
                   ]
                   _else -> []
                 end
@@ -153,7 +153,7 @@ defmodule Chi2fit.Gnuplotlib do
 
   @doc """
   Draws a graph of the PDF.
-  
+
   ## Options
 
       `:bin` - the size of the bins to use,
@@ -175,7 +175,7 @@ defmodule Chi2fit.Gnuplotlib do
     offset = options[:offset] || 0
     noerrors = options[:noerrors] || false
     maxx = data |> Enum.max |> Kernel.*(1.2)
-    
+
     hist = data
     |> S.make_histogram(bin,offset)
     |> Enum.map(&Tuple.to_list/1)
@@ -185,10 +185,10 @@ defmodule Chi2fit.Gnuplotlib do
 
     terminal(options)
       ++ [
-        ['count=#{length(data)}'],
-        ['width=#{bin}'],
-        ['hist(x,width)=width*floor((x-1)/width)+width/2.0'],
-        [:set, :boxwidth, 'width*0.9'],
+        ["count=#{length(data)}"],
+        ["width=#{bin}"],
+        ["hist(x,width)=width*floor((x-1)/width)+width/2.0"],
+        [:set, :boxwidth, "width*0.9"],
         [:set, :style, :fill, :solid, 0.5],
         if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
         if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
@@ -199,13 +199,13 @@ defmodule Chi2fit.Gnuplotlib do
         [:plot, G.list(
                 [~w|'-' u (hist($1,width)):($2/count/#{bin}) smooth freq w boxes lc rgb "green" title "Empirical PDF"|a]
                 ++ if(noerrors, do: [], else: [~w|'-' u (hist($1,width)):($2/count/#{bin}):(sqrt($2)/count/#{bin}) w errorbars ls 3 notitle|a])
-                ++ [ ["", :u, '1:2', :w, :lines, :ls, 3, :title, options[:title]] ]
+                ++ [ ["", :u, "1:2", :w, :lines, :ls, 3, :title, options[:title]] ]
             )
         ]
       ]
       |> do_output(args, options)
   end
-  
+
   @doc """
   Plots severals graphs in a multi-plot.
   """
@@ -218,7 +218,7 @@ defmodule Chi2fit.Gnuplotlib do
     [
       terminal(options)
       ++ [
-           [:set, :multiplot, :layout, '#{rows},#{cols}'] ++ (if options[:title], do: [:title, options[:title], :font, ",14"], else: []),
+           [:set, :multiplot, :layout, "#{rows},#{cols}"] ++ (if options[:title], do: [:title, options[:title], :font, ",14"], else: []),
        ]
     ]
     |> Enum.concat(commands)
@@ -230,14 +230,14 @@ defmodule Chi2fit.Gnuplotlib do
   def surface(data, options) do
     dgrid3d = options[:dgrid3d] || ""
     using = options[:parameters] || "1:2"
-    
+
     terminal(options)
       ++ [
-        ['set cntrparam levels 50'],
-        ['set contour'],
-        ['set dgrid3d #{dgrid3d}'],
-        ['unset key'],
-        ['set cntrlabel start 2 font ",7"'],
+        ["set cntrparam levels 50"],
+        ["set contour"],
+        ["set dgrid3d #{dgrid3d}"],
+        ["unset key"],
+        ["set cntrlabel start 2 font \",7\""],
 
         if(options[:plottitle], do: [:set, :title, options[:plottitle]], else: []),
         if(options[:xrange], do: [:set, :xrange, options[:xrange]], else: []),
@@ -257,7 +257,7 @@ defmodule Chi2fit.Gnuplotlib do
   ## Local functions
   ##
   #############################################################################
-  
+
   defp make_terminal(options) do
     List.flatten([
       @pngoptions,

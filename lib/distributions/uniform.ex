@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.Uniform do
   """
 
   defstruct [:pars, name: "uniform"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | {number, number},
     name: String.t
@@ -47,12 +47,12 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Uniform do
     min + (max-min)*:rand.uniform()
   end
 
-  def skewness(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "skewness is not supported for the Uniform distribution"
-  def kurtosis(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "kurtosis is not supported for the Uniform distribution"
+  def skewness(%Uniform{}), do: raise(D.FunctionNotSupportedError, message: "skewness is not supported for the Uniform distribution")
+  def kurtosis(%Uniform{}), do: raise(D.FunctionNotSupportedError, message: "kurtosis is not supported for the Uniform distribution")
   def size(%Uniform{}), do: 1
 
-  def cdf(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "cdf is not supported for the Uniform distribution"
-  def pdf(%Uniform{}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Uniform distribution"
+  def cdf(%Uniform{}), do: raise(D.FunctionNotSupportedError, message: "cdf is not supported for the Uniform distribution")
+  def pdf(%Uniform{}), do: raise(D.FunctionNotSupportedError, message: "pdf is not supported for the Uniform distribution")
 
   @doc """
   ## Examples:
@@ -70,21 +70,21 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Uniform do
   def random(%Uniform{pars: r=%Range{}}), do: uniform(r).()
   def random(%Uniform{pars: list}), do: uniform(list).()
   def random(%Uniform{}), do: uniform([]).()
-  
+
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Uniform do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->
         "#Uniform<>"
       {min,max} ->
         concat ["#Uniform<", to_doc("#{min}..#{max}", opts), ">"]
-      min..max ->
+      min..max//_ ->
         concat ["#Uniform<", to_doc("#{min}..#{max}", opts), ">"]
       list ->
         concat ["#Uniform<", to_doc(list, opts), ">"]

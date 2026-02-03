@@ -43,23 +43,23 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Dice do
   defp dice_gk4([avg: avg]), do: dice_gk4(avg)
   defp dice_gk4(avg), do: %D.Uniform{pars: [avg*3,avg*4,avg*4,avg*5,avg*5,avg*6]}
 
-  def skewness(%Dice{}), do: raise D.FunctionNotSupportedError, message: "skewness is not supported for the Dice distribution"
-  def kurtosis(%Dice{}), do: raise D.FunctionNotSupportedError, message: "kurtosis is not supported for the Dice distribution"
+  def skewness(%Dice{}), do: raise(D.FunctionNotSupportedError, message: "skewness is not supported for the Dice distribution")
+  def kurtosis(%Dice{}), do: raise(D.FunctionNotSupportedError, message: "kurtosis is not supported for the Dice distribution")
   def size(%Dice{}), do: 0
 
-  def cdf(%Dice{}), do: raise D.FunctionNotSupportedError, message: "cdf is not supported for the Dice distribution"
-  def pdf(%Dice{}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Dice distribution"
+  def cdf(%Dice{}), do: raise(D.FunctionNotSupportedError, message: "cdf is not supported for the Dice distribution")
+  def pdf(%Dice{}), do: raise(D.FunctionNotSupportedError, message: "pdf is not supported for the Dice distribution")
 
   def random(%Dice{mode: :regular}), do: D.random(dice([]))
   def random(%Dice{mode: :gk4}), do: D.random(dice_gk4([]))
-  
+
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Dice do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.mode do
       nil ->

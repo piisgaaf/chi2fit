@@ -74,7 +74,7 @@ defmodule Chi2fit.Statistics do
         acc |> Map.update(if(number < offset, do: 0, else: trunc(Float.floor(1 + (number - offset) / binsize))), 1, &(1 + &1))
     end) |> Enum.reduce([], fn (pair, acc) -> [pair|acc] end) |> Enum.sort_by(fn {k, _v} -> k end)
   end
-  def make_histogram(_list, _binsize, _offset), do: raise ArgumentError, message: "binsize must be larger than bin offset"
+  def make_histogram(_list, _binsize, _offset), do: raise(ArgumentError, message: "binsize must be larger than bin offset")
 
 
   defmodule UnknownSampleErrorAlgorithmError do
@@ -465,20 +465,20 @@ defmodule Chi2fit.Statistics do
       :cont ->
         file = options |> Keyword.fetch!(:filename)
         {:ok,:storage} = :dets.open_file :storage, type: :set, file: file, auto_save: 1000, estimated_no_objects: total
-        objects = :dets.select(:storage, [{{:_,:'$1'},[],[:'$1']}])
+        objects = :dets.select(:storage, [{{:_,:"$1"},[],[:"$1"]}])
         {length(objects)+1,objects}
       _ ->
         {1,[]}
     end
 
-    if start>total, do: raise ArgumentError, message: "start cannot be larger than the total"
+    if start>total, do: raise(ArgumentError, message: "start cannot be larger than the total")
 
     1..total |> Enum.reduce(continuation, fn (k,acc) ->
       try do
         ## Evaluate the function
         result = data |> Enum.map(fn _ -> Enum.random(data) end) |> fun.(k)
 
-        if safe, do: true = :dets.insert_new :storage, {k,result}
+        if safe, do: true = :dets.insert_new(:storage, {k,result})
 
         [result|acc]
       rescue
@@ -590,7 +590,7 @@ defmodule Chi2fit.Statistics do
           {y,ylow,yhigh}
 
         other ->
-          raise UnknownSampleErrorAlgorithmError, message: "unknown algorithm '#{inspect other}'"
+          raise(UnknownSampleErrorAlgorithmError, message: "unknown algorithm '#{inspect other}'")
       end
     end
   end

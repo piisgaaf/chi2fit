@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.Frechet do
   """
 
   defstruct [:pars, name: "frechet"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     name: String.t
@@ -52,7 +52,7 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Frechet do
         :math.exp(-:math.pow(x/scale,-shape))
     end
   end
-  defp frechetCDF(_scale,_shape), do: raise ArithmeticError, "Fréchet is only defined for positive scale and shape"
+  defp frechetCDF(_scale,_shape), do: raise(ArithmeticError, "Fréchet is only defined for positive scale and shape")
 
   def skewness(%Frechet{pars: nil}) do
     fn [_scale,shape] ->
@@ -72,19 +72,19 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Frechet do
     end
   end
   def size(%Frechet{}), do: 2
-  
+
   def cdf(%Frechet{pars: nil}), do: fn x, [scale,shape] -> frechetCDF(scale,shape).(x) end
 
-  def pdf(%Frechet{pars: nil}), do: raise D.FunctionNotSupportedError, message: "pdf is not supported for the Frechet distribution"
+  def pdf(%Frechet{pars: nil}), do: raise(D.FunctionNotSupportedError, message: "pdf is not supported for the Frechet distribution")
   def random(%Frechet{pars: [scale,shape]}), do: frechet(scale, shape).()
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Frechet do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

@@ -19,7 +19,7 @@ defmodule Chi2fit.Distribution.Weibull do
   """
 
   defstruct [:pars, name: "weibull"]
-  
+
   @type t() :: %__MODULE__{
     pars: [number()] | nil,
     name: String.t
@@ -48,14 +48,14 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Weibull do
       beta*:math.pow(-:math.log(u),1.0/alpha)
     end
   end
-  
+
   @spec weibullCDF(number,number) :: (number -> number)
-  defp weibullCDF(k,_) when k<0, do: raise ArithmeticError, "Weibull is only defined for positive shape"
-  defp weibullCDF(_,lambda) when lambda<0, do: raise ArithmeticError, "Weibull is only defined for positive scale"
+  defp weibullCDF(k,_) when k<0, do: raise(ArithmeticError, "Weibull is only defined for positive shape")
+  defp weibullCDF(_,lambda) when lambda<0, do: raise(ArithmeticError, "Weibull is only defined for positive scale")
   defp weibullCDF(k,lambda) when is_number(k) and is_number(lambda) do
     fn
       0 -> 0.0
-      0.0 -> 0.0
+      +0.0 -> 0.0
       x when x<0 -> 0.0
       x ->
         lg = :math.log(x/lambda)*k
@@ -73,19 +73,20 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Weibull do
   end
 
   @spec weibullPDF(number,number) :: (number -> number)
-  defp weibullPDF(k,_) when k<0, do: raise ArithmeticError, "Weibull is only defined for positive shape"
-  defp weibullPDF(_,lambda) when lambda<0, do: raise ArithmeticError, "Weibull is only defined for positive scale"
+  defp weibullPDF(k,_) when k<0, do: raise(ArithmeticError, "Weibull is only defined for positive shape")
+  defp weibullPDF(_,lambda) when lambda<0, do: raise(ArithmeticError, "Weibull is only defined for positive scale")
   defp weibullPDF(k,lambda) when is_number(k) and is_number(lambda) do
     fn
       0 -> 0.0
-      0.0 -> 0.0
+      +0.0 -> 0.0
       x when x<0 -> 0.0
       x ->
         t = :math.pow(x/lambda, k)
         k*t/x*:math.exp( -t )
     end
   end
-  
+
+  @spec skewness(%Weibull{}) :: ([number] -> float)
   def skewness(%Weibull{pars: nil}) do
     fn [k,lambda] ->
       mu = lambda*tgamma(1+1/k)
@@ -120,12 +121,12 @@ defimpl Chi2fit.Distribution, for: Chi2fit.Distribution.Weibull do
   def random(%Weibull{pars: nil}), do: fn [k,lambda] -> weibull(k,lambda).() end
 
   def name(model), do: model.name
-  
+
 end
 
 defimpl Inspect, for: Chi2fit.Distribution.Weibull do
   import Inspect.Algebra
-  
+
   def inspect(dict, opts) do
     case dict.pars do
       nil ->

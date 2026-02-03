@@ -16,11 +16,11 @@ defmodule Chi2fit.Utilities do
 
   @moduledoc """
   Provides various utilities:
-  
+
     * Bootstrapping
     * Creating Cumulative Distribution Functions / Histograms from sample data
     * Autocorrelation coefficients
-  
+
   """
 
   alias Chi2fit.Distribution, as: D
@@ -29,7 +29,7 @@ defmodule Chi2fit.Utilities do
   alias Chi2fit.Math, as: M
   alias Chi2fit.Matrix, as: Mx
   alias Chi2fit.Statistics, as: S
-  
+
   @typedoc "Average and standard deviationm (error)"
   @type avgsd :: {avg :: float, sd :: float}
 
@@ -37,7 +37,7 @@ defmodule Chi2fit.Utilities do
   Reads data from a file specified by `filename` and returns a stream with the data parsed as floats.
 
   It expects a single data point on a separate line and removes entries that:
-  
+
     * are not floats, and
     * smaller than zero (0)
 
@@ -108,7 +108,7 @@ defmodule Chi2fit.Utilities do
   end
   def unzip(list=[_|_]) do
     0..tuple_size(hd(list))-1
-    |> Enum.reduce({},fn i,tup -> Tuple.append(tup,list |> Enum.map(&elem(&1,i))) end)
+    |> Enum.reduce({},fn i,tup -> Tuple.to_list(tup) ++ (list |> Enum.map(&elem(&1,i))) end)
   end
 
   ##
@@ -117,7 +117,7 @@ defmodule Chi2fit.Utilities do
 
   @doc """
   Outputs and formats the errors that result from a call to `Chi2fit.Fit.chi2/4`
-  
+
   Errors are tuples of length 2 and larger: `{[min1,max1], [min2,max2], ...}`.
   """
   @spec puts_errors(device :: IO.device(), errors :: tuple()) :: none()
@@ -237,10 +237,10 @@ defmodule Chi2fit.Utilities do
       {row, _} ->
         IO.puts row |> Enum.with_index(1) |> Enum.map(fn {str,i} -> String.pad_trailing(str, map[i]) end) |> Enum.join("|")
     end)
-    
+
     rows
   end
-  
+
   defp _to_string(list) when is_list(list), do: list |> Enum.map(&_to_string/1)
   defp _to_string(tuple) when is_tuple(tuple), do: tuple |> Tuple.to_list |> _to_string()
   defp _to_string(string) when is_binary(string), do: string
@@ -255,10 +255,10 @@ defmodule Chi2fit.Utilities do
 
       iex> subsequences []
       []
-  
+
       iex> subsequences [:a, :b]
       [[:a], [:a, :b]]
-  
+
       iex> Stream.cycle([1,2,3]) |> subsequences |> Enum.take(4)
       [[1], [1, 2], [1, 2, 3], [1, 2, 3, 1]]
 
