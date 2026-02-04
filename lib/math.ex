@@ -65,7 +65,7 @@ defmodule Chi2fit.Math do
   @spec jacobian(x :: [float], (([float])->float)) :: [float]
   def jacobian(x, fun, options \\ []) do
     jacfun = &(jacobian(x, &1, fun, options))
-    Enum.reduce(length(x)..1, [], fn (k,acc) -> [jacfun.(k)|acc] end)
+    Enum.reduce(length(x)..1//-1, [], fn (k,acc) -> [jacfun.(k)|acc] end)
   end
 
   ## TODO: implement gauss-kronrad integration (progressive gauss)

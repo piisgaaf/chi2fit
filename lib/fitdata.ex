@@ -187,7 +187,7 @@ defmodule Chi2fit.Fit do
 
   defp gamma(observables, {parameters, fun, penalties, options}) do
     gammafun = &(gamma(&1,observables, {parameters, fun, penalties, options}))
-    Enum.reduce(length(parameters)..1, [], fn (k,acc)->[gammafun.(k)|acc] end)
+    Enum.reduce(length(parameters)..1//-1, [], fn (k,acc)->[gammafun.(k)|acc] end)
   end
 
   @spec gamma(pos_integer, observables, model) :: float
@@ -199,9 +199,9 @@ defmodule Chi2fit.Fit do
 
   defp alpha(observables, {parameters, fun, penalties, options}) do
     alphafun = &(alpha({&1,&2}, observables, {parameters, fun, penalties,options}))
-    Enum.reduce(length(parameters)..1, [], fn
+    Enum.reduce(length(parameters)..1//-1, [], fn
       (k,acc) -> [
-        Enum.reduce(length(parameters)..1, [], fn
+        Enum.reduce(length(parameters)..1//-1, [], fn
           (j,acc)->[alphafun.(k,j)|acc] end)
         |acc]
       end)

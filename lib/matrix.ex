@@ -160,13 +160,13 @@ defmodule Chi2fit.Matrix do
       iex> inverse [[1,2],[3,4]]
       {:ok,[[-2.0, 1.0], [1.5, -0.5]]}
 
-      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]]) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,10)) end)
+      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]]) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Chi2fit.Utilities.normalize_zero(Float.round(&1,10))) end)
       [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
 
-      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], algorithm: :soleymani) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,14)) end)
+      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], algorithm: :soleymani) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Chi2fit.Utilities.normalize_zero(Float.round(&1,14))) end)
       [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
 
-      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], tolerance: 1.0e-15) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Float.round(&1,14)) end)
+      iex> inverse([[3,2,0],[0,0,1],[2,-2,1]], tolerance: 1.0e-15) |> elem(1) |> Enum.map(fn row -> Enum.map(row, & Chi2fit.Utilities.normalize_zero(Float.round(&1,14))) end)
       [[0.2, -0.2, 0.2], [0.2, 0.3, -0.3], [0.0, 1.0, 0.0]]
 
   For matrices that have no inverse:

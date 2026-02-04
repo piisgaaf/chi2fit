@@ -33,6 +33,13 @@ defmodule Chi2fit.Utilities do
   @typedoc "Average and standard deviationm (error)"
   @type avgsd :: {avg :: float, sd :: float}
 
+  @spec normalize_zero(float) :: float
+  def normalize_zero(x) when is_float(x) and x == 0.0, do: 0.0
+  def normalize_zero(x) when is_list(x), do: Enum.map(x, &normalize_zero/1)
+  def normalize_zero(x) when is_tuple(x), do: x|> Tuple.to_list() |> Enum.map(&normalize_zero/1) |> List.to_tuple()
+  def normalize_zero(x) when is_map(x), do: Map.new(x, fn {k, val} -> {k, normalize_zero(val)} end)
+  def normalize_zero(x), do: x
+
   @doc """
   Reads data from a file specified by `filename` and returns a stream with the data parsed as floats.
 

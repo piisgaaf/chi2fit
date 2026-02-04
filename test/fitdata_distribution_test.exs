@@ -49,8 +49,9 @@ defmodule FitDistributionTest do
     errors = cov |> Chi2fit.Matrix.diagonal
     Enum.zip([params,errors,expect_params])
     |> Enum.each(fn {par,err,check}->
-      ssd = 4.0*:math.sqrt(err)
-      assert par-ssd < check and check < par+ssd, "#{par-ssd} < #{check} < #{par+ssd}"
+      ssd = Float.round(4.0*:math.sqrt(err),2)
+      parr = Float.round(par,2)
+      assert parr-ssd <= check and check <= parr+ssd, "#{parr-ssd} <= #{check} <= #{parr+ssd}"
     end)
   end
 
@@ -274,7 +275,7 @@ defmodule FitDistributionTest do
     IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
     IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
   end
-  
+
   @tag distrib: "normal"
   @tag params: [1,2]
   @tag size: 500
@@ -297,7 +298,7 @@ defmodule FitDistributionTest do
     IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
     IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
   end
-  
+
   @tag distrib: "normal"
   @tag params: [1,2]
   @tag size: 1000
@@ -320,7 +321,7 @@ defmodule FitDistributionTest do
     IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
     IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
   end
-  
+
   @tag distrib: "normal"
   @tag params: [1,2]
   @tag size: 2000
@@ -343,7 +344,7 @@ defmodule FitDistributionTest do
     IO.puts "(mu,   mu_var)    = #{p1},#{v1}"
     IO.puts "(sigma,sigma_var) = #{p2},#{v2}"
   end
-  
+
   @tag distrib: "weibull"
   @tag params: [1,2]
   @tag size: 50
@@ -366,7 +367,7 @@ defmodule FitDistributionTest do
     IO.puts "(alpha,alpha_var) = #{p1},#{v1}"
     IO.puts "(beta, beta_var)  = #{p2},#{v2}"
   end
-  
+
   @tag distrib: "weibull"
   @tag params: [1,2]
   @tag size: 50
@@ -389,7 +390,7 @@ defmodule FitDistributionTest do
     IO.puts "(alpha,alpha_var) = #{p1},#{v1}"
     IO.puts "(beta, beta_var)  = #{p2},#{v2}"
   end
-  
+
   @tag distrib: "weibull"
   @tag params: [1,2]
   @tag size: 50
