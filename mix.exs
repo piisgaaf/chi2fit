@@ -1,4 +1,4 @@
-defmodule Chi2fit.Mixfile do
+defmodule Chi2fit.MixProject do
 
   # Copyright 2015-2019 Pieter Rijken
   #
@@ -41,14 +41,14 @@ defmodule Chi2fit.Mixfile do
   end
 
   # Run "mix help compile.app" to learn about applications.
-  def application do
+  def application() do
     [
       extra_applications: [ :logger]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
-  defp deps do
+  defp deps() do
     [
       {:exboost, "~> 0.2"},
       {:graphvix,"~> 1.1"},
@@ -66,7 +66,7 @@ defmodule Chi2fit.Mixfile do
     ]
   end
 
-  defp aliases do
+  defp aliases() do
     [
       test_notebook: "test --only notebooks",
       test_perf: "test --only performance",
@@ -75,7 +75,7 @@ defmodule Chi2fit.Mixfile do
     ]
   end
 
-  defp escript do
+  defp escript() do
     [
       main_module: Chi2fit.Cli
     ]
@@ -103,7 +103,7 @@ defmodule Chi2fit.Mixfile do
     ]
   end
 
-  def cli do
+  def cli() do
     [
       preferred_envs: [
         test: :test,
@@ -113,7 +113,7 @@ defmodule Chi2fit.Mixfile do
         coveralls: :test,
         docs: :docs,
         "coveralls.html": :test,
-        "hex.publish": :docs,
+        "hex.publish": :docs
       ]
     ]
   end
