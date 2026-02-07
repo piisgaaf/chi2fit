@@ -1,7 +1,5 @@
 # Chi2fit
 
-Binder: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/piisgaaf/chi2fit/master?filepath=README.ipynb)
-
 Tool for fitting particular probability distributions to empirical cumulative distribution functions.
 Distributions supported are Weibull, Wald (Inverse Gauss), Normal, Exponential, Poisson, Erlang, and Skewed Exponential.
 
@@ -19,7 +17,7 @@ by adding `chi2fit` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:chi2fit, "~> 0.9"}
+    {:chi2fit, "~> 2.1"}
   ]
 end
 ```
@@ -27,30 +25,6 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/chi2fit](https://hexdocs.pm/chi2fit).
-
-## Docker & Jupyter Notebooks
-
-`Chi2fit` can be used together with Jupyter Notebooks. The easiest way is to create a docker image and run it.
-The docker image is based on [IElixir](https://github.com/pprzetacznik/IElixir).
-
-The image is built using:
-
-```shell
-$ docker build -f docker/Dockerfile .
-```
-
-Run the image with the command:
-
-```shell
-$  docker run -p 8888:8888 --hostname 127.0.0.1 -v /tmp:/app/notebooks <docker image id>
-```
-
-In Jupyter use one of the provided example notebooks to learn how Chi2fit is set-up from within a notebook.
-
-## Using the prebuilt docker container
-
-Instead of building the docker image yourself, docker images are available at [https://hub.docker.com/r/pietertje/chi2fit](https://hub.docker.com/r/pietertje/chi2fit). After starting the container the log
-shows the url to connect to the jupyter notebook.
 
 ## Basic usage: command line
 
@@ -83,28 +57,6 @@ minimum Chi-squared and the parameter values at this minimum. The reported error
 
 More options are available using the option `--help`.
 
-## Basic usage: jupyter notebook
-
-The repository contains the notebooks:
-
-* `chi2fit.ipynb` - simple template containing the minimal set-up to get started,
-* `BacklogForecasting.ipynb` - elaborate example using data to forecast the completion date of a backlog of work items,
-* `BacklogForecasting-plots.ipynb` - same as `BacklogForecasting.ipynb` but with plots using `GnuPlot`; see below,
-* `BacklogForecasting-non-equilibrium.ipynb` - illustration of binning and changing delivery rate,
-* `BacklogForecasting-multiplot.ipynb` - demonstration of how to do multi plots.
-
-Plots are supported using the package [:gnuplot](https://hex.pm/packages/gnuplot).
-On MacOS execute the following command from the shell to display the GnuPlot window:
-
-```shell
-$ socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"$DISPLAY\"
-```
-
-On a Mac using `port` the tool `socat` is installed by the command:
-
-```shell
-$ sudo port install socat
-```  
 ## Documentation
 
 For detailed documentation please visit [https://hexdocs.pm/chi2fit](https://hexdocs.pm/chi2fit).

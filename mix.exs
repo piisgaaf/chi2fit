@@ -21,11 +21,10 @@ defmodule Chi2fit.MixProject do
       app: :chi2fit,
       version: "2.1.0",
       elixir: ">= 1.15.8",
-      start_permanent: Mix.env == :prod,
+      start_permanent: false,
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
-      compilers: if(Mix.env == :docs, do: [:md], else: []) ++ Mix.compilers, # Add the make compiler
       test_coverage: [tool: ExCoveralls],
 
       ## Hex stuff:
@@ -33,16 +32,13 @@ defmodule Chi2fit.MixProject do
       package: package(),
       name: "Chi-SquaredFit",
       source_url: "https://github.com/piisgaaf/chi2fit",
-
-      ## Docs
-      docs: docs()
     ]
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application() do
     [
-      extra_applications: [:logger,:gettext]
+      extra_applications: [:logger]
     ]
   end
 
@@ -50,27 +46,19 @@ defmodule Chi2fit.MixProject do
   defp deps() do
     [
       {:exboost,"~> 0.3"},
-      {:graphvix,"~> 1.1"},
       {:csv, "~> 3.2"},
       {:timex, "~> 3.7.13", runtime: false},
-      {:stream_data, "~> 1.2"},
-      {:gnuplot, "~> 1.22"},
-      {:ielixir, "~> 1.0", only: :nb, runtime: false},
       {:tzdata, "~> 1.1", runtime: false},
       {:excoveralls, "~> 0.11.0", only: :test},
-      {:ex_doc, "~> 0.40", runtime: false},
-      {:credo, "~> 1.7", only: :dev},
-      {:mix_test_watch, "~> 1.0", only: :test},
-      {:poison, "~> 3.0", only: [:nb,:test]}
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
+      {:credo, "~> 1.7", only: :dev}
     ]
   end
 
   defp aliases() do
     [
-      test_notebook: "test --only notebooks",
       test_perf: "test --only performance",
-      test_all: "test --include performance --include notebooks",
-      docs: ["docs", &copy_images/1]
+      test_all: "test --include performance"
     ]
   end
 
@@ -106,47 +94,10 @@ defmodule Chi2fit.MixProject do
         test: :test,
         test_all: :test,
         test_perf: :test,
-        test_notebook: :test,
         coveralls: :test,
-        docs: :docs,
-        "coveralls.html": :test,
-        "hex.publish": :docs
+        "coveralls.html": :test
       ]
     ]
   end
 
-  defp docs() do
-    [
-      extras: [
-        "README.md",
-        "Forecasting-empirical-data.md",
-        "Forecasting-fit-to-known-distribution.md",
-        "Forecasting-bootstrapping.md",
-        "Forecasting-non-equilibrium.md",
-        "Example-multi-plot.md",
-        "Forecasting-cycle-times.md",
-      ] |> Enum.map(& "#{Mix.Project.build_path()}/lib/chi2fit/docs/"<>&1)
-    ]
-  end
-
-  defp copy_images(_args) do
-    "#{Mix.Project.build_path()}/lib/chi2fit/docs/*_files"
-    |> Path.wildcard()
-    |> Enum.each(& File.cp_r!(&1, "doc/#{Path.basename &1}"))
-  end
-
-end
-
-defmodule Mix.Tasks.Compile.Md do
-  use Mix.Task.Compiler
-
-  @shortdoc "Compiles with jupyter nbconvert to create markdown from a notebook"
-
-  def run(_) do
-    outdir = "#{Mix.Project.build_path()}/lib/chi2fit/docs"
-    docs = Chi2fit.Mixfile.project()[:docs][:extras]
-
-    {result, _error_code} = System.cmd("make", docs, stderr_to_stdout: true, env: [{"OUTDIR",outdir}])
-    Mix.shell.info result
-  end
 end
