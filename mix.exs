@@ -19,14 +19,13 @@ defmodule Chi2fit.MixProject do
   def project do
     [
       app: :chi2fit,
-      version: "2.0.2",
-      elixir: "~> 1.19",
+      version: "2.1.0",
+      elixir: ">= 1.15.8",
       start_permanent: Mix.env == :prod,
-      build_embedded: Mix.env == :prod,
       deps: deps(),
       escript: escript(),
       aliases: aliases(),
-      compilers: Mix.compilers ++ if(Mix.env == :docs, do: [:md], else: []), # Add the make compiler
+      compilers: if(Mix.env == :docs, do: [:md], else: []) ++ Mix.compilers, # Add the make compiler
       test_coverage: [tool: ExCoveralls],
 
       ## Hex stuff:
@@ -43,14 +42,14 @@ defmodule Chi2fit.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application() do
     [
-      extra_applications: [ :logger]
+      extra_applications: [:logger,:gettext]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps() do
     [
-      {:exboost, "~> 0.2"},
+      {:exboost,"~> 0.3"},
       {:graphvix,"~> 1.1"},
       {:csv, "~> 3.2"},
       {:timex, "~> 3.7.13", runtime: false},
@@ -97,8 +96,6 @@ defmodule Chi2fit.MixProject do
       files: [ "lib", "mix.exs", "README*", "LICENSE*", "NOTICE", "config", "chi2fit" ],
       links: %{
         "GitHub" => "https://github.com/piisgaaf/chi2fit",
-        "Docker" => "https://hub.docker.com/r/pietertje/chi2fit",
-        "Binder" => "https://mybinder.org/v2/gh/piisgaaf/chi2fit/master?filepath=README.ipynb"
       }
     ]
   end

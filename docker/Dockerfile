@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM pprzetacznik/ielixir
-#FROM pietertje/ielixir
+#
+# To circumvent that the imported base uses arch amd64, but miniforge3
+# expects arm64 build using:
+# $ docker buildx build --platform=linux/amd64 -f docker/Dockerfile .
+#
+
+FROM quay.io/jupyter/base-notebook:aarch64-ubuntu-24.04
 
 # Set the working directory
 WORKDIR /app
@@ -22,23 +27,8 @@ USER root
 
 # Environment variables
 ENV MIX_ENV=prod
-ENV BOOSTLIB=/usr/lib/x86_64-linux-gnu/
 ENV ERL_LIBS=/app/chi2fit/_build/${MIX_ENV}/lib
 
-# Install the BOOST++ libraries
-RUN set -xe \
-  && buildDeps='libstdc++-10-dev \
-                libboost1.71-dev \
-                libboost-math1.71-dev \
-                libboost-random1.71-dev \
-                libboost-thread1.71-dev \
-                libboost-system1.71-dev \
-                libboost1.71-tools-dev \
-                libmpfrc++-dev \
-                libntl-dev' \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends $buildDeps
-  
 # Install the XeTeX distribution with additional fonts
 RUN set -xe \
   && buildDeps='texlive-xetex \
@@ -47,17 +37,54 @@ RUN set -xe \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
 
-# Reinstall anaconda
+# Install erlang (OTP27) and elixir (1.18):
 RUN set -xe \
-  && rm -rf /opt/conda \
-  && mkdir -p /tmp \
-  && wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
-  && bash /tmp/miniconda.sh -b -p /opt/conda
+  && buildDeps='erlang \
+                elixir' \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends $buildDeps
 
-# Install additional conda packages
+# IElixir:
 RUN set -xe \
-  && conda update -n base conda \
-  && conda install -c conda-forge rise
+  && buildDeps='libzmq3-dev \
+                libsqlite3-dev \
+                unzip \
+                make \
+                g++ \
+                gcc' \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends $buildDeps
+
+# Source: https://github.com/pprzetacznik/IElixir
+ENV CFLAGS="-x c"
+RUN set -xe \
+  && wget -q https://github.com/pprzetacznik/IElixir/archive/refs/heads/master.zip -O ielixir.zip \
+  && unzip ielixir.zip -d ielixir_tmp \
+  && mv ielixir_tmp/IElixir-master ielixir \
+  && rm -rf ielixir_tmp \
+  && cd ielixir \
+  && ls -alh \
+  && mix local.hex --force \
+  && mix local.rebar --force \
+  && mix deps.get \
+  && mix deps.compile \
+  && ./install_script.sh
+ADD config/config_ielixir.exs ielixir/config/config.exs
+ADD config/prod_ielixir.exs ielixir/config/prod.exs
+
+# Install the BOOST++ libraries
+RUN set -xe \
+  && buildDeps='libstdc++-11-dev \
+                libboost-dev \
+                libboost-math-dev \
+                libboost-random-dev \
+                libboost-thread-dev \
+                libboost-system-dev \
+                libboost-tools-dev \
+                libmpfrc++-dev \
+                libntl-dev' \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends $buildDeps
 
 # Install additional packages needed for the Chi2fit package
 RUN set -xe \
@@ -67,7 +94,11 @@ RUN set -xe \
   && apt-get update \
   && apt-get install -y --no-install-recommends $buildDeps
 
-  # Copy the Chi2fit package
+ENV CC=c++
+ENV BOOSTLIB=/usr/lib/aarch64-linux-gnu
+ENV BOOSTINCLUDE=/usr/include/boost
+
+# Copy the Chi2fit package
 WORKDIR /app/chi2fit
 ADD mix.* ./
 ADD config config/
@@ -75,11 +106,10 @@ ADD lib lib/
 
 # Compile dependencies & Chi2Fit
 RUN set -xe \
+  && mix deps.clean exboost --build \
+  && mix clean \
   && mix local.hex --force \
   && mix deps.get \
-  && mix deps.compile
-
-RUN set -xe \
   && mix deps.compile \
   && mix compile
 
@@ -93,3 +123,11 @@ RUN set -xe \
 WORKDIR /app/notebooks
 ADD notebooks/*.ipynb ./
 ADD notebooks/data/* ./data/
+
+RUN set -xe \
+  && chown -R jovyan:users /app/*
+
+USER $NB_UID
+
+ENV ELIXIR_ERL_OPTIONS="-smp enable"
+CMD ["start-notebook.py"]

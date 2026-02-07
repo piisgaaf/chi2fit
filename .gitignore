@@ -20,10 +20,10 @@ erl_crash.dump
 *.ez
 chi2fit
 *.tar
-priv
 
 /.DS_Store
 /notebooks/*.md
 /notebooks/*_files
 /notebooks/.ipynb_checkpoints
 /envs
+.tool-versions
