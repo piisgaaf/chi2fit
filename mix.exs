@@ -49,7 +49,7 @@ defmodule Chi2fit.MixProject do
       {:csv, "~> 3.2"},
       {:timex, "~> 3.7.13", runtime: false},
       {:tzdata, "~> 1.1", runtime: false},
-      {:excoveralls, "~> 0.11.0", only: :test},
+      {:excoveralls, "~> 0.18", only: :test},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: :dev}
     ]
@@ -90,6 +90,7 @@ defmodule Chi2fit.MixProject do
 
   def cli() do
     [
+      default_env: :dev,
       preferred_envs: [
         test: :test,
         test_all: :test,
