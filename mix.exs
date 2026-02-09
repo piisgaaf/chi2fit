@@ -19,7 +19,7 @@ defmodule Chi2fit.MixProject do
   def project do
     [
       app: :chi2fit,
-      version: "2.1.0",
+      version: "2.1.1",
       elixir: ">= 1.15.8",
       start_permanent: false,
       deps: deps(),

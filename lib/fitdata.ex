@@ -286,7 +286,12 @@ defmodule Chi2fit.Fit do
       |> Tuple.to_list
       |> Enum.map(fn plist -> [ Enum.min(plist),Enum.max(plist) ] end)
       |> List.to_tuple}
-    if options[:saved?], do: Tuple.to_list(result) ++ saved, else: result
+    if options[:saved?] do
+      {a,b,c} = result
+      {a,b,c,saved}
+    else
+      result
+    end
   end
   defp chi2probe(observables, parranges, {fun,penalties}, num, best, options) do
     if options[:progress] do
