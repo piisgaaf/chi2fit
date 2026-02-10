@@ -21,9 +21,7 @@ erl_crash.dump
 chi2fit
 *.tar
 
-/.DS_Store
-/notebooks/*.md
-/notebooks/*_files
-/notebooks/.ipynb_checkpoints
+.DS_Store
 /envs
 .tool-versions
+.credo.exs
