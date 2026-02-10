@@ -115,7 +115,8 @@ defmodule Chi2fit.Utilities do
   end
   def unzip(list=[_|_]) do
     0..tuple_size(hd(list))-1
-    |> Enum.reduce({},fn i,tup -> Tuple.to_list(tup) ++ (list |> Enum.map(&elem(&1,i))) end)
+    |> Enum.reduce([],fn i,tup -> tup ++ [list |> Enum.map(&elem(&1,i))] end)
+    |> List.to_tuple
   end
 
   ##
