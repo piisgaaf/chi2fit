@@ -31,6 +31,8 @@ be found at [https://hexdocs.pm/chi2fit](https://hexdocs.pm/chi2fit).
 The following command does a simple fit against data:
 
 ```shell
+$ mix escript.build
+$ mix escript.install
 $ chi2fit data.csv --ranges '[{0.8,1.2},{0.6,1.2}]' --cdf weibull
 
 Initial guess:
