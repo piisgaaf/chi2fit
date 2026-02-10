@@ -19,7 +19,7 @@ defmodule Chi2fit.MixProject do
   def project do
     [
       app: :chi2fit,
-      version: "2.1.2",
+      version: "2.1.4",
       elixir: ">= 1.15.8",
       start_permanent: false,
       deps: deps(),
@@ -47,8 +47,8 @@ defmodule Chi2fit.MixProject do
     [
       {:exboost,"~> 0.3"},
       {:csv, "~> 3.2"},
-      {:timex, "~> 3.7.13"},
-      {:tzdata, "~> 1.1"},
+      {:timex, "~> 3.7.13", runtime: false},
+      {:tzdata, "~> 1.1", runtime: false},
       {:excoveralls, "~> 0.18", only: :test},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
       {:credo, "~> 1.7", only: :dev}
