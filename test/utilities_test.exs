@@ -16,9 +16,11 @@ defmodule UtilitiesTest do
 
   use ExUnit.Case, async: true
   import Chi2fit.Math
+  import Chi2fit.Times
   import Chi2fit.Utilities
 
   doctest Chi2fit.Math
+  doctest Chi2fit.Times
   doctest Chi2fit.Utilities
 
   test "Third derivatives" do
