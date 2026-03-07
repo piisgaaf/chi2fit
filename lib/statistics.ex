@@ -387,7 +387,7 @@ defmodule Chi2fit.Statistics do
   - List of observations
   - Optional: keyword list with options:
     * `nproc`: the number of CPUs to use for the FFT (defaults to 1)
-    * `estimator`: boolean whether to calculate the natural estimator (defatuls to `false`)
+    * `estimator?`: boolean whether to calculate the natural estimator (defatuls to `false`)
 
   ## Example
 
@@ -435,7 +435,7 @@ defmodule Chi2fit.Statistics do
   - a list of autocorrelation coefficients. This may be the output of `auto/2`.
 
   ## Output
-  - the tuple `{var,lag}` where `var` is the *initial convex sequence` estimator.
+  - the tuple `{var,lag}` where `var` is the *initial convex sequence* estimator.
 
   ## References
 
