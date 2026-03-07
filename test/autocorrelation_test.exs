@@ -18,7 +18,7 @@ defmodule AutocorrelationTest do
 
   import Chi2fit.Statistics
   import Chi2fit.FFT
-    
+
   @h 1.0e-5
 
   defp [] <~> [], do: true
@@ -54,7 +54,7 @@ defmodule AutocorrelationTest do
   test "FFT Double" do
     assert [{3.7,0.0},{-1.5,0.0}] <~> fft([1.1, 2.6])
   end
-  
+
   test "FFT odd" do
     assert [{6.0,0.0},{-1.5,0.8660254037844375},{-1.5,-0.8660254037844375}] <~> fft([1,2,3])
     assert [{15.0,0.0},{-2.5,3.44095},{-2.5,0.812299},{-2.5,-0.812299},{-2.5,-3.44095}] <~> fft([1,2,3,4,5])
@@ -65,7 +65,7 @@ defmodule AutocorrelationTest do
     assert [10.0,{-2.0,2.0},-2.0,{-2.0,-2.0}] <~> fft([1,2,3,4])
     assert [21.0,{-3.0,5.196152},{-3.0,1.73205},-3.0,{-3.0,-1.73205},{-3.0,-5.196152}] <~> fft([1,2,3,4,5,6])
   end
-  
+
   test "FFT - multi-core" do
     assert [4.0,0.0,0.0,0.0] <~> fft([1,1,1,1],nproc: 2)
     assert [4.0,0.0,0.0,0.0] <~> fft([1,1,1,1],nproc: 4)
@@ -79,7 +79,7 @@ defmodule AutocorrelationTest do
     t1 = Time.utc_now() |> toms
     fft(tl(list),nproc: 1)
     t2 = Time.utc_now() |> toms
-    
+
     IO.puts "\nPower of 2 test:"
     IO.puts "t1 = #{(t1-t0)/1_000_000} seconds"
     IO.puts "t2 = #{(t2-t1)/1_000_000} seconds"
@@ -95,7 +95,7 @@ defmodule AutocorrelationTest do
     t2 = Time.utc_now() |> toms
     fft(list,nproc: 4)
     t4 = Time.utc_now() |> toms
-    
+
     IO.puts "\nFFT - parallel (multi-core) test:"
     IO.puts "single (nproc=1) = #{(t1-t0)/1_000_000} seconds"
     IO.puts "dual   (nproc=2) = #{(t2-t1)/1_000_000} seconds"
@@ -107,7 +107,7 @@ defmodule AutocorrelationTest do
     assert [1.1] <~> ([1.1] |> fft |> ifft)
     assert [1.1,2.6] <~> ([1.1,2.6] |> fft |> ifft)
   end
-  
+
   test "Inverse FFT - nontrivial" do
     assert [1,2,3] <~> ([1,2,3] |> fft |> ifft)
     assert [1,2,3,4] <~> ([1,2,3,4] |> fft |> ifft)
@@ -116,14 +116,19 @@ defmodule AutocorrelationTest do
   end
 
   test "Autocorrelation - trivial" do
-    assert [] == auto []
-    assert [1.21] <~> auto([1.1])
+    assert [] == autocov []
+    assert [1.21] <~> autocov([1.1])
   end
 
   test "Autocorrelation - simple" do
-    assert [5.0,2.0] <~> auto([1,2])
-    assert [38.0,16.0,15.0] <~> auto([5,2,3])
-    assert [13.0,10.0,6.0,2.0] <~> auto([1,2,2,2])
+    assert [2.5,1.0] <~> autocov([1,2])
+    assert [12.666666666666666, 5.333333333333333, 5.0] <~> autocov([5,2,3])
+    assert [3.25,2.5,1.5,0.5] <~> autocov([1,2,2,2])
+  end
+
+  test "Autocorrelation - natural estimator" do
+    assert [38.5, 33.0, 27.6, 22.4, 17.5, 13.0, 9.0, 5.6, 2.9, 1.0] <~> autocov([1,2,3,4,5,6,7,8,9,10])
+    assert [8.25, 5.775, 3.4, 1.225, -0.65, -2.125, -3.1, -3.475, -3.15, -2.025] <~> autocov([1,2,3,4,5,6,7,8,9,10], estimator?: true)
   end
 
   @tag timeout: 3_600_000
@@ -131,13 +136,13 @@ defmodule AutocorrelationTest do
   test "Autocorrelation - multi-core - performance" do
     list = Stream.repeatedly(&:rand.uniform/0) |> Enum.take(65536*2)
     t0 = Time.utc_now() |> toms
-    auto(list,nproc: 1)
+    autocov(list,nproc: 1)
     t1 = Time.utc_now() |> toms
-    auto(list,nproc: 2)
+    autocov(list,nproc: 2)
     t2 = Time.utc_now() |> toms
-    auto(list,nproc: 4)
+    autocov(list,nproc: 4)
     t4 = Time.utc_now() |> toms
-    
+
     IO.puts "\nAutocorrelation - parallel (multi-core) test:"
     IO.puts "single (nproc=1) = #{(t1-t0)/1_000_000} seconds"
     IO.puts "dual   (nproc=2) = #{(t2-t1)/1_000_000} seconds"

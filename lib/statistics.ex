@@ -378,29 +378,48 @@ defmodule Chi2fit.Statistics do
   end
 
   @doc """
-  Calculates the autocorrelation coefficient of a list of observations.
+  Calculates the lag-k autocovariance of a list of observations.
 
-  The implementation uses the discrete Fast Fourier Transform to calculate the autocorrelation.
-  For available options see `Chi2fit.FFT.fft/2`. Returns a list of the autocorrelation coefficients.
+  The implementation uses the discrete Fast Fourier Transform to calculate the autocovariance.
+  For available options see `Chi2fit.FFT.fft/2`. Returns a list of the autocovariance.
+
+  ## Input:
+  - List of observations
+  - Optional: keyword list with options:
+    * `nproc`: the number of CPUs to use for the FFT (defaults to 1)
+    * `estimator`: boolean whether to calculate the natural estimator (defatuls to `false`)
 
   ## Example
 
-      iex> auto [1,2,3]
-      [14.0, 7.999999999999999, 2.999999999999997]
+      iex> autocov [1,2,3]
+      [4.666666666666667, 2.6666666666666665, 0.9999999999999988]
 
   """
-  @spec auto([number],Keyword.t) :: [number]
-  def auto(list,opts \\ [nproc: 1])
+  @spec autocov([number],Keyword.t) :: [number]
+  def autocov(list,opts \\ [nproc: 1, estimator?: false])
 
-  def auto([],_opts), do: []
-  def auto([x],_opts), do: [x*x]
-  def auto(list,opts) do
+  def autocov([],_opts), do: []
+  def autocov([x],opts) do
+    do_estimator? = Keyword.get(opts, :estimator?, false)
+    mean = cond do
+      do_estimator? -> x
+      true -> 0
+    end
+    [(x-mean)*(x-mean)]
+  end
+  def autocov(list,opts) do
+    do_estimator? = Keyword.get(opts, :estimator?, false)
+    mean = cond do
+      do_estimator? -> Enum.sum(list)/length(list)
+      true -> 0
+    end
+
     n = length(list)
     List.duplicate(0,n)
-    |> Enum.concat(list)
+    |> Enum.concat(list |> Enum.map(fn x -> x-mean end))
     |> fft(opts) |> normv |> ifft(opts)
     |> Stream.take(n)
-    |> Stream.map(&(elem(&1,0)))
+    |> Stream.map(&(elem(&1,0)/n))
     |> Enum.to_list
   end
 
@@ -412,7 +431,11 @@ defmodule Chi2fit.Statistics do
   The only supported method is the so-called `Initial Sequence Method`. See section 1.10.2 (Initial sequence method)
   of [1].
 
-  Input is a list of autocorrelation coefficients. This may be the output of `auto/2`.
+  ## Input
+  - a list of autocorrelation coefficients. This may be the output of `auto/2`.
+
+  ## Output
+  - the tuple `{var,lag}` where `var` is the *initial convex sequence` estimator.
 
   ## References
 
