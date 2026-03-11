@@ -445,7 +445,7 @@ defmodule Chi2fit.Statistics do
   @spec error([{gamma :: number,k :: pos_integer}], :initial_sequence_method) :: {var :: number, lag :: number}
   def error(nauto, :initial_sequence_method) do
     ## For reversible Markov Chains
-    gamma = nauto |> Stream.chunk_every(2) |> Stream.map(fn ([{x,k},{y,_}])->{k/2,x+y} end) |> Enum.to_list
+    gamma = nauto |> Stream.chunk_every(2,2,:discard) |> Stream.map(fn ([{x,k},{y,_}])->{k/2,x+y} end) |> Enum.to_list
     gamma0 = nauto |> Stream.take(1) |> Enum.to_list |> (&(elem(hd(&1),0))).()
     m = gamma |> Stream.take_while(fn ({_k,x})->x>0 end) |> Enum.count
     gammap = gamma |> Stream.take_while(fn ({_k,x})->x>0 end) |> Stream.map(fn {_,x}->x end) |> Stream.concat([0.0]) |> Enum.to_list
