@@ -20,11 +20,11 @@ defmodule Chi2fit.MonteCarlo do
 
   @doc """
   Basic Monte Carlo simulation to repeatedly run a simulation multiple times.
-  
+
   ## Options
-  
+
       `:collect_all?` - If true, collects data from each individual simulation run and returns this an the third element of the result tuple
-  
+
   """
   @spec mc(iterations :: pos_integer, fun :: ((pos_integer) -> float), options :: Keyword.t) :: {avg :: float, sd :: float, tries :: [float]} | {avg :: float, sd :: float}
   def mc(iterations,fun,options \\ []) do
@@ -61,24 +61,40 @@ defmodule Chi2fit.MonteCarlo do
   end
 
   @doc """
+  Performs a nested bootstrap on sample data.
+  """
+  @spec nested_bootstrap(list(number()), (list(number()) -> number), Keyword.t()) :: list(number())
+  def nested_bootstrap(values, fun, options) do
+    iterations = Keyword.get(options, :iterations, 10_000)
+    resamples = Keyword.get(options, :resamples, 1_000)
+    target = Keyword.fetch!(options, :target)
+
+    bootstrap(resamples, values, fn
+      data, _i ->
+        {_avg,_sd,collection} = mc(iterations, fun.(data), collect_all?: true)
+        get_percentile(collection, target)
+      end)
+  end
+
+  @doc """
   Forecasts how many time periods are needed to complete `size` items
-  
+
   Related functions: `forecast_duration/2` and `forecast_items/2`.
   """
   @spec forecast(fun :: (() -> non_neg_integer),size :: pos_integer, tries :: pos_integer, update :: (() -> number)) :: number
   def forecast(fun, size, tries \\ 0,update \\ fn -> 1 end)
   def forecast(fun, size, tries, update) when size>0 do
-      forecast(fun, size-fun.(),tries+update.(),update)
+    forecast(fun, size-fun.(),tries+update.(),update)
   end
   def forecast(_fun,_size,tries,_update), do: tries
 
   @doc """
   Returns a function for forecasting the duration to complete a number of items.
-  
+
   This function is a wrapper for `forecast/4`.
 
   ## Arguments
-  
+
       `data` - either a data set to base the forecasting on, or a function that returns (random) numbers
       `size` - the number of items to complete
 
@@ -93,11 +109,11 @@ defmodule Chi2fit.MonteCarlo do
 
   @doc """
   Returns a function for forecasting the number of completed items in a number periods.
-  
+
   This function is a wrapper for `forecast/4`.
 
   ## Arguments
-  
+
       `data` - either a data set to base the forecasting on, or a function that returns (random) numbers
       `periods` - the number of periods to forecast the number of completed items for
 
@@ -108,6 +124,16 @@ defmodule Chi2fit.MonteCarlo do
   end
   def forecast_items(fun, periods) when is_function(fun,0) do
     fn -> forecast(fn -> 1 end, periods, 0, fun) end
+  end
+
+  @spec get_percentile(list(), non_neg_integer()) :: float()
+  def get_percentile(collection, value) do
+    size = length(collection)
+
+    [0|collection]
+    |> Enum.sort(&(&1 >= &2))
+    |> Enum.find_index(&(&1 < value))
+    |> Kernel./(size)
   end
 
 end
